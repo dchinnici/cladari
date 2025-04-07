@@ -11,13 +11,14 @@ export default function CarlaBlackeaeProfile() {
       boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
     }}>
       <h1 style={{ color: '#065f46' }}>Anthurium 'CarlaBlackeae'</h1>
-      <p><strong>Cladari Plant ID:</strong> CLD-001</p>
-<img
-  src="/carlablackeae.jpg"
-  alt="Anthurium Carlablackeae"
-  style={{ width: '100%', borderRadius: '8px', marginBottom: '1rem' }}
-/>
 
+      <img
+        src="/carlablackeae.jpeg"
+        alt="Anthurium CarlaBlackeae"
+        style={{ width: '100%', borderRadius: '8px', marginBottom: '1rem' }}
+      />
+
+      <p><strong>Cladari Plant ID:</strong> CLD-001</p>
       <hr style={{ margin: '1rem 0' }} />
 
       <h2>Lineage / Parentage</h2>
