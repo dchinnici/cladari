@@ -13,7 +13,7 @@ export default function CarlaBlackeaeProfile() {
       <h1 style={{ color: '#065f46' }}>Anthurium 'CarlaBlackeae'</h1>
       <p><strong>Cladari Plant ID:</strong> CLD-001</p>
 <img
-  src="/carlablackeae.jpg"
+  src="/public/carlablackeae.jpg"
   alt="Anthurium CarlaBlackeae"
   style={{ width: '100%', borderRadius: '8px', marginBottom: '1rem' }}
 />
