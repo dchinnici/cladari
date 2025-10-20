@@ -1,0 +1,399 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Plant {
+  id                String   @id @default(cuid())
+  plantId           String   @unique // ANT-2025-XXXX format
+  accessionDate     DateTime @default(now())
+
+  // Taxonomy
+  genus             String   @default("Anthurium")
+  section           String?  // AOS, Cardiolonchium, Xialophyllum, etc.
+  species           String?
+  hybridName        String?
+  crossNotation     String?  // e.g., "(RA8×RA5)²"
+
+  // Lineage
+  femaleParent      Plant?   @relation("FemaleOffspring", fields: [femaleParentId], references: [id])
+  femaleParentId    String?
+  maleParent        Plant?   @relation("MaleOffspring", fields: [maleParentId], references: [id])
+  maleParentId      String?
+  generation        String?  // F1, F2, F3, etc.
+
+  // Source & Acquisition
+  breeder           String?
+  breederCode       String?  // RA5, RA8, OG5, etc.
+  vendor            Vendor?  @relation(fields: [vendorId], references: [id])
+  vendorId          String?
+  acquisitionCost   Float?
+  propagationType   String?  // seed, cutting, tissue_culture, division, purchase
+
+  // Status & Location
+  currentLocation   Location? @relation(fields: [locationId], references: [id])
+  locationId        String?
+  healthStatus      String    @default("healthy") // healthy, stressed, diseased, recovering
+  conservationStatus String?  // CITES status, conservation priority
+
+  // Genetics
+  genetics          Genetics?
+  traits            Trait[]
+
+  // Records
+  photos            Photo[]
+  careLogs          CareLog[]
+  measurements      Measurement[]
+  floweringCycles   FloweringCycle[]
+
+  // Breeding
+  femaleOffspring   Plant[]  @relation("FemaleOffspring")
+  maleOffspring     Plant[]  @relation("MaleOffspring")
+  femaleBreedings   BreedingRecord[] @relation("FemalePlant")
+  maleBreedings     BreedingRecord[] @relation("MalePlant")
+
+  // Market
+  marketValue       Float?
+  isForSale         Boolean  @default(false)
+  isMother          Boolean  @default(false)
+  isEliteGenetics   Boolean  @default(false)
+
+  // Metadata
+  notes             String?
+  tags              String   @default("[]") // JSON array stored as string
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([plantId])
+  @@index([vendorId])
+  @@index([locationId])
+  @@index([section])
+}
+
+model BreedingRecord {
+  id                String   @id @default(cuid())
+  crossId           String   @unique // X-2025-XXXX format
+  crossDate         DateTime
+
+  // Parents
+  femalePlant       Plant    @relation("FemalePlant", fields: [femalePlantId], references: [id])
+  femalePlantId     String
+  malePlant         Plant    @relation("MalePlant", fields: [malePlantId], references: [id])
+  malePlantId       String
+
+  // Cross Details
+  crossType         String   // controlled, open, self
+  pollinationMethod String?  // fresh, stored, mixed
+
+  // Results
+  seedsProduced     Int?
+  germinationRate   Float?
+  seedlingCount     Int?
+  f1PlantsRaised    Int?
+
+  // Selection
+  selectionCriteria String   @default("[]") // JSON array
+  selectedPlants    String   @default("[]") // JSON array of Plant IDs
+
+  // Documentation
+  notes             String?
+  photos            String   @default("[]") // JSON array
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([femalePlantId])
+  @@index([malePlantId])
+  @@index([crossDate])
+}
+
+model Genetics {
+  id              String   @id @default(cuid())
+  plant           Plant    @relation(fields: [plantId], references: [id])
+  plantId         String   @unique
+
+  // Lineage codes
+  raNumber        String?  // RA5, RA8, RA6, etc.
+  ogNumber        String?  // OG5, etc.
+  provenance      String?  // Eastern Panama, Colombia, etc.
+
+  // Genetic data
+  ploidy          String?  // 2n, 3n, 4n
+  dnaBarcode      String?
+  sequenceData    String?  // JSON stored as string
+
+  // Breeding value
+  breedingValue   Float?   // 0-1 score
+  inbreedingCoeff Float?   // COI calculation
+
+  // Trait predictions
+  traitPredictions String? // JSON - ML model outputs
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Trait {
+  id              String   @id @default(cuid())
+  plant           Plant    @relation(fields: [plantId], references: [id])
+  plantId         String
+
+  category        String   // leaf, spathe, spadix, growth
+  traitName       String   // velvety, crystalline, size, color
+  value           String?  // Expression value
+  expressionLevel Float?   // 0-1 scale
+  inheritancePattern String? // dominant, recessive, polygenic
+
+  observationDate DateTime
+  notes           String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([plantId])
+  @@index([category])
+  @@index([observationDate])
+  // No unique constraint - allows multiple observations over time
+  // Each observation has unique id for editing
+}
+
+model Photo {
+  id              String   @id @default(cuid())
+  plant           Plant    @relation(fields: [plantId], references: [id])
+  plantId         String
+
+  url             String
+  thumbnailUrl    String?
+  dateTaken       DateTime
+  growthStage     String?  // seedling, juvenile, mature
+  photoType       String   // whole_plant, leaf, spathe, spadix, roots
+
+  metadata        String?  // JSON - EXIF data, camera settings
+  aiAnalysis      String?  // JSON - Computer vision results
+
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  @@index([plantId])
+  @@index([dateTaken])
+}
+
+model CareLog {
+  id              String   @id @default(cuid())
+  plant           Plant    @relation(fields: [plantId], references: [id])
+  plantId         String
+
+  date            DateTime
+  action          String   // water, fertilize, repot, prune, treat
+
+  // Treatment details
+  treatment       Treatment? @relation(fields: [treatmentId], references: [id])
+  treatmentId     String?
+  dosage          Float?
+  unit            String?
+
+  details         String?
+  nextActionDue   DateTime?
+  performedBy     String?
+
+  createdAt       DateTime @default(now())
+
+  @@index([plantId])
+  @@index([date])
+  @@index([action])
+}
+
+model Treatment {
+  id              String   @id @default(cuid())
+  name            String
+  type            String   // fertilizer, fungicide, insecticide, hormone
+  brand           String?
+
+  composition     String?  // JSON - NPK ratios, active ingredients
+  applicationRate String?
+  frequency       String?
+
+  careLogs        CareLog[]
+
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Measurement {
+  id              String   @id @default(cuid())
+  plant           Plant    @relation(fields: [plantId], references: [id])
+  plantId         String
+
+  measurementDate DateTime
+
+  // Leaf measurements
+  leafLength      Float?   // cm
+  leafWidth       Float?   // cm
+  petioleLength   Float?   // cm
+  internodeLength Float?   // cm
+
+  // Colors
+  primaryVeinColor String?
+  flushColor      String?
+  petioleColor    String?
+
+  // Other traits
+  texture         String?  // velvety, glossy, matte
+  vigorScore      Int?     // 1-5
+  leafCount       Int?
+  height          Float?   // cm
+
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  @@index([plantId])
+  @@index([measurementDate])
+}
+
+model Vendor {
+  id              String   @id @default(cuid())
+  name            String   @unique
+  type            String   // nursery, private, import, local
+  location        String?
+  country         String?
+
+  reputationScore Float?   // 1-5
+  specialties     String   @default("[]") // JSON array
+
+  contactInfo     String?
+  website         String?
+  instagram       String?
+
+  plants          Plant[]
+  purchases       Purchase[]
+
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([name])
+}
+
+model Purchase {
+  id              String   @id @default(cuid())
+  vendor          Vendor   @relation(fields: [vendorId], references: [id])
+  vendorId        String
+
+  purchaseDate    DateTime
+  totalCost       Float
+  plantCount      Int
+
+  invoiceNumber   String?
+  trackingNumber  String?
+
+  plantIds        String   @default("[]") // JSON array of Plant IDs
+  notes           String?
+
+  createdAt       DateTime @default(now())
+
+  @@index([vendorId])
+  @@index([purchaseDate])
+}
+
+model Location {
+  id              String   @id @default(cuid())
+  name            String   @unique
+  type            String   // greenhouse, tent, indoor, outdoor
+
+  zone            String?  // A1, B2, etc.
+  shelf           String?
+  position        String?
+
+  // Environmental conditions
+  lightLevel      String?  // low, medium, high, grow_light
+  humidity        Float?   // percentage (RH)
+  temperature     Float?   // celsius
+
+  // Advanced environmental metrics
+  dli             Float?   // Daily Light Integral (mol/m²/day) - typically 10-20 for anthuriums
+  vpd             Float?   // Vapor Pressure Deficit (kPa) - optimal 0.8-1.2 for anthuriums
+  pressure        Float?   // Atmospheric pressure (hPa/mbar)
+  co2             Float?   // CO2 concentration (ppm) - ambient ~400, enriched ~800-1200
+
+  // Lighting setup
+  growLights      String?  // JSON: [{type, wattage, spectrum, distance, photoperiod}]
+  photoperiod     String?  // Light schedule (e.g., "16/8", "12/12")
+
+  // Ventilation & air flow
+  airflow         String?  // none, low, medium, high, automated
+  fanSpeed        String?  // CFM or percentage
+
+  capacity        Int?
+  currentOccupancy Int     @default(0)
+
+  plants          Plant[]
+
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([name])
+}
+
+model Species {
+  id              String   @id @default(cuid())
+  genus           String
+  species         String
+  section         String?  // Cardiolonchium, Xialophyllum, etc.
+
+  commonNames     String   @default("[]") // JSON array
+  nativeRange     String?
+  conservationStatus String? // IUCN status
+  citesListing    String?  // Appendix I, II, III
+
+  keyTraits       String   @default("[]") // JSON array
+  description     String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([genus, species])
+  @@index([section])
+}
+
+model FloweringCycle {
+  id              String   @id @default(cuid())
+  plant           Plant    @relation(fields: [plantId], references: [id])
+  plantId         String
+
+  // Cycle tracking - Anthurium spadix stages
+  spatheEmergence DateTime?  // When spathe first appears
+  femaleStart     DateTime?  // Female receptive begins (stigmas receptive)
+  femaleEnd       DateTime?  // Female receptive ends
+  maleStart       DateTime?  // Male pollen production begins
+  maleEnd         DateTime?  // Male pollen ends
+  spatheClose     DateTime?  // Spathe closes/cycle complete
+
+  // Pollen management
+  pollenCollected Boolean @default(false)
+  pollenQuality   String?  // abundant, moderate, sparse, poor
+  pollenStored    Boolean @default(false)  // Refrigerated for later use
+  pollenStorageDate DateTime?  // When pollen was collected/stored
+
+  // Outcome tracking
+  crossesAttempted String @default("[]")  // JSON: [{crossId, date, success}]
+  seedsProduced   Int?
+
+  // Environmental conditions during cycle
+  temperature     Float?   // Average temp during cycle
+  humidity        Float?   // Average humidity during cycle
+
+  // Metadata
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([plantId])
+  @@index([femaleStart])
+  @@index([maleStart])
+  @@index([spatheEmergence])
+}

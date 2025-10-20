@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Expose the app over your Tailscale tailnet using `tailscale serve`.
+# Requirements: Tailscale v1.44+ with Serve enabled.
+# Usage examples:
+#   ./scripts/ts-serve                  # serve https://<device> on port 443 → http://localhost:3000
+#   ./scripts/ts-serve --port 4000      # map to a different local port
+#   ./scripts/ts-serve --off            # disable serving
+#   ./scripts/ts-serve --status         # show serve status
+
+PORT=3000
+ACTION="enable"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --port) PORT="${2:-3000}"; shift 2 ;;
+    --off) ACTION="disable"; shift ;;
+    --status) ACTION="status"; shift ;;
+    *) echo "Unknown option: $1"; exit 1 ;;
+  esac
+done
+
+if ! command -v tailscale >/dev/null 2>&1; then
+  echo "[cladari] tailscale CLI not found. Install Tailscale first: https://tailscale.com/download"
+  exit 1
+fi
+
+case "$ACTION" in
+  status)
+    tailscale serve status || true
+    ;;
+  disable)
+    echo "[cladari] Disabling Tailscale Serve for this device"
+    tailscale serve stop || true
+    ;;
+  enable)
+    echo "[cladari] Enabling Tailscale Serve: https://<device>:443 → http://localhost:$PORT"
+    tailscale serve --https=443 http://localhost:"$PORT"
+    tailscale serve status || true
+    ;;
+esac
+

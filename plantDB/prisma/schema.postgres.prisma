@@ -1,0 +1,331 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Postgres variant to enable JSON/JSONB and pgvector usage.
+
+model Plant {
+  id                String   @id @default(cuid())
+  plantId           String   @unique
+  accessionDate     DateTime @default(now())
+
+  genus             String   @default("Anthurium")
+  speciesComplex    String?
+  species           String?
+  hybridName        String?
+  crossNotation     String?
+
+  femaleParent      Plant?   @relation("FemaleOffspring", fields: [femaleParentId], references: [id])
+  femaleParentId    String?
+  maleParent        Plant?   @relation("MaleOffspring", fields: [maleParentId], references: [id])
+  maleParentId      String?
+  generation        String?
+
+  breeder           String?
+  breederCode       String?
+  vendor            Vendor?  @relation(fields: [vendorId], references: [id])
+  vendorId          String?
+  acquisitionCost   Float?
+  propagationType   String?
+
+  currentLocation   Location? @relation(fields: [locationId], references: [id])
+  locationId        String?
+  healthStatus      String    @default("healthy")
+  conservationStatus String?
+
+  genetics          Genetics?
+  traits            Trait[]
+  photos            Photo[]
+  careLogs          CareLog[]
+  measurements      Measurement[]
+
+  femaleOffspring   Plant[]  @relation("FemaleOffspring")
+  maleOffspring     Plant[]  @relation("MaleOffspring")
+  femaleBreedings   BreedingRecord[] @relation("FemalePlant")
+  maleBreedings     BreedingRecord[] @relation("MalePlant")
+
+  marketValue       Float?
+  isForSale         Boolean  @default(false)
+  isMother          Boolean  @default(false)
+
+  notes             String?
+  tags              Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([plantId])
+  @@index([vendorId])
+  @@index([locationId])
+  @@index([speciesComplex])
+}
+
+model BreedingRecord {
+  id                String   @id @default(cuid())
+  crossId           String   @unique
+  crossDate         DateTime
+
+  femalePlant       Plant    @relation("FemalePlant", fields: [femalePlantId], references: [id])
+  femalePlantId     String
+  malePlant         Plant    @relation("MalePlant", fields: [malePlantId], references: [id])
+  malePlantId       String
+
+  crossType         String
+  pollinationMethod String?
+
+  seedsProduced     Int?
+  germinationRate   Float?
+  seedlingCount     Int?
+  f1PlantsRaised    Int?
+
+  selectionCriteria Json?
+  selectedPlants    Json?
+
+  notes             String?
+  photos            Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([femalePlantId])
+  @@index([malePlantId])
+  @@index([crossDate])
+}
+
+model Genetics {
+  id              String   @id @default(cuid())
+  plant           Plant    @relation(fields: [plantId], references: [id])
+  plantId         String   @unique
+
+  raNumber        String?
+  ogNumber        String?
+  provenance      String?
+
+  ploidy          String?
+  dnaBarcode      String?
+  sequenceData    Json?
+  variegationType String?
+
+  breedingValue   Float?
+  inbreedingCoeff Float?
+
+  traitPredictions Json?
+
+  // Prepare for pgvector embeddings (set via migration):
+  // traitEmbedding Unsupported("vector(768)")?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Trait {
+  id              String   @id @default(cuid())
+  plant           Plant    @relation(fields: [plantId], references: [id])
+  plantId         String
+
+  category        String
+  traitName       String
+  value           String?
+  expressionLevel Float?
+  inheritancePattern String?
+
+  observationDate DateTime
+  notes           String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([plantId])
+  @@index([category])
+  @@unique([plantId, category, traitName])
+}
+
+model Photo {
+  id              String   @id @default(cuid())
+  plant           Plant    @relation(fields: [plantId], references: [id])
+  plantId         String
+
+  url             String
+  thumbnailUrl    String?
+  dateTaken       DateTime
+  growthStage     String?
+  photoType       String
+
+  metadata        Json?
+  aiAnalysis      Json?
+
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  @@index([plantId])
+  @@index([dateTaken])
+}
+
+model CareLog {
+  id              String   @id @default(cuid())
+  plant           Plant    @relation(fields: [plantId], references: [id])
+  plantId         String
+
+  date            DateTime
+  action          String
+
+  treatment       Treatment? @relation(fields: [treatmentId], references: [id])
+  treatmentId     String?
+  dosage          Float?
+  unit            String?
+
+  details         Json?
+  nextActionDue   DateTime?
+  performedBy     String?
+
+  createdAt       DateTime @default(now())
+
+  @@index([plantId])
+  @@index([date])
+  @@index([action])
+}
+
+model Treatment {
+  id              String   @id @default(cuid())
+  name            String
+  type            String
+  brand           String?
+
+  composition     Json?
+  applicationRate String?
+  frequency       String?
+
+  careLogs        CareLog[]
+
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Measurement {
+  id              String   @id @default(cuid())
+  plant           Plant    @relation(fields: [plantId], references: [id])
+  plantId         String
+
+  measurementDate DateTime
+  measurementType String? @default("routine")
+
+  leafLength      Float?
+  leafWidth       Float?
+  petioleLength   Float?
+  internodeLength Float?
+
+  primaryVeinColor String?
+  flushColor      String?
+  petioleColor    String?
+
+  texture         String?
+  vigorScore      Int?
+  leafCount       Int?
+  height          Float?
+
+  ecValue         Float?
+  phValue         Float?
+  tdsValue        Int?
+
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  @@index([plantId])
+  @@index([measurementDate])
+}
+
+model Vendor {
+  id              String   @id @default(cuid())
+  name            String   @unique
+  type            String
+  location        String?
+  country         String?
+
+  reputationScore Float?
+  specialties     Json?
+
+  contactInfo     String?
+  website         String?
+  instagram       String?
+
+  plants          Plant[]
+  purchases       Purchase[]
+
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([name])
+}
+
+model Purchase {
+  id              String   @id @default(cuid())
+  vendor          Vendor   @relation(fields: [vendorId], references: [id])
+  vendorId        String
+
+  purchaseDate    DateTime
+  totalCost       Float
+  plantCount      Int
+
+  invoiceNumber   String?
+  trackingNumber  String?
+
+  plantIds        Json?
+  notes           String?
+
+  createdAt       DateTime @default(now())
+
+  @@index([vendorId])
+  @@index([purchaseDate])
+}
+
+model Location {
+  id              String   @id @default(cuid())
+  name            String   @unique
+  type            String
+
+  zone            String?
+  shelf           String?
+  position        String?
+
+  lightLevel      String?
+  humidity        Float?
+  temperature     Float?
+
+  capacity        Int?
+  currentOccupancy Int     @default(0)
+
+  plants          Plant[]
+
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([name])
+}
+
+model Species {
+  id              String   @id @default(cuid())
+  genus           String
+  species         String
+  section         String?
+
+  commonNames     Json?
+  nativeRange     String?
+  conservationStatus String?
+  citesListing    String?
+
+  keyTraits       Json?
+  description     String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([genus, species])
+  @@index([section])
+}
+

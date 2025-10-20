@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Health check for Cladari web UI and database.
+#
+# Usage:
+#   ./scripts/health                    # checks http://localhost:3000 and DB
+#   ./scripts/health --host f1          # checks http://f1:3000 and DB
+#   ./scripts/health --url http://f1:3000
+#   ./scripts/health --port 4000 --host f1
+#   ./scripts/health --timeout 3
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+APP_DIR="$ROOT_DIR/plantDB"
+
+HOST="localhost"
+PORT=3000
+URL=""
+TIMEOUT=5
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --host) HOST="${2:-localhost}"; shift 2 ;;
+    --port) PORT="${2:-3000}"; shift 2 ;;
+    --url) URL="${2:-}"; shift 2 ;;
+    --timeout) TIMEOUT="${2:-5}"; shift 2 ;;
+    *) echo "Unknown option: $1"; exit 1 ;;
+  esac
+done
+
+if [[ -z "$URL" ]]; then
+  URL="http://${HOST}:${PORT}"
+fi
+
+echo "[cladari] Health check"
+echo "  App dir: $APP_DIR"
+echo "  URL:     $URL"
+
+curl_ok() {
+  local url="$1"
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsS --max-time "$TIMEOUT" "$url" > /dev/null
+  else
+    # Minimal fallback using bash/ksh builtins is omitted; curl is recommended.
+    echo "curl not found" >&2
+    return 127
+  fi
+}
+
+check_endpoint() {
+  local path="$1"
+  local full="$URL$path"
+  if curl_ok "$full"; then
+    echo "  [OK]  $path"
+  else
+    echo "  [ERR] $path (unreachable or non-2xx)"
+  fi
+}
+
+echo "- HTTP endpoints"
+check_endpoint "/"
+check_endpoint "/api/plants"
+check_endpoint "/api/dashboard/stats"
+
+echo "- Database"
+cd "$APP_DIR"
+DB_URL="${DATABASE_URL:-file:./prisma/dev.db}"
+if DATABASE_URL="$DB_URL" node -e '
+  const { PrismaClient } = require("@prisma/client");
+  const prisma = new PrismaClient({ datasources: { db: { url: process.env.DATABASE_URL || "file:./prisma/dev.db" }}});
+  (async () => {
+    try {
+      await prisma.$connect();
+      const cnt = await prisma.plant.count();
+      console.log(`  [OK]  DB connected (plants: ${cnt})`);
+      process.exit(0);
+    } catch (e) {
+      console.error("  [ERR] DB check failed:", e?.message || e);
+      process.exit(2);
+    } finally {
+      await prisma.$disconnect();
+    }
+  })();
+' >/dev/null 2>&1; then
+  :
+else
+  echo "  (Tip) Ensure you ran: ./scripts/db generate && ./scripts/db migrate"
+fi
+
+echo "- Summary"
+echo "  If HTTP checks failed: is the server running? Try ./scripts/dev or ./scripts/start"
+echo "  If DB check failed: verify plantDB/.env or pass DATABASE_URL when running health."
+

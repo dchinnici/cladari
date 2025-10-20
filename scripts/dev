@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Start the Cladari dev server from the repo root.
+# Usage:
+#   ./scripts/dev                # foreground on port 3000
+#   ./scripts/dev --bg           # background with PID file
+#   ./scripts/dev --port 4000    # change port
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+APP_DIR="$ROOT_DIR/plantDB"
+PID_FILE="$ROOT_DIR/.cladari_dev.pid"
+PORT=3000
+HOST="0.0.0.0"
+BG=0
+NO_TS=0
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --bg) BG=1; shift ;;
+    --port) PORT="${2:-3000}"; shift 2 ;;
+    --host) HOST="${2:-0.0.0.0}"; shift 2 ;;
+    --no-ts) NO_TS=1; shift ;;
+    *) echo "Unknown option: $1"; exit 1 ;;
+  esac
+done
+
+cd "$APP_DIR"
+echo "[cladari] Dev server starting on http://$HOST:$PORT"
+
+if [[ $BG -eq 1 ]]; then
+  # Start in background and store PID
+  nohup npm run dev -- -p "$PORT" -H "$HOST" > "$APP_DIR/.next-dev.log" 2>&1 &
+  echo $! > "$PID_FILE"
+  echo "[cladari] Dev server PID $(cat "$PID_FILE"). Logs: $APP_DIR/.next-dev.log"
+  if [[ $NO_TS -eq 0 ]] && command -v tailscale >/dev/null 2>&1; then
+    echo "[cladari] Enabling Tailscale Serve: https://<device>:443 → http://localhost:$PORT"
+    tailscale serve --https=443 http://localhost:"$PORT" || echo "[cladari] tailscale serve failed (ignored)"
+    tailscale serve status || true
+  else
+    [[ $NO_TS -eq 1 ]] && echo "[cladari] Skipping Tailscale Serve (disabled via --no-ts)" || echo "[cladari] tailscale CLI not found; skipping Serve"
+  fi
+else
+  npm run dev -- -p "$PORT" -H "$HOST"
+fi

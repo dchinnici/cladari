@@ -1,0 +1,2 @@
+PlantID,CrossID,TaxonID,CloneCode,AcqDate,Origin,VendorID,CostUSD,Status,LocationID,PhotoRef,Notes
+PLT-2025-0001,CRS-2025-001,TAX-0003,S1-01,2025-09-01,Seed,VEN-0001,161.0,Active,LOC-GT-01,photos/PLT-2025-0001_main.jpg,

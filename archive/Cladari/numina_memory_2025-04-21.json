@@ -1,0 +1,72 @@
+{
+  "version": "2025-04-21",
+  "updated": "2025-04-22T03:15:20.077589",
+  "user_preferences": {
+    "platform": "Cladari",
+    "drive_root": "/Cladari Workspace/Care Logs/",
+    "PDF_output_enabled": true,
+    "prefers_scientific_validity": true,
+    "wants visual diagnosis linked to Cladari logs": true
+  },
+  "cladari_insights": {
+    "CLD-0103": {
+      "species": "Alocasia 'Polly'",
+      "diagnosis": [
+        "microclimate edema",
+        "low airflow",
+        "high RH",
+        "possible bacterial spotting"
+      ],
+      "estimated_PAR": 50,
+      "treatment": "moved to higher airflow zone, withheld watering, increased humidity monitoring"
+    },
+    "CLD-0112": {
+      "type": "Philodendron (unconfirmed)",
+      "diagnosis": [
+        "low light starvation",
+        "phototropism stretch"
+      ],
+      "environment": "dark shelf ~15ft from window, <40 \u00b5mol ambient light",
+      "notes": "newest leaf small but healthy"
+    },
+    "CLD-0113": {
+      "type": "Philodendron 'White Wizard' (tricolor)",
+      "mutation_type": "chimeric (possible somaclonal origin)",
+      "status": "stable across 3 leaves",
+      "notes": "mint, white, and green variegation tracked for persistence"
+    },
+    "CLD-0114": {
+      "type": "Ree Gardens Anthurium hoffmanii hybrid",
+      "propagation": "clone",
+      "observations": [
+        "elongated peduncle",
+        "maturation shift",
+        "phase transition"
+      ],
+      "notes": "grown in custom Cladari soil mix in self-watering pot; nutrients: TPS One, Silica Boost",
+      "avoid_extra_CalMag": true,
+      "watch_for": "inflorescence development"
+    },
+    "Lineage_CLD-X001": {
+      "parent_A": "regale-type hybrid (likely female)",
+      "parent_B": "crystallinum or forgetii-line hybrid (likely male)",
+      "seed_batch": "2025-01",
+      "status": "first genetically logged F1 Cladari pair"
+    }
+  },
+  "glossary_updates": {
+    "Leaf Axil": "Angle between the upper side of a leaf/petiole and the stem; common site of new growth or pests.",
+    "Node": "The point on a stem where leaves or petioles emerge.",
+    "Internode": "The segment of stem between two nodes.",
+    "Chimeric Mutation": "A mutation affecting only some tissue layers, often causing variegation or mosaic expression.",
+    "Somaclonal Variation": "Genetic variation that arises during tissue culture propagation, sometimes stable."
+  },
+  "to_do_flags": [
+    "Build out the full Cladari glossary view with key terms and visuals",
+    "Photograph and log seedlings from Seed Batch 2025-01",
+    "Create hybrid ancestry map for CLD-X001",
+    "Resume Google Drive integration",
+    "Build trait map visual for CLD-0113",
+    "Develop visual glossary cards"
+  ]
+}

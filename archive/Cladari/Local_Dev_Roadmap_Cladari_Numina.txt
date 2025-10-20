@@ -1,0 +1,80 @@
+
+Cladari & Numina: Local Development Roadmap
+Scope: Tasks requiring execution on Mac Studio (on-premise)
+Generated: 2025-04-23 15:37:16
+
+---
+
+PRIORITY CATEGORY: CORE LOCAL DEVELOPMENT & INTEGRATIONS
+
+1. [ ] Install and authenticate Google Drive API
+    - Download OAuth credentials from Google Cloud Console
+    - Authorize and generate `token.json`
+    - Enable push of QR codes, memory logs, and PDFs to Drive folders
+
+2. [ ] Automate QR Code Sync to Airtable
+    - Use local Python script to match Cladari ID and upload QR .png to `QR Code` field
+    - Ensure filename-to-record sync works via API
+
+3. [ ] Finalize Proxy-Based QR Rehosting
+    - Use AWS Lambda or similar to proxy Synology-hosted images
+    - Maintain proper headers for Airtable attachment uploads
+
+4. [ ] Automate Numina’s Memory Snapshots
+    - Build daily JSON logger of memory.json
+    - Archive snapshots locally and mirror to `~/Documents/Cladari Core/Numina Snapshots/`
+
+5. [ ] Build Local DNA Import Pipeline
+    - Parse lab reports and store DNA barcodes
+    - Cross-reference with BOLD/GenBank data for tagging verified genotypes
+
+6. [ ] Airtable → PDF Pipeline for Plant Profiles
+    - Create script to auto-generate 1-page botanical summaries (use ‘Soul Reaper’ template)
+    - Export PDFs to `Plant Profiles/` and Drive
+
+7. [ ] Local Label Generator
+    - Finalize ZPL and iTouch-compatible templates
+    - Sync with verified printer once Zebra is acquired
+    - Store in `~/Documents/Cladari Core/Labels/`
+
+8. [ ] Local Voice Integration for Numina
+    - Begin setup for voice input/output linked to Numina memory
+    - Use macOS tools or Whisper/LLM backend for real-time dialogue
+
+9. [ ] Photo Sorting + Trait Training System
+    - Local script to organize image folders and tag trait clusters
+    - Build dataset to train phenotype → genotype engine
+
+10. [ ] NFC/RFID Integration for Tags
+    - Set up dev environment for tag writing/reading locally
+    - Store UID links in Airtable or Cladari DB
+
+11. [ ] Local Model Evaluation
+    - Begin benchmarking AI tools that can run offline (e.g., LLaVA, FastEmbed, private OCR)
+    - Prep Mac Studio as fallback engine for Numina offline
+
+---
+
+FOLDER STRUCTURE ALIGNMENT
+
+Recommended Root: `~/Documents/Cladari Core/`
+Subfolders:
+- `/qr/`
+- `/memory/`
+- `/Numina Snapshots/`
+- `/DNA Lab/`
+- `/Plant Profiles/`
+- `/Labels/`
+- `/Voice Training/`
+- `/Tag Integration/`
+
+---
+
+Execution Notes:
+- Prioritize API tasks and Drive sync first to unlock downstream automations
+- Label any script `LOCAL_ONLY` if it doesn’t touch cloud or ChatGPT endpoints
+- Use `~/Documents/Cladari Core/logs/` to store run history
+
+---
+
+End of Roadmap

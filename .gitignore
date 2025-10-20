@@ -1,0 +1,46 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Development
+.cladari_dev.pid
+
+# PlantDB Next.js
+plantDB/node_modules/
+plantDB/.next/
+plantDB/out/
+plantDB/.env
+plantDB/.env*.local
+
+# Database (don't commit local database)
+plantDB/prisma/dev.db
+plantDB/prisma/dev.db-journal
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+plantDB/.pnpm-debug.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+.cache/
+
+# Build artifacts
+plantDB/dist/
+plantDB/build/
+
+# Testing
+plantDB/coverage/
+
+# Misc
+*.orig

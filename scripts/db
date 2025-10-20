@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Prisma helpers from the repo root.
+# Usage:
+#   ./scripts/db generate
+#   ./scripts/db migrate [--name my_migration]
+#   ./scripts/db studio
+#   ./scripts/db push
+#   ./scripts/db import             # Excel -> SQLite dev DB
+#   ./scripts/db use-pg             # print instructions for Postgres schema
+# Options:
+#   --pg     Use Postgres schema (prisma/schema.postgres.prisma)
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+APP_DIR="$ROOT_DIR/plantDB"
+SQLITE_SCHEMA="$APP_DIR/prisma/schema.prisma"
+PG_SCHEMA="$APP_DIR/prisma/schema.postgres.prisma"
+SCHEMA="$SQLITE_SCHEMA"
+CMD="${1:-}"
+shift || true
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --pg) SCHEMA="$PG_SCHEMA"; shift ;;
+    --schema) SCHEMA="$2"; shift 2 ;;
+    *) break ;;
+  esac
+done
+
+if [[ -z "$CMD" ]]; then
+  echo "Usage: $0 <generate|migrate|studio|push|import|use-pg> [--pg] [--schema PATH] [--name NAME]" >&2
+  exit 1
+fi
+
+cd "$APP_DIR"
+
+case "$CMD" in
+  generate)
+    echo "[cladari] prisma generate --schema=$SCHEMA"
+    npx prisma generate --schema="$SCHEMA"
+    ;;
+  migrate)
+    NAME=""
+    if [[ "${1:-}" == "--name" ]]; then NAME="$2"; shift 2; fi
+    echo "[cladari] prisma migrate dev --schema=$SCHEMA ${NAME:+--name $NAME}"
+    npx prisma migrate dev --schema="$SCHEMA" ${NAME:+--name "$NAME"}
+    ;;
+  push)
+    echo "[cladari] prisma db push --schema=$SCHEMA"
+    npx prisma db push --schema="$SCHEMA"
+    ;;
+  studio)
+    echo "[cladari] prisma studio --schema=$SCHEMA"
+    npx prisma studio --schema="$SCHEMA"
+    ;;
+  import)
+    # Use SQLite dev DB by default
+    echo "[cladari] Importing Excel data into SQLite dev DB"
+    DATABASE_URL="file:./prisma/dev.db" node scripts/import-excel-data.js
+    ;;
+  use-pg)
+    cat <<EOF
+[cladari] Postgres schema path: prisma/schema.postgres.prisma
+Example commands:
+  ./scripts/db generate --pg
+  ./scripts/db migrate --pg --name init
+Then set DATABASE_URL to your Postgres DSN in plantDB/.env
+EOF
+    ;;
+  *)
+    echo "Unknown command: $CMD" >&2
+    exit 1
+    ;;
+esac
+

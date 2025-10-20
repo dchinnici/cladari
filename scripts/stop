@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Stop any background server started via scripts/dev or scripts/start
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+DEV_PID_FILE="$ROOT_DIR/.cladari_dev.pid"
+APP_PID_FILE="$ROOT_DIR/.cladari_app.pid"
+
+stopped=0
+
+for PID_FILE in "$DEV_PID_FILE" "$APP_PID_FILE"; do
+  if [[ -f "$PID_FILE" ]]; then
+    PID=$(cat "$PID_FILE" || true)
+    if [[ -n "${PID:-}" ]] && kill -0 "$PID" 2>/dev/null; then
+      echo "[cladari] Stopping PID $PID from $(basename "$PID_FILE")"
+      kill "$PID" || true
+      # wait briefly
+      sleep 1
+      if kill -0 "$PID" 2>/dev/null; then
+        echo "[cladari] PID $PID still running, forcing stop"
+        kill -9 "$PID" || true
+      fi
+      echo "[cladari] Stopped $PID"
+      stopped=$((stopped+1))
+    fi
+    rm -f "$PID_FILE" || true
+  fi
+done
+
+if [[ $stopped -eq 0 ]]; then
+  echo "[cladari] No background server PID files found. If a server is still running, stop it manually (Ctrl+C or kill)."
+fi
+
