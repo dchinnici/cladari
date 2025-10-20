@@ -4,7 +4,7 @@ import prisma from '@/lib/prisma'
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { plantIds, activityType, notes, dosage, inputEC, inputPH, outputEC, outputPH, date } = body
+    const { plantIds, activityType, notes, dosage, inputEC, inputPH, outputEC, outputPH, rainAmount, rainDuration, date } = body
 
     if (!plantIds || !Array.isArray(plantIds) || plantIds.length === 0) {
       return NextResponse.json(
@@ -13,13 +13,15 @@ export async function POST(request: Request) {
       )
     }
 
-    // Build details JSON with EC/pH data and notes
+    // Build details JSON with EC/pH data, rain data, and notes
     const detailsObj: any = {}
     if (notes) detailsObj.notes = notes
     if (inputEC) detailsObj.inputEC = parseFloat(inputEC)
     if (inputPH) detailsObj.inputPH = parseFloat(inputPH)
     if (outputEC) detailsObj.outputEC = parseFloat(outputEC)
     if (outputPH) detailsObj.outputPH = parseFloat(outputPH)
+    if (rainAmount) detailsObj.rainAmount = rainAmount
+    if (rainDuration) detailsObj.rainDuration = rainDuration
 
     // Create care logs for all selected plants
     const careLogs = await prisma.careLog.createMany({

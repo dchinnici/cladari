@@ -17,6 +17,8 @@ Built with Next.js 15, Prisma, and SQLite for comprehensive Anthurium breeding p
 - **Temporal Morphology** - Document phenotypic changes over time
 - **Care Logging** - Record watering, fertilization, treatments, and interventions
 - **Care Log Editing** - Edit existing care logs to add output measurements and notes
+- **Batch Care Operations** - Apply same care to multiple plants with location-based selection
+- **Rain Tracking** - Log natural rainfall with amount and duration for outdoor plants
 - **EC & pH Tracking** - Monitor nutrient and soil chemistry metrics
 - **Elite Genetics Flagging** - Mark and track elite breeding stock
 
@@ -146,6 +148,17 @@ See `prisma/schema.prisma` for complete schema definition.
 3. System tracks changes over time automatically
 4. Each update creates a new timestamped observation
 
+### Batch Care Operations
+1. Navigate to **Batch Care** from top navigation
+2. **Select by Location:**
+   - Choose location from dropdown (shows plant count)
+   - Click "Select" to select all plants in that location
+3. Choose activity type (Watering, Rain, Fertilizing, etc.)
+4. For **Rain** activity:
+   - Select rainfall amount: Light, Medium, or Heavy
+   - Select duration: Brief, Short, Medium, Long, or Extended
+5. Add notes and click **Save to Selected Plants**
+
 ---
 
 ## 📊 Environmental Metrics
@@ -246,6 +259,8 @@ PATCH  /api/plants/[id]/care-logs/[logId]      # Edit care log
 - Flowering cycle tracking
 - Temporal morphology
 - Care logging with edit capabilities
+- Batch care with location-based selection
+- Rain activity tracking with amount/duration
 - CSV export functionality
 - Plant deletion with safety checks
 - Smart filtering and sorting

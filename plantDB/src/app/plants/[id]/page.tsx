@@ -630,15 +630,17 @@ export default function PlantDetailPage() {
                         type="checkbox"
                         checked={plant.isEliteGenetics || false}
                         onChange={async (e) => {
+                          const newValue = e.target.checked
                           try {
                             const response = await fetch(`/api/plants/${params.id}`, {
                               method: 'PATCH',
                               headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ isEliteGenetics: e.target.checked })
+                              body: JSON.stringify({ isEliteGenetics: newValue })
                             })
                             if (response.ok) {
+                              const updatedPlant = await response.json()
                               await preserveScrollPosition(fetchPlant)
-                              showToast({ type: 'success', title: e.target.checked ? 'Marked as elite genetics' : 'Unmarked as elite genetics' })
+                              showToast({ type: 'success', title: updatedPlant.isEliteGenetics ? 'Marked as elite genetics' : 'Unmarked as elite genetics' })
                             }
                           } catch (error) {
                             console.error('Error updating elite genetics:', error)

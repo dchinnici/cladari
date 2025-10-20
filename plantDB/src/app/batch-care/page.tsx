@@ -7,10 +7,12 @@ import { showToast } from '@/components/toast'
 
 export default function BatchCarePage() {
   const [plants, setPlants] = useState<any[]>([])
+  const [locations, setLocations] = useState<any[]>([])
   const [selectedPlants, setSelectedPlants] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  const [selectedLocationFilter, setSelectedLocationFilter] = useState<string>('')
 
   const [careForm, setCareForm] = useState({
     activityType: 'watering',
@@ -20,11 +22,14 @@ export default function BatchCarePage() {
     inputPH: '',
     outputEC: '',
     outputPH: '',
+    rainAmount: '',
+    rainDuration: '',
     date: new Date().toISOString().split('T')[0]
   })
 
   useEffect(() => {
     fetchPlants()
+    fetchLocations()
   }, [])
 
   const fetchPlants = async () => {
@@ -41,11 +46,38 @@ export default function BatchCarePage() {
     }
   }
 
+  const fetchLocations = async () => {
+    try {
+      const response = await fetch('/api/locations')
+      const data = await response.json()
+      if (Array.isArray(data)) {
+        setLocations(data)
+      }
+    } catch (error) {
+      console.error('Error fetching locations:', error)
+    }
+  }
+
   const handleSelectAll = () => {
     if (selectedPlants.length === filteredPlants.length) {
       setSelectedPlants([])
     } else {
       setSelectedPlants(filteredPlants.map(p => p.id))
+    }
+  }
+
+  const handleSelectByLocation = (locationId: string) => {
+    const plantsInLocation = filteredPlants.filter(p => p.locationId === locationId)
+    const plantIds = plantsInLocation.map(p => p.id)
+
+    // Toggle: if all plants from this location are already selected, deselect them
+    const allSelected = plantIds.every(id => selectedPlants.includes(id))
+    if (allSelected) {
+      setSelectedPlants(selectedPlants.filter(id => !plantIds.includes(id)))
+    } else {
+      // Add all plants from this location (avoiding duplicates)
+      const newSelection = [...new Set([...selectedPlants, ...plantIds])]
+      setSelectedPlants(newSelection)
     }
   }
 
@@ -85,6 +117,8 @@ export default function BatchCarePage() {
           inputPH: '',
           outputEC: '',
           outputPH: '',
+          rainAmount: '',
+          rainDuration: '',
           date: new Date().toISOString().split('T')[0]
         })
       } else {
@@ -147,6 +181,7 @@ export default function BatchCarePage() {
                     className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
                     <option value="watering">Watering</option>
+                    <option value="rain">Rain</option>
                     <option value="fertilizing">Fertilizing</option>
                     <option value="repotting">Repotting</option>
                     <option value="pruning">Pruning</option>
@@ -157,6 +192,44 @@ export default function BatchCarePage() {
                     <option value="other">Other</option>
                   </select>
                 </div>
+
+                {careForm.activityType === 'rain' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Rainfall Amount
+                      </label>
+                      <select
+                        value={careForm.rainAmount}
+                        onChange={(e) => setCareForm({ ...careForm, rainAmount: e.target.value })}
+                        className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      >
+                        <option value="">-- Select amount --</option>
+                        <option value="light">Light</option>
+                        <option value="medium">Medium</option>
+                        <option value="heavy">Heavy</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Duration
+                      </label>
+                      <select
+                        value={careForm.rainDuration}
+                        onChange={(e) => setCareForm({ ...careForm, rainDuration: e.target.value })}
+                        className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      >
+                        <option value="">-- Select duration --</option>
+                        <option value="brief">Brief (&lt;15 min)</option>
+                        <option value="short">Short (15-30 min)</option>
+                        <option value="medium">Medium (30-60 min)</option>
+                        <option value="long">Long (1-2 hrs)</option>
+                        <option value="extended">Extended (2+ hrs)</option>
+                      </select>
+                    </div>
+                  </>
+                )}
 
                 {(careForm.activityType === 'fertilizing' ||
                   careForm.activityType === 'calmag' ||
@@ -272,6 +345,36 @@ export default function BatchCarePage() {
                 >
                   {selectedPlants.length === filteredPlants.length ? 'Deselect All' : 'Select All'}
                 </button>
+              </div>
+
+              {/* Location Filter */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Select by Location</label>
+                <div className="flex gap-2">
+                  <select
+                    value={selectedLocationFilter}
+                    onChange={(e) => setSelectedLocationFilter(e.target.value)}
+                    className="flex-1 p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value="">-- Choose location --</option>
+                    {locations.map((location) => (
+                      <option key={location.id} value={location.id}>
+                        {location.name} ({plants.filter(p => p.locationId === location.id).length} plants)
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => {
+                      if (selectedLocationFilter) {
+                        handleSelectByLocation(selectedLocationFilter)
+                      }
+                    }}
+                    disabled={!selectedLocationFilter}
+                    className="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Select
+                  </button>
+                </div>
               </div>
 
               <input

@@ -2,6 +2,33 @@
 
 All notable changes to the Cladari Plant Management System will be documented in this file.
 
+## [1.1.1] - 2025-10-20 (Later Update)
+
+### Added
+- **Batch Care: Select by Location** - Quick selection of all plants in a specific location
+  - Dropdown shows all locations with plant counts
+  - "Select" button to instantly select/deselect all plants in that location
+  - Perfect for location-based care operations (e.g., outdoor rain watering)
+
+- **Rain Activity Type** - New batch care option for tracking natural rainfall
+  - Rainfall Amount: Light, Medium, Heavy
+  - Duration: Brief (<15 min), Short (15-30 min), Medium (30-60 min), Long (1-2 hrs), Extended (2+ hrs)
+  - Rain data saved to care log details JSON
+  - Ideal for outdoor plants on balconies, patios, etc.
+
+### Fixed
+- **Elite Genetics Toast Message** - Fixed backwards notification
+  - Was showing "Unmarked" when marking and vice versa
+  - Now correctly reads actual saved value from API response
+  - Toast message accurately reflects database state
+
+### Technical
+- Updated batch care API to accept `rainAmount` and `rainDuration` fields
+- Enhanced batch care UI with conditional rain-specific form fields
+- Fixed elite genetics checkbox event handler to use API response value
+
+---
+
 ## [1.1.0] - 2025-10-20
 
 ### Added

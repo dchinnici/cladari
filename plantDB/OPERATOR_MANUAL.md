@@ -165,9 +165,11 @@ anthurium-breeding-system/
 - Search and filter capabilities
 
 #### Batch Care (`/batch-care`)
-- Multi-plant selection
+- Multi-plant selection with manual or location-based selection
+- Select by Location dropdown for quick bulk operations
 - Single form for multiple plants
 - EC/pH input with separate in/out fields
+- Rain activity type with amount and duration tracking
 
 ---
 
@@ -181,7 +183,8 @@ anthurium-breeding-system/
 
 ### 2. Care Tracking
 - Individual care logs
-- Batch care operations
+- Batch care operations with location-based selection
+- Rain tracking with amount and duration
 - Fertigation tracking (input/output EC/pH)
 - Care scheduling
 
@@ -217,7 +220,25 @@ anthurium-breeding-system/
 
 ---
 
-## Recent Updates (v1.1.0)
+## Recent Updates (v1.1.1) - Latest
+
+### New Features Added
+1. **Batch Care: Select by Location** - Instantly select all plants in a specific location
+   - Dropdown shows all locations with plant counts
+   - Perfect for applying care to outdoor plants (balcony, patio) after rain
+2. **Rain Activity Type** - Track natural rainfall for outdoor plants
+   - Rainfall Amount: Light, Medium, Heavy
+   - Duration: Brief, Short, Medium, Long, Extended
+   - Saved to care log details JSON for analytics
+
+### Bugs Fixed
+1. **Elite Genetics Toast** - Fixed backwards notification message
+   - Now correctly reflects actual database state
+   - Uses API response value instead of event target
+
+---
+
+## Previous Updates (v1.1.0)
 
 ### New Features Added
 1. **CSV Export** - Export entire database to CSV from Plants page
@@ -385,7 +406,7 @@ Remember: This is a living system designed to grow with your collection and bree
 ---
 
 *Last Updated: October 20, 2025*
-*Version: 1.1.0*
+*Version: 1.1.1*
 *Total Plants: 67+*
 *Collection Value: $11,469+*
 ### PostgreSQL + pgvector Plan
