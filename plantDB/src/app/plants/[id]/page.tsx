@@ -1,11 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Camera, Droplets, Heart, Activity, FileText, FlaskConical, Dna, Calendar, DollarSign, MapPin, Edit, Save, X, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, Camera, Droplets, Heart, Activity, FileText, FlaskConical, Dna, Calendar, DollarSign, MapPin, Edit, Save, X, Plus, Trash2, Upload, Image as ImageIcon } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
+import { useDropzone } from 'react-dropzone'
 import { Modal } from '@/components/modal'
 import { showToast } from '@/components/toast'
+import { getLastWateringEvent, getLastFertilizingEvent } from '@/lib/careLogUtils'
 
 export default function PlantDetailPage() {
   const params = useParams()
@@ -54,6 +56,8 @@ export default function PlantDetailPage() {
     inputPH: '',
     outputEC: '',
     outputPH: '',
+    rainAmount: '',
+    rainDuration: '',
     date: new Date().toISOString().split('T')[0]
   })
 
@@ -85,6 +89,16 @@ export default function PlantDetailPage() {
     breeder: '',
     breederCode: ''
   })
+
+  const [photoForm, setPhotoForm] = useState({
+    photoType: 'whole_plant',
+    growthStage: '',
+    notes: '',
+    dateTaken: new Date().toISOString().split('T')[0]
+  })
+
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
 
   const [floweringForm, setFloweringForm] = useState({
     cycleId: '',
@@ -269,6 +283,8 @@ export default function PlantDetailPage() {
           inputPH: '',
           outputEC: '',
           outputPH: '',
+          rainAmount: '',
+          rainDuration: '',
           date: new Date().toISOString().split('T')[0]
         })
       } else {
@@ -329,6 +345,105 @@ export default function PlantDetailPage() {
       showToast({ type: 'error', title: 'Failed to update overview' })
     }
   }
+
+  const handlePhotoUpload = async () => {
+    if (selectedFiles.length === 0) {
+      showToast({ type: 'error', title: 'Please select at least one photo' })
+      return
+    }
+
+    setUploadingPhoto(true)
+    let successCount = 0
+    let failCount = 0
+
+    try {
+      for (const file of selectedFiles) {
+        try {
+          const formData = new FormData()
+          formData.append('file', file)
+          formData.append('plantId', plant.id)
+          formData.append('photoType', photoForm.photoType)
+          if (photoForm.growthStage) formData.append('growthStage', photoForm.growthStage)
+          if (photoForm.notes) formData.append('notes', photoForm.notes)
+          formData.append('dateTaken', photoForm.dateTaken)
+
+          const response = await fetch('/api/photos', {
+            method: 'POST',
+            body: formData
+          })
+
+          if (response.ok) {
+            successCount++
+          } else {
+            failCount++
+            console.error('Failed to upload:', file.name)
+          }
+        } catch (error) {
+          failCount++
+          console.error('Error uploading file:', file.name, error)
+        }
+      }
+
+      await preserveScrollPosition(fetchPlant)
+      setPhotoUploadModalOpen(false)
+      setSelectedFiles([])
+      setPhotoForm({
+        photoType: 'whole_plant',
+        growthStage: '',
+        notes: '',
+        dateTaken: new Date().toISOString().split('T')[0]
+      })
+
+      if (failCount === 0) {
+        showToast({
+          type: 'success',
+          title: selectedFiles.length === 1 ? 'Photo uploaded' : `${successCount} photos uploaded`
+        })
+      } else {
+        showToast({
+          type: 'warning',
+          title: `Uploaded ${successCount}, failed ${failCount}`
+        })
+      }
+    } catch (error) {
+      console.error('Error uploading photos:', error)
+      showToast({ type: 'error', title: 'Failed to upload photos' })
+    } finally {
+      setUploadingPhoto(false)
+    }
+  }
+
+  const handleDeletePhoto = async (photoId: string) => {
+    if (!confirm('Are you sure you want to delete this photo?')) return
+
+    try {
+      const response = await fetch(`/api/photos?id=${photoId}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        await preserveScrollPosition(fetchPlant)
+        showToast({ type: 'success', title: 'Photo deleted' })
+      } else {
+        showToast({ type: 'error', title: 'Failed to delete photo' })
+      }
+    } catch (error) {
+      console.error('Error deleting photo:', error)
+      showToast({ type: 'error', title: 'Error deleting photo' })
+    }
+  }
+
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    setSelectedFiles(prev => [...prev, ...acceptedFiles])
+  }, [])
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'image/*': ['.png', '.jpg', '.jpeg', '.webp', '.heic']
+    },
+    multiple: true
+  })
 
   const fetchFloweringCycles = async () => {
     try {
@@ -528,6 +643,52 @@ export default function PlantDetailPage() {
         <div className="glass rounded-3xl p-6">
           {activeTab === 'overview' && (
             <div className="space-y-6">
+              {/* Last Water/Feed Banner */}
+              {plant.careLogs && plant.careLogs.length > 0 && (() => {
+                // Using centralized business logic from careLogUtils
+                const lastWater = getLastWateringEvent(plant.careLogs)
+                const lastFeed = getLastFertilizingEvent(plant.careLogs)
+
+                const formatDaysAgo = (date: Date) => {
+                  const days = Math.floor((Date.now() - new Date(date).getTime()) / (1000 * 60 * 60 * 24))
+                  if (days === 0) return 'Today'
+                  if (days === 1) return 'Yesterday'
+                  return `${days} days ago`
+                }
+
+                return (lastWater || lastFeed) && (
+                  <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-2xl p-4 border border-blue-200">
+                    <div className="flex items-center gap-4">
+                      <Droplets className="w-8 h-8 text-blue-500" />
+                      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {lastWater && (
+                          <div>
+                            <p className="text-sm font-medium text-gray-700">Last Watered</p>
+                            <p className="text-lg font-bold text-blue-700">
+                              {formatDaysAgo(lastWater.date)}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {new Date(lastWater.date).toLocaleDateString()}
+                            </p>
+                          </div>
+                        )}
+                        {lastFeed && (
+                          <div>
+                            <p className="text-sm font-medium text-gray-700">Last Fertilized</p>
+                            <p className="text-lg font-bold text-green-700">
+                              {formatDaysAgo(lastFeed.date)}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {new Date(lastFeed.date).toLocaleDateString()}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })()}
+
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-bold">Plant Overview</h3>
                 <button
@@ -1003,26 +1164,49 @@ export default function PlantDetailPage() {
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-bold">Photos</h3>
                 <button
-                  onClick={() => {
-                    // Placeholder until implemented
-                    showToast({ type: 'info', title: 'Coming soon', message: 'Photo upload will be implemented soon.' })
-                    // setPhotoUploadModalOpen(true)
-                  }}
+                  onClick={() => setPhotoUploadModalOpen(true)}
                   className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl hover:from-emerald-600 hover:to-green-700 flex items-center gap-2">
                   <Camera className="w-4 h-4" />
-                  Upload Photo
+                  Upload Photos
                 </button>
               </div>
 
               {plant.photos && plant.photos.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {plant.photos.map((photo: any) => (
-                    <div key={photo.id} className="bg-white/50 rounded-xl p-2">
-                      <div className="aspect-square bg-gray-200 rounded-lg mb-2"></div>
-                      <p className="text-xs text-gray-600 truncate">{photo.notes || 'No caption'}</p>
-                      <p className="text-xs text-gray-500">
-                        {photo.dateTaken ? new Date(photo.dateTaken).toLocaleDateString() : ''}
-                      </p>
+                    <div key={photo.id} className="group relative bg-white/50 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all">
+                      <div className="aspect-square relative">
+                        <img
+                          src={photo.url}
+                          alt={photo.notes || 'Plant photo'}
+                          className="w-full h-full object-cover"
+                        />
+                        <button
+                          onClick={() => handleDeletePhoto(photo.id)}
+                          className="absolute top-2 right-2 p-2 bg-red-500/90 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                          title="Delete photo"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div className="p-3">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full font-medium">
+                            {photo.photoType?.replace('_', ' ')}
+                          </span>
+                          {photo.growthStage && (
+                            <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full font-medium">
+                              {photo.growthStage}
+                            </span>
+                          )}
+                        </div>
+                        {photo.notes && (
+                          <p className="text-xs text-gray-600 truncate mb-1">{photo.notes}</p>
+                        )}
+                        <p className="text-xs text-gray-500">
+                          {photo.dateTaken ? new Date(photo.dateTaken).toLocaleDateString() : ''}
+                        </p>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1030,6 +1214,13 @@ export default function PlantDetailPage() {
                 <div className="text-center py-12">
                   <Camera className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                   <p className="text-gray-500">No photos uploaded yet</p>
+                  <button
+                    onClick={() => setPhotoUploadModalOpen(true)}
+                    className="mt-4 px-6 py-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl hover:from-emerald-600 hover:to-green-700 flex items-center gap-2 mx-auto"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Upload Your First Photo
+                  </button>
                 </div>
               )}
             </div>
@@ -1141,6 +1332,8 @@ export default function PlantDetailPage() {
                               inputPH: details.inputPH?.toString() || '',
                               outputEC: details.outputEC?.toString() || '',
                               outputPH: details.outputPH?.toString() || '',
+                              rainAmount: details.rainAmount || '',
+                              rainDuration: details.rainDuration || '',
                               date: new Date(log.date).toISOString().split('T')[0]
                             })
                             setCareLogModalOpen(true)
@@ -1247,7 +1440,26 @@ export default function PlantDetailPage() {
       {/* Care Log Modal */}
       <Modal
         isOpen={careLogModalOpen}
-        onClose={() => setCareLogModalOpen(false)}
+        onClose={() => {
+          setCareLogModalOpen(false)
+          // Reset form when closing modal
+          setCareLogForm({
+            logId: '',
+            activityType: 'watering',
+            notes: '',
+            fertilizer: '',
+            pesticide: '',
+            fungicide: '',
+            dosage: '',
+            inputEC: '',
+            inputPH: '',
+            outputEC: '',
+            outputPH: '',
+            rainAmount: '',
+            rainDuration: '',
+            date: new Date().toISOString().split('T')[0]
+          })
+        }}
         title={careLogForm.logId ? "Edit Care Log" : "Add Care Log"}
       >
         <div className="space-y-4">
@@ -1269,6 +1481,7 @@ export default function PlantDetailPage() {
               className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
               <option value="watering">Watering</option>
+              <option value="rain">Rain</option>
               <option value="fertilizing">Fertilizing</option>
               <option value="repotting">Repotting</option>
               <option value="pruning">Pruning</option>
@@ -1288,6 +1501,44 @@ export default function PlantDetailPage() {
               placeholder="Describe the activity..."
             />
           </div>
+
+          {careLogForm.activityType === 'rain' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Rainfall Amount
+                </label>
+                <select
+                  value={careLogForm.rainAmount}
+                  onChange={(e) => setCareLogForm({ ...careLogForm, rainAmount: e.target.value })}
+                  className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="">-- Select amount --</option>
+                  <option value="light">Light (drizzle)</option>
+                  <option value="medium">Medium (steady rain)</option>
+                  <option value="heavy">Heavy (downpour)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Duration
+                </label>
+                <select
+                  value={careLogForm.rainDuration}
+                  onChange={(e) => setCareLogForm({ ...careLogForm, rainDuration: e.target.value })}
+                  className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="">-- Select duration --</option>
+                  <option value="brief">Brief (&lt;15 min)</option>
+                  <option value="short">Short (15-30 min)</option>
+                  <option value="medium">Medium (30-60 min)</option>
+                  <option value="long">Long (1-2 hrs)</option>
+                  <option value="extended">Extended (2+ hrs)</option>
+                </select>
+              </div>
+            </>
+          )}
 
           {(careLogForm.activityType === 'watering' || careLogForm.activityType === 'fertilizing') && (
             <>
@@ -1780,12 +2031,15 @@ export default function PlantDetailPage() {
               className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
               <option value="">Select type...</option>
-              <option value="seed">Seed</option>
-              <option value="cutting">Cutting</option>
-              <option value="tissue_culture">Tissue Culture</option>
-              <option value="division">Division</option>
-              <option value="purchase">Purchase</option>
+              <option value="seed">Seed - Grown from seed</option>
+              <option value="cutting">Cutting - Stem/leaf cutting</option>
+              <option value="tissue_culture">Tissue Culture - Lab propagated</option>
+              <option value="division">Division - Offset/clone from mother plant</option>
+              <option value="purchase">Purchase - Acquired as established plant</option>
             </select>
+            <p className="text-xs text-gray-500 mt-1">
+              💡 Division = genetically identical clone of parent plant
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -1797,15 +2051,30 @@ export default function PlantDetailPage() {
                 className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
                 <option value="">Select generation...</option>
-                <option value="F1">F1</option>
-                <option value="F2">F2</option>
-                <option value="F3">F3</option>
-                <option value="F4">F4</option>
-                <option value="F5">F5</option>
-                <option value="F6">F6</option>
-                <option value="P1">P1 (Parent)</option>
-                <option value="BC1">BC1 (Backcross)</option>
+                <optgroup label="Cross-Pollinated (F-series)">
+                  <option value="F1">F1 - First filial generation</option>
+                  <option value="F2">F2 - Second filial generation</option>
+                  <option value="F3">F3 - Third filial generation</option>
+                  <option value="F4">F4 - Fourth filial generation</option>
+                  <option value="F5">F5 - Fifth filial generation</option>
+                  <option value="F6">F6 - Sixth filial generation</option>
+                </optgroup>
+                <optgroup label="Self-Pollinated (S-series)">
+                  <option value="S1">S1 - First selfed generation</option>
+                  <option value="S2">S2 - Second selfed generation</option>
+                  <option value="S3">S3 - Third selfed generation</option>
+                  <option value="S4">S4 - Fourth selfed generation</option>
+                  <option value="S5">S5 - Fifth selfed generation</option>
+                </optgroup>
+                <optgroup label="Other">
+                  <option value="P1">P1 - Parent/Foundation</option>
+                  <option value="BC1">BC1 - Backcross</option>
+                  <option value="Clone">Clone/Division (same as parent)</option>
+                </optgroup>
               </select>
+              <p className="text-xs text-gray-500 mt-1">
+                💡 For divisions/clones: Use "Clone" or same generation as mother plant
+              </p>
             </div>
 
             <div>
@@ -2053,6 +2322,175 @@ export default function PlantDetailPage() {
               className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700"
             >
               Delete Permanently
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Photo Upload Modal */}
+      <Modal
+        isOpen={photoUploadModalOpen}
+        onClose={() => {
+          setPhotoUploadModalOpen(false)
+          setSelectedFiles([])
+        }}
+        title="Upload Photos"
+      >
+        <div className="space-y-4">
+          {/* Drag and Drop Area */}
+          <div
+            {...getRootProps()}
+            className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
+              isDragActive
+                ? 'border-emerald-500 bg-emerald-50'
+                : 'border-gray-300 hover:border-emerald-400 hover:bg-gray-50'
+            }`}
+          >
+            <input {...getInputProps()} />
+            <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+            {isDragActive ? (
+              <p className="text-emerald-600 font-medium">Drop photos here...</p>
+            ) : (
+              <>
+                <p className="text-gray-700 font-medium mb-1">
+                  Drag & drop photos here, or click to select
+                </p>
+                <p className="text-sm text-gray-500">
+                  Supports: JPG, PNG, WEBP, HEIC (iOS photos)
+                </p>
+                <p className="text-xs text-gray-400 mt-2">
+                  Multiple files supported for batch upload
+                </p>
+              </>
+            )}
+          </div>
+
+          {/* Selected Files Preview */}
+          {selectedFiles.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-gray-700">
+                Selected: {selectedFiles.length} {selectedFiles.length === 1 ? 'photo' : 'photos'}
+              </p>
+              <div className="max-h-40 overflow-y-auto space-y-1">
+                {selectedFiles.map((file, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
+                  >
+                    <div className="flex items-center gap-2">
+                      <ImageIcon className="w-4 h-4 text-emerald-600" />
+                      <span className="text-sm text-gray-700 truncate max-w-xs">
+                        {file.name}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                      </span>
+                    </div>
+                    <button
+                      onClick={() =>
+                        setSelectedFiles(prev => prev.filter((_, i) => i !== index))
+                      }
+                      className="p-1 hover:bg-gray-200 rounded"
+                    >
+                      <X className="w-4 h-4 text-gray-500" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Photo Metadata */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Photo Type
+              </label>
+              <select
+                value={photoForm.photoType}
+                onChange={(e) => setPhotoForm({ ...photoForm, photoType: e.target.value })}
+                className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                <option value="whole_plant">Whole Plant</option>
+                <option value="leaf">Leaf Detail</option>
+                <option value="spathe">Spathe</option>
+                <option value="spadix">Spadix</option>
+                <option value="roots">Roots</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Growth Stage
+              </label>
+              <select
+                value={photoForm.growthStage}
+                onChange={(e) => setPhotoForm({ ...photoForm, growthStage: e.target.value })}
+                className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                <option value="">Not specified</option>
+                <option value="seedling">Seedling</option>
+                <option value="juvenile">Juvenile</option>
+                <option value="mature">Mature</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Date Taken (optional)
+            </label>
+            <input
+              type="date"
+              value={photoForm.dateTaken}
+              onChange={(e) => setPhotoForm({ ...photoForm, dateTaken: e.target.value })}
+              className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              📸 Date will be automatically extracted from photo EXIF data if available
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Notes (optional)
+            </label>
+            <textarea
+              value={photoForm.notes}
+              onChange={(e) => setPhotoForm({ ...photoForm, notes: e.target.value })}
+              className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              rows={2}
+              placeholder="Add any notes about these photos..."
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={() => {
+                setPhotoUploadModalOpen(false)
+                setSelectedFiles([])
+              }}
+              className="flex-1 px-4 py-2 border border-gray-200 rounded-xl hover:bg-gray-50"
+              disabled={uploadingPhoto}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handlePhotoUpload}
+              disabled={uploadingPhoto || selectedFiles.length === 0}
+              className="flex-1 px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl hover:from-emerald-600 hover:to-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {uploadingPhoto ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Upload className="w-4 h-4" />
+                  Upload {selectedFiles.length > 0 && `(${selectedFiles.length})`}
+                </>
+              )}
             </button>
           </div>
         </div>

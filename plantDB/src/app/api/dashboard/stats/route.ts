@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { isWateringEvent, isFertilizingEvent, getDaysSinceLastWatering, calculateWateringFrequency } from '@/lib/careLogUtils'
 
 export async function GET() {
   try {
@@ -218,7 +219,69 @@ export async function GET() {
       }
     })
 
+    // POWER FEATURES: Plants needing attention
+    const plantsWithCare = await prisma.plant.findMany({
+      include: {
+        careLogs: {
+          orderBy: { date: 'desc' },
+          take: 10
+        }
+      }
+    })
+
+    const plantsNeedingWater = plantsWithCare.filter(plant => {
+      const daysSince = getDaysSinceLastWatering(plant.careLogs)
+      return daysSince === null || daysSince >= 7
+    }).map(p => ({
+      id: p.id,
+      plantId: p.plantId,
+      name: p.hybridName || p.species,
+      daysSinceWater: getDaysSinceLastWatering(p.careLogs) || 999
+    })).slice(0, 10)
+
+    const plantsNeedingFertilizer = plantsWithCare.filter(plant => {
+      const lastFeed = plant.careLogs.find(log => isFertilizingEvent(log.action))
+      if (!lastFeed) return true
+      const daysSince = Math.floor((Date.now() - new Date(lastFeed.date).getTime()) / (1000 * 60 * 60 * 24))
+      return daysSince >= 14
+    }).slice(0, 10)
+
+    // Health distribution
+    const healthDistribution = await prisma.plant.groupBy({
+      by: ['healthStatus'],
+      _count: true
+    })
+
+    const healthStats = healthDistribution.map(item => ({
+      status: item.healthStatus,
+      count: item._count
+    }))
+
+    // Plants with no activity in 14+ days (stale plants)
+    const fourteenDaysAgo = new Date()
+    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14)
+
+    const stalePlants = await prisma.plant.count({
+      where: {
+        updatedAt: {
+          lt: fourteenDaysAgo
+        }
+      }
+    })
+
+    // Care frequency insights (avg days between watering across collection)
+    const avgWateringFrequency = plantsWithCare
+      .map(p => calculateWateringFrequency(p.careLogs))
+      .filter(f => f !== null)
+      .reduce((sum, freq) => sum + (freq || 0), 0) / plantsWithCare.length || 7
+
+    // Market value insights
+    const elitePlantCount = await prisma.plant.count({ where: { isEliteGenetics: true } })
+    const motherPlantCount = await prisma.plant.count({ where: { isMother: true } })
+    const forSaleCount = await prisma.plant.count({ where: { isForSale: true } })
+
     return NextResponse.json({
+      // Basic stats
       totalPlants,
       healthyPlants,
       totalInvestment: financialStats._sum.acquisitionCost || 0,
@@ -228,10 +291,26 @@ export async function GET() {
       activeCrosses,
       totalVendors,
       activeVendors: activeVendorCount,
+
+      // Distribution data
       speciesDistribution,
+      healthDistribution: healthStats,
       topVendors,
       eliteGenetics,
+
+      // Activity
       recentActivity,
+
+      // POWER FEATURES - Today's Tasks
+      plantsNeedingWater,
+      plantsNeedingFertilizer,
+      stalePlants,
+
+      // Insights
+      avgWateringFrequency: Math.round(avgWateringFrequency),
+      elitePlantCount,
+      motherPlantCount,
+      forSaleCount,
     })
   } catch (error) {
     console.error('Error fetching dashboard stats:', error)

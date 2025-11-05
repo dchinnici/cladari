@@ -20,9 +20,9 @@ model Plant {
   crossNotation     String?  // e.g., "(RA8×RA5)²"
 
   // Lineage
-  femaleParent      Plant?   @relation("FemaleOffspring", fields: [femaleParentId], references: [id])
+  femaleParent      Plant?   @relation("FemaleOffspring", fields: [femaleParentId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   femaleParentId    String?
-  maleParent        Plant?   @relation("MaleOffspring", fields: [maleParentId], references: [id])
+  maleParent        Plant?   @relation("MaleOffspring", fields: [maleParentId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   maleParentId      String?
   generation        String?  // F1, F2, F3, etc.
 
@@ -80,9 +80,9 @@ model BreedingRecord {
   crossDate         DateTime
 
   // Parents
-  femalePlant       Plant    @relation("FemalePlant", fields: [femalePlantId], references: [id])
+  femalePlant       Plant    @relation("FemalePlant", fields: [femalePlantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   femalePlantId     String
-  malePlant         Plant    @relation("MalePlant", fields: [malePlantId], references: [id])
+  malePlant         Plant    @relation("MalePlant", fields: [malePlantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   malePlantId       String
 
   // Cross Details
@@ -112,7 +112,7 @@ model BreedingRecord {
 
 model Genetics {
   id              String   @id @default(cuid())
-  plant           Plant    @relation(fields: [plantId], references: [id])
+  plant           Plant    @relation(fields: [plantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   plantId         String   @unique
 
   // Lineage codes
@@ -138,7 +138,7 @@ model Genetics {
 
 model Trait {
   id              String   @id @default(cuid())
-  plant           Plant    @relation(fields: [plantId], references: [id])
+  plant           Plant    @relation(fields: [plantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   plantId         String
 
   category        String   // leaf, spathe, spadix, growth
@@ -162,7 +162,7 @@ model Trait {
 
 model Photo {
   id              String   @id @default(cuid())
-  plant           Plant    @relation(fields: [plantId], references: [id])
+  plant           Plant    @relation(fields: [plantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   plantId         String
 
   url             String
@@ -183,7 +183,7 @@ model Photo {
 
 model CareLog {
   id              String   @id @default(cuid())
-  plant           Plant    @relation(fields: [plantId], references: [id])
+  plant           Plant    @relation(fields: [plantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   plantId         String
 
   date            DateTime
@@ -225,7 +225,7 @@ model Treatment {
 
 model Measurement {
   id              String   @id @default(cuid())
-  plant           Plant    @relation(fields: [plantId], references: [id])
+  plant           Plant    @relation(fields: [plantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   plantId         String
 
   measurementDate DateTime
@@ -362,7 +362,7 @@ model Species {
 
 model FloweringCycle {
   id              String   @id @default(cuid())
-  plant           Plant    @relation(fields: [plantId], references: [id])
+  plant           Plant    @relation(fields: [plantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   plantId         String
 
   // Cycle tracking - Anthurium spadix stages

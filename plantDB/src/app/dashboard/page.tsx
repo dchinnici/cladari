@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { DollarSign, Leaf, Users, TrendingUp, Activity, Package, Sparkles, Dna, FlaskConical, Award } from 'lucide-react'
+import { DollarSign, Leaf, Users, TrendingUp, Activity, Package, Sparkles, Dna, FlaskConical, Award, Droplets } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Area, AreaChart } from 'recharts'
 
 export default function Dashboard() {
@@ -44,12 +44,28 @@ export default function Dashboard() {
       bgColor: 'from-emerald-50 to-green-50',
     },
     {
+      title: 'Collection Value',
+      value: `$${((stats?.totalInvestment || 0) / 1000).toFixed(1)}k`,
+      subtext: `Avg $${Math.round(stats?.avgCost || 0)}`,
+      icon: DollarSign,
+      color: 'from-amber-400 to-orange-600',
+      bgColor: 'from-amber-50 to-orange-50',
+    },
+    {
       title: 'Breeding Lines',
       value: stats?.totalCrosses || 0,
       subtext: `${stats?.activeCrosses || 0} active`,
       icon: Dna,
       color: 'from-purple-400 to-pink-600',
       bgColor: 'from-purple-50 to-pink-50',
+    },
+    {
+      title: 'Elite Genetics',
+      value: stats?.elitePlantCount || 0,
+      subtext: `${stats?.motherPlantCount || 0} mothers`,
+      icon: Award,
+      color: 'from-yellow-400 to-amber-600',
+      bgColor: 'from-yellow-50 to-amber-50',
     },
   ]
 
@@ -95,6 +111,100 @@ export default function Dashboard() {
             )
           })}
         </div>
+
+        {/* TODAY'S TASKS - POWER FEATURE */}
+        {(stats?.plantsNeedingWater?.length > 0 || stats?.plantsNeedingFertilizer?.length > 0 || stats?.stalePlants > 0) && (
+          <Card className="overflow-hidden bg-gradient-to-r from-orange-50 to-amber-50 border-orange-200/50 shadow-xl mb-8">
+            <CardHeader className="bg-gradient-to-r from-orange-100 to-amber-100">
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="w-6 h-6 text-orange-600" />
+                Today's Tasks - Plants Needing Attention
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {stats?.plantsNeedingWater?.length > 0 && (
+                  <div className="bg-white/80 rounded-xl p-4 border border-blue-200">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Droplets className="w-5 h-5 text-blue-600" />
+                      <h3 className="font-bold text-blue-900">Needs Water</h3>
+                    </div>
+                    <div className="space-y-2">
+                      {stats.plantsNeedingWater.slice(0, 5).map((plant: any) => (
+                        <a
+                          key={plant.id}
+                          href={`/plants/${plant.id}`}
+                          className="block text-sm hover:bg-blue-50 p-2 rounded-lg transition-colors"
+                        >
+                          <div className="font-medium text-gray-900">{plant.name || plant.plantId}</div>
+                          <div className="text-xs text-gray-500">{plant.daysSinceWater}+ days ago</div>
+                        </a>
+                      ))}
+                      {stats.plantsNeedingWater.length > 5 && (
+                        <div className="text-xs text-gray-500 pt-2">
+                          +{stats.plantsNeedingWater.length - 5} more plants
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {stats?.plantsNeedingFertilizer?.length > 0 && (
+                  <div className="bg-white/80 rounded-xl p-4 border border-green-200">
+                    <div className="flex items-center gap-2 mb-3">
+                      <FlaskConical className="w-5 h-5 text-green-600" />
+                      <h3 className="font-bold text-green-900">Needs Feed</h3>
+                    </div>
+                    <div className="space-y-2">
+                      {stats.plantsNeedingFertilizer.slice(0, 5).map((plant: any) => (
+                        <a
+                          key={plant.id}
+                          href={`/plants/${plant.id}`}
+                          className="block text-sm hover:bg-green-50 p-2 rounded-lg transition-colors"
+                        >
+                          <div className="font-medium text-gray-900">{plant.name || plant.plantId}</div>
+                        </a>
+                      ))}
+                      {stats.plantsNeedingFertilizer.length > 5 && (
+                        <div className="text-xs text-gray-500 pt-2">
+                          +{stats.plantsNeedingFertilizer.length - 5} more plants
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {stats?.stalePlants > 0 && (
+                  <div className="bg-white/80 rounded-xl p-4 border border-amber-200">
+                    <div className="flex items-center gap-2 mb-3">
+                      <TrendingUp className="w-5 h-5 text-amber-600" />
+                      <h3 className="font-bold text-amber-900">No Activity</h3>
+                    </div>
+                    <div className="text-center py-4">
+                      <div className="text-3xl font-bold text-amber-600">{stats.stalePlants}</div>
+                      <div className="text-sm text-gray-600 mt-1">plants with no updates</div>
+                      <div className="text-xs text-gray-500">in 14+ days</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {stats?.avgWateringFrequency && (
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Droplets className="w-4 h-4 text-blue-600" />
+                      <span className="text-sm font-medium text-blue-900">Collection Average</span>
+                    </div>
+                    <span className="text-sm font-bold text-blue-700">
+                      Watering every ~{stats.avgWateringFrequency} days
+                    </span>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Species Distribution */}
         <Card className="overflow-hidden bg-white/80 backdrop-blur-xl border-gray-200/50 shadow-xl mb-8">

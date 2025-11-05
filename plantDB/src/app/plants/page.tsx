@@ -7,10 +7,16 @@ import { Modal } from '@/components/modal'
 import { useEffect, useState } from 'react'
 
 export default function PlantsPage() {
-  // Helper to check if plant hasn't been updated in 7+ days
+  // Helper to check if plant hasn't had ANY activity in 7+ days
   const isStale = (plant: any) => {
-    const daysSinceUpdate = Math.floor((Date.now() - new Date(plant.updatedAt).getTime()) / (1000 * 60 * 60 * 24))
+    const lastActivity = plant.lastActivityDate || plant.updatedAt
+    const daysSinceUpdate = Math.floor((Date.now() - new Date(lastActivity).getTime()) / (1000 * 60 * 60 * 24))
     return daysSinceUpdate >= 7
+  }
+
+  // Helper to get the most recent activity date
+  const getLastActivityDate = (plant: any) => {
+    return plant.lastActivityDate ? new Date(plant.lastActivityDate) : new Date(plant.updatedAt)
   }
 
   const [plants, setPlants] = useState<any[]>([])
@@ -40,6 +46,15 @@ export default function PlantsPage() {
   useEffect(() => {
     fetchPlants()
     fetchLocations()
+
+    // Restore scroll position if returning from plant detail
+    const savedScroll = sessionStorage.getItem('plantsPageScroll')
+    if (savedScroll) {
+      setTimeout(() => {
+        window.scrollTo(0, parseInt(savedScroll))
+        sessionStorage.removeItem('plantsPageScroll')
+      }, 100)
+    }
   }, [])
 
   const fetchLocations = async () => {
@@ -94,14 +109,16 @@ export default function PlantsPage() {
     })
     .sort((a, b) => {
       if (sortBy === 'oldest') {
-        // Oldest updated first (plants needing attention)
-        return new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()
+        // Oldest activity first (plants needing attention) - considers ALL activity
+        return getLastActivityDate(a).getTime() - getLastActivityDate(b).getTime()
       } else if (sortBy === 'newest') {
-        // Newest updated first
-        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        // Newest activity first - considers ALL activity
+        return getLastActivityDate(b).getTime() - getLastActivityDate(a).getTime()
       } else if (sortBy === 'alphabetical') {
-        // Sort by plant ID alphabetically
-        return (a.plantId || '').localeCompare(b.plantId || '')
+        // Sort by hybrid name or species, fallback to plantId
+        const nameA = (a.hybridName || a.species || a.plantId || '').toLowerCase()
+        const nameB = (b.hybridName || b.species || b.plantId || '').toLowerCase()
+        return nameA.localeCompare(nameB)
       }
       return 0
     })
@@ -180,8 +197,8 @@ export default function PlantsPage() {
               onChange={(e) => setSortBy(e.target.value)}
               className="px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
             >
-              <option value="oldest">⚠️ Needs Attention (Oldest First)</option>
-              <option value="newest">🕐 Recently Updated</option>
+              <option value="oldest">⚠️ Needs Attention (No Recent Activity)</option>
+              <option value="newest">🕐 Recently Active</option>
               <option value="alphabetical">🔤 Alphabetical (A-Z)</option>
             </select>
             <button onClick={() => setFilterOpen(true)} className="px-6 py-3 rounded-xl border border-gray-200 hover:bg-gray-50 flex items-center gap-2 relative">
@@ -226,6 +243,10 @@ export default function PlantsPage() {
                 <Link
                   href={`/plants/${plant.id}`}
                   key={plant.id}
+                  onClick={() => {
+                    // Save scroll position before navigating
+                    sessionStorage.setItem('plantsPageScroll', window.scrollY.toString())
+                  }}
                   className="bg-white/50 rounded-2xl p-5 hover:bg-white/80 transition-all hover-lift cursor-pointer block"
                 >
                   <div className="flex items-start justify-between mb-3">
@@ -242,7 +263,7 @@ export default function PlantsPage() {
                             </span>
                           )}
                           {isStale(plant) && (
-                            <span className="text-xs px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full flex items-center gap-1" title="Not updated in 7+ days">
+                            <span className="text-xs px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full flex items-center gap-1" title="No activity (care, measurements, etc.) in 7+ days">
                               <AlertTriangle className="w-3 h-3" />
                               Stale
                             </span>
@@ -384,16 +405,12 @@ export default function PlantsPage() {
                 className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
                 <option value="">All breeder codes</option>
-                <option value="RA">RA</option>
-                <option value="OG">OG</option>
-                <option value="NSE">NSE</option>
-                <option value="TZ">TZ</option>
-                <option value="SKG">SKG</option>
-                <option value="Wu">Wu</option>
-                <option value="EPP">EPP</option>
-                <option value="SC">SC</option>
-                <option value="DF">DF</option>
-                <option value="FP">FP</option>
+                {Array.from(new Set(plants.map(p => p.breederCode).filter(Boolean)))
+                  .sort((a, b) => a.localeCompare(b))
+                  .map(code => (
+                    <option key={code} value={code}>{code}</option>
+                  ))
+                }
               </select>
             </div>
 

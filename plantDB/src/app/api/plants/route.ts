@@ -7,11 +7,47 @@ export async function GET() {
       include: {
         vendor: true,
         currentLocation: true,
+        careLogs: {
+          orderBy: { date: 'desc' },
+          take: 1
+        },
+        measurements: {
+          orderBy: { measurementDate: 'desc' },
+          take: 1
+        },
+        traits: {
+          orderBy: { observationDate: 'desc' },
+          take: 1
+        },
+        floweringCycles: {
+          orderBy: { createdAt: 'desc' },
+          take: 1
+        }
+      }
+    })
+
+    // Add lastActivityDate to each plant
+    const plantsWithActivity = plants.map(plant => {
+      const dates = [
+        plant.updatedAt,
+        plant.careLogs[0]?.date,
+        plant.measurements[0]?.measurementDate,
+        plant.traits[0]?.observationDate,
+        plant.floweringCycles[0]?.createdAt
+      ].filter(Boolean).map(d => new Date(d!))
+
+      const lastActivityDate = dates.length > 0
+        ? new Date(Math.max(...dates.map(d => d.getTime())))
+        : plant.updatedAt
+
+      return {
+        ...plant,
+        lastActivityDate
       }
     })
 
     // Sort by name (hybridName or species, whichever exists)
-    const sortedPlants = plants.sort((a, b) => {
+    const sortedPlants = plantsWithActivity.sort((a, b) => {
       const nameA = (a.hybridName || a.species || '').toLowerCase()
       const nameB = (b.hybridName || b.species || '').toLowerCase()
       return nameA.localeCompare(nameB)
