@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
-import { isWateringEvent, isFertilizingEvent, getDaysSinceLastWatering, calculateWateringFrequency } from '@/lib/careLogUtils'
+import { isWateringEvent, isFertilizingEvent, getDaysSinceLastWatering, getDaysSinceLastFertilizing, calculateWateringFrequency, calculateFertilizingFrequency } from '@/lib/careLogUtils'
+import { DEFAULT_INTERVALS } from '@/lib/care/types'
 
 export async function GET() {
   try {
@@ -231,7 +232,12 @@ export async function GET() {
 
     const plantsNeedingWater = plantsWithCare.filter(plant => {
       const daysSince = getDaysSinceLastWatering(plant.careLogs)
-      return daysSince === null || daysSince >= 7
+      const avgFrequency = calculateWateringFrequency(plant.careLogs) || DEFAULT_INTERVALS.water
+
+      // Plant needs water if:
+      // 1. Never been watered OR
+      // 2. Days since last watering >= average watering frequency
+      return daysSince === null || daysSince >= avgFrequency
     }).map(p => ({
       id: p.id,
       plantId: p.plantId,
@@ -240,11 +246,19 @@ export async function GET() {
     })).slice(0, 10)
 
     const plantsNeedingFertilizer = plantsWithCare.filter(plant => {
-      const lastFeed = plant.careLogs.find(log => isFertilizingEvent(log.action))
-      if (!lastFeed) return true
-      const daysSince = Math.floor((Date.now() - new Date(lastFeed.date).getTime()) / (1000 * 60 * 60 * 24))
-      return daysSince >= 14
-    }).slice(0, 10)
+      const daysSince = getDaysSinceLastFertilizing(plant.careLogs)
+      const avgFrequency = calculateFertilizingFrequency(plant.careLogs) || DEFAULT_INTERVALS.fertilize
+
+      // Plant needs fertilizer if:
+      // 1. Never been fertilized OR
+      // 2. Days since last fertilizing >= average fertilizing frequency
+      return daysSince === null || daysSince >= avgFrequency
+    }).map(p => ({
+      id: p.id,
+      plantId: p.plantId,
+      name: p.hybridName || p.species,
+      daysSinceFertilizer: getDaysSinceLastFertilizing(p.careLogs) || 999
+    })).slice(0, 10)
 
     // Health distribution
     const healthDistribution = await prisma.plant.groupBy({

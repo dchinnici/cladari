@@ -5,6 +5,8 @@ import { ArrowLeft, Search, Plus, Filter, Leaf, DollarSign, MapPin, Calendar, Dr
 import { showToast } from '@/components/toast'
 import { Modal } from '@/components/modal'
 import { useEffect, useState } from 'react'
+import { getDaysSinceLastWatering, getDaysSinceLastFertilizing, calculateWateringFrequency, calculateFertilizingFrequency } from '@/lib/careLogUtils'
+import { DEFAULT_INTERVALS } from '@/lib/care/types'
 
 export default function PlantsPage() {
   // Helper to check if plant hasn't had ANY activity in 7+ days
@@ -47,13 +49,36 @@ export default function PlantsPage() {
     fetchPlants()
     fetchLocations()
 
-    // Restore scroll position if returning from plant detail
+    // Restore scroll position, filters, and sort if returning from plant detail
     const savedScroll = sessionStorage.getItem('plantsPageScroll')
+    const savedFilters = sessionStorage.getItem('plantsPageFilters')
+    const savedSort = sessionStorage.getItem('plantsPageSort')
+    const savedSearch = sessionStorage.getItem('plantsPageSearch')
+
     if (savedScroll) {
       setTimeout(() => {
         window.scrollTo(0, parseInt(savedScroll))
         sessionStorage.removeItem('plantsPageScroll')
       }, 100)
+    }
+
+    if (savedFilters) {
+      try {
+        setFilters(JSON.parse(savedFilters))
+        sessionStorage.removeItem('plantsPageFilters')
+      } catch (e) {
+        console.error('Failed to restore filters:', e)
+      }
+    }
+
+    if (savedSort) {
+      setSortBy(savedSort)
+      sessionStorage.removeItem('plantsPageSort')
+    }
+
+    if (savedSearch) {
+      setSearchTerm(savedSearch)
+      sessionStorage.removeItem('plantsPageSearch')
     }
   }, [])
 
@@ -109,13 +134,35 @@ export default function PlantsPage() {
     })
     .sort((a, b) => {
       if (sortBy === 'oldest') {
-        // Oldest activity first (plants needing attention) - considers ALL activity
-        return getLastActivityDate(a).getTime() - getLastActivityDate(b).getTime()
+        // Plants needing care first - based on watering/fertilizing frequency
+        const aWaterDays = getDaysSinceLastWatering(a.careLogs || [])
+        const aWaterFreq = calculateWateringFrequency(a.careLogs || []) || DEFAULT_INTERVALS.water
+        const aWaterOverdue = (aWaterDays === null ? 999 : aWaterDays) - aWaterFreq
+
+        const aFertDays = getDaysSinceLastFertilizing(a.careLogs || [])
+        const aFertFreq = calculateFertilizingFrequency(a.careLogs || []) || DEFAULT_INTERVALS.fertilize
+        const aFertOverdue = (aFertDays === null ? 999 : aFertDays) - aFertFreq
+
+        // Use the worst overdue status (watering or fertilizing)
+        const aMaxOverdue = Math.max(aWaterOverdue, aFertOverdue)
+
+        const bWaterDays = getDaysSinceLastWatering(b.careLogs || [])
+        const bWaterFreq = calculateWateringFrequency(b.careLogs || []) || DEFAULT_INTERVALS.water
+        const bWaterOverdue = (bWaterDays === null ? 999 : bWaterDays) - bWaterFreq
+
+        const bFertDays = getDaysSinceLastFertilizing(b.careLogs || [])
+        const bFertFreq = calculateFertilizingFrequency(b.careLogs || []) || DEFAULT_INTERVALS.fertilize
+        const bFertOverdue = (bFertDays === null ? 999 : bFertDays) - bFertFreq
+
+        const bMaxOverdue = Math.max(bWaterOverdue, bFertOverdue)
+
+        // Sort by most overdue first (descending)
+        return bMaxOverdue - aMaxOverdue
       } else if (sortBy === 'newest') {
         // Newest activity first - considers ALL activity
         return getLastActivityDate(b).getTime() - getLastActivityDate(a).getTime()
       } else if (sortBy === 'alphabetical') {
-        // Sort by hybrid name or species, fallback to plantId
+        // Sort by hybrid name, then species, then plantId as fallback
         const nameA = (a.hybridName || a.species || a.plantId || '').toLowerCase()
         const nameB = (b.hybridName || b.species || b.plantId || '').toLowerCase()
         return nameA.localeCompare(nameB)
@@ -244,8 +291,11 @@ export default function PlantsPage() {
                   href={`/plants/${plant.id}`}
                   key={plant.id}
                   onClick={() => {
-                    // Save scroll position before navigating
+                    // Save scroll position, filters, sort, and search before navigating
                     sessionStorage.setItem('plantsPageScroll', window.scrollY.toString())
+                    sessionStorage.setItem('plantsPageFilters', JSON.stringify(filters))
+                    sessionStorage.setItem('plantsPageSort', sortBy)
+                    sessionStorage.setItem('plantsPageSearch', searchTerm)
                   }}
                   className="bg-white/50 rounded-2xl p-5 hover:bg-white/80 transition-all hover-lift cursor-pointer block"
                 >

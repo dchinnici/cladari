@@ -194,6 +194,53 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// PATCH endpoint to update photo details
+export async function PATCH(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams
+    const photoId = searchParams.get('id')
+
+    if (!photoId) {
+      return NextResponse.json({ error: 'Photo ID is required' }, { status: 400 })
+    }
+
+    const body = await request.json()
+    const { photoType, growthStage, notes, dateTaken } = body
+
+    // Validate photo exists
+    const existingPhoto = await prisma.photo.findUnique({ where: { id: photoId } })
+    if (!existingPhoto) {
+      return NextResponse.json({ error: 'Photo not found' }, { status: 404 })
+    }
+
+    // Parse date if provided
+    let parsedDate: Date | undefined
+    if (dateTaken) {
+      const [year, month, day] = dateTaken.split('-').map(Number)
+      parsedDate = new Date(year, month - 1, day, 12, 0, 0)
+    }
+
+    // Update photo
+    const updatedPhoto = await prisma.photo.update({
+      where: { id: photoId },
+      data: {
+        photoType: photoType || undefined,
+        growthStage: growthStage || null,
+        notes: notes || null,
+        dateTaken: parsedDate || undefined
+      }
+    })
+
+    return NextResponse.json({ success: true, photo: updatedPhoto })
+  } catch (error) {
+    console.error('Error updating photo:', error)
+    return NextResponse.json(
+      { error: 'Failed to update photo' },
+      { status: 500 }
+    )
+  }
+}
+
 // DELETE endpoint to remove a photo
 export async function DELETE(request: NextRequest) {
   try {

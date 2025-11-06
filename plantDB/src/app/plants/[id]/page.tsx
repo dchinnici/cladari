@@ -2,12 +2,14 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Camera, Droplets, Heart, Activity, FileText, FlaskConical, Dna, Calendar, DollarSign, MapPin, Edit, Save, X, Plus, Trash2, Upload, Image as ImageIcon } from 'lucide-react'
+import { ArrowLeft, Camera, Droplets, Heart, Activity, FileText, FlaskConical, Dna, Calendar, DollarSign, MapPin, Edit, Save, X, Plus, Trash2, Upload, Image as ImageIcon, TrendingUp } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 import { useDropzone } from 'react-dropzone'
 import { Modal } from '@/components/modal'
 import { showToast } from '@/components/toast'
 import { getLastWateringEvent, getLastFertilizingEvent } from '@/lib/careLogUtils'
+import { UpcomingCare } from '@/components/care/UpcomingCare'
+import { ECPHDashboard } from '@/components/care/ECPHDashboard'
 
 export default function PlantDetailPage() {
   const params = useParams()
@@ -58,8 +60,15 @@ export default function PlantDetailPage() {
     outputPH: '',
     rainAmount: '',
     rainDuration: '',
-    date: new Date().toISOString().split('T')[0]
+    date: new Date().toISOString().split('T')[0],
+    // Pest/disease discovery fields
+    pestType: '',
+    severity: '',
+    affectedArea: ''
   })
+
+  const [useBaselineFeed, setUseBaselineFeed] = useState(false)
+  const [careLogToDelete, setCareLogToDelete] = useState<string | null>(null)
 
   const [morphologyForm, setMorphologyForm] = useState({
     leafShape: '',
@@ -91,6 +100,7 @@ export default function PlantDetailPage() {
   })
 
   const [photoForm, setPhotoForm] = useState({
+    photoId: '',
     photoType: 'whole_plant',
     growthStage: '',
     notes: '',
@@ -296,6 +306,52 @@ export default function PlantDetailPage() {
     }
   }
 
+  const handleDeleteCareLog = async () => {
+    if (!careLogToDelete) return
+
+    try {
+      const response = await fetch(`/api/plants/${params.id}/care-logs/${careLogToDelete}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        await preserveScrollPosition(fetchPlant)
+        showToast({ type: 'success', title: 'Care log deleted' })
+        setCareLogToDelete(null)
+      } else {
+        showToast({ type: 'error', title: 'Failed to delete care log' })
+      }
+    } catch (error) {
+      console.error('Error deleting care log:', error)
+      showToast({ type: 'error', title: 'Error deleting care log' })
+    }
+  }
+
+  const handleCloseCareLogModal = () => {
+    setCareLogModalOpen(false)
+    setUseBaselineFeed(false)
+    // Reset form to prevent edit state from persisting
+    setCareLogForm({
+      logId: '',
+      activityType: 'watering',
+      notes: '',
+      fertilizer: '',
+      pesticide: '',
+      fungicide: '',
+      dosage: '',
+      inputEC: '',
+      inputPH: '',
+      outputEC: '',
+      outputPH: '',
+      rainAmount: '',
+      rainDuration: '',
+      date: new Date().toISOString().split('T')[0],
+      pestType: '',
+      severity: '',
+      affectedArea: ''
+    })
+  }
+
   const handleUpdateMorphology = async () => {
     try {
       const response = await fetch(`/api/plants/${params.id}/traits`, {
@@ -410,6 +466,41 @@ export default function PlantDetailPage() {
       showToast({ type: 'error', title: 'Failed to upload photos' })
     } finally {
       setUploadingPhoto(false)
+    }
+  }
+
+  const handleUpdatePhoto = async () => {
+    if (!photoForm.photoId) return
+
+    try {
+      const response = await fetch(`/api/photos?id=${photoForm.photoId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          photoType: photoForm.photoType,
+          growthStage: photoForm.growthStage || null,
+          notes: photoForm.notes || null,
+          dateTaken: photoForm.dateTaken
+        })
+      })
+
+      if (response.ok) {
+        await preserveScrollPosition(fetchPlant)
+        setPhotoUploadModalOpen(false)
+        setPhotoForm({
+          photoId: '',
+          photoType: 'whole_plant',
+          growthStage: '',
+          notes: '',
+          dateTaken: new Date().toISOString().split('T')[0]
+        })
+        showToast({ type: 'success', title: 'Photo updated' })
+      } else {
+        showToast({ type: 'error', title: 'Failed to update photo' })
+      }
+    } catch (error) {
+      console.error('Error updating photo:', error)
+      showToast({ type: 'error', title: 'Error updating photo' })
     }
   }
 
@@ -554,6 +645,7 @@ export default function PlantDetailPage() {
 
   const tabs = [
     { id: 'overview', name: 'Overview', icon: FileText },
+    { id: 'recommendations', name: 'Care Schedule', icon: TrendingUp },
     { id: 'care', name: 'Care & Notes', icon: Heart },
     { id: 'measurements', name: 'EC & pH', icon: Droplets },
     { id: 'morphology', name: 'Morphology', icon: Dna },
@@ -664,6 +756,9 @@ export default function PlantDetailPage() {
                         {lastWater && (
                           <div>
                             <p className="text-sm font-medium text-gray-700">Last Watered</p>
+                            <p className="text-xs text-gray-500 italic mb-1">
+                              (includes baseline feed)
+                            </p>
                             <p className="text-lg font-bold text-blue-700">
                               {formatDaysAgo(lastWater.date)}
                             </p>
@@ -674,9 +769,12 @@ export default function PlantDetailPage() {
                         )}
                         {lastFeed && (
                           <div>
-                            <p className="text-sm font-medium text-gray-700">Last Fertilized</p>
+                            <p className="text-sm font-medium text-gray-700">Last Incremental Feed</p>
                             <p className="text-lg font-bold text-green-700">
                               {formatDaysAgo(lastFeed.date)}
+                            </p>
+                            <p className="text-xs text-gray-500 italic">
+                              Special/deviation feeds only
                             </p>
                             <p className="text-xs text-gray-500">
                               {new Date(lastFeed.date).toLocaleDateString()}
@@ -826,6 +924,20 @@ export default function PlantDetailPage() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {activeTab === 'recommendations' && (
+            <div className="space-y-6">
+              <div className="mb-6">
+                <h3 className="text-2xl font-bold mb-2">Care Schedule & Recommendations</h3>
+                <p className="text-gray-600">AI-powered care recommendations based on your historical data, environmental factors, and EC/pH analysis.</p>
+              </div>
+
+              <UpcomingCare
+                plantId={params.id as string}
+                onActionComplete={fetchPlant}
+              />
             </div>
           )}
 
@@ -1181,13 +1293,31 @@ export default function PlantDetailPage() {
                           alt={photo.notes || 'Plant photo'}
                           className="w-full h-full object-cover"
                         />
-                        <button
-                          onClick={() => handleDeletePhoto(photo.id)}
-                          className="absolute top-2 right-2 p-2 bg-red-500/90 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-                          title="Delete photo"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => {
+                              setPhotoForm({
+                                photoId: photo.id,
+                                photoType: photo.photoType || 'whole_plant',
+                                growthStage: photo.growthStage || '',
+                                notes: photo.notes || '',
+                                dateTaken: photo.dateTaken ? new Date(photo.dateTaken).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+                              })
+                              setPhotoUploadModalOpen(true)
+                            }}
+                            className="p-2 bg-blue-500/90 text-white rounded-lg hover:bg-blue-600"
+                            title="Edit photo details"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeletePhoto(photo.id)}
+                            className="p-2 bg-red-500/90 text-white rounded-lg hover:bg-red-600"
+                            title="Delete photo"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                       <div className="p-3">
                         <div className="flex items-center gap-2 mb-1">
@@ -1317,32 +1447,41 @@ export default function PlantDetailPage() {
                             }
                           })()}
                         </div>
-                        <button
-                          onClick={() => {
-                            const details = log.details ? (typeof log.details === 'string' ? JSON.parse(log.details) : log.details) : {}
-                            setCareLogForm({
-                              logId: log.id,
-                              activityType: log.action || log.activityType || 'watering',
-                              notes: details.notes || '',
-                              fertilizer: '',
-                              pesticide: '',
-                              fungicide: '',
-                              dosage: '',
-                              inputEC: details.inputEC?.toString() || '',
-                              inputPH: details.inputPH?.toString() || '',
-                              outputEC: details.outputEC?.toString() || '',
-                              outputPH: details.outputPH?.toString() || '',
-                              rainAmount: details.rainAmount || '',
-                              rainDuration: details.rainDuration || '',
-                              date: new Date(log.date).toISOString().split('T')[0]
-                            })
-                            setCareLogModalOpen(true)
-                          }}
-                          className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center gap-1"
-                        >
-                          <Edit className="w-3 h-3" />
-                          Edit
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              const details = log.details ? (typeof log.details === 'string' ? JSON.parse(log.details) : log.details) : {}
+                              setCareLogForm({
+                                logId: log.id,
+                                activityType: log.action || log.activityType || 'watering',
+                                notes: details.notes || '',
+                                fertilizer: '',
+                                pesticide: '',
+                                fungicide: '',
+                                dosage: '',
+                                inputEC: details.inputEC?.toString() || '',
+                                inputPH: details.inputPH?.toString() || '',
+                                outputEC: details.outputEC?.toString() || '',
+                                outputPH: details.outputPH?.toString() || '',
+                                rainAmount: details.rainAmount || '',
+                                rainDuration: details.rainDuration || '',
+                                date: new Date(log.date).toISOString().split('T')[0]
+                              })
+                              setCareLogModalOpen(true)
+                            }}
+                            className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center gap-1"
+                          >
+                            <Edit className="w-3 h-3" />
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => setCareLogToDelete(log.id)}
+                            className="px-3 py-1 text-sm bg-red-50 hover:bg-red-100 text-red-600 rounded-lg flex items-center gap-1"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            Delete
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -1440,26 +1579,7 @@ export default function PlantDetailPage() {
       {/* Care Log Modal */}
       <Modal
         isOpen={careLogModalOpen}
-        onClose={() => {
-          setCareLogModalOpen(false)
-          // Reset form when closing modal
-          setCareLogForm({
-            logId: '',
-            activityType: 'watering',
-            notes: '',
-            fertilizer: '',
-            pesticide: '',
-            fungicide: '',
-            dosage: '',
-            inputEC: '',
-            inputPH: '',
-            outputEC: '',
-            outputPH: '',
-            rainAmount: '',
-            rainDuration: '',
-            date: new Date().toISOString().split('T')[0]
-          })
-        }}
+        onClose={handleCloseCareLogModal}
         title={careLogForm.logId ? "Edit Care Log" : "Add Care Log"}
       >
         <div className="space-y-4">
@@ -1477,19 +1597,58 @@ export default function PlantDetailPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Activity Type</label>
             <select
               value={careLogForm.activityType}
-              onChange={(e) => setCareLogForm({ ...careLogForm, activityType: e.target.value })}
+              onChange={(e) => {
+                setCareLogForm({ ...careLogForm, activityType: e.target.value })
+                // Reset baseline feed when changing activity type
+                if (e.target.value !== 'watering') {
+                  setUseBaselineFeed(false)
+                }
+              }}
               className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
-              <option value="watering">Watering</option>
+              <option value="watering">Watering (with baseline feed)</option>
               <option value="rain">Rain</option>
-              <option value="fertilizing">Fertilizing</option>
+              <option value="fertilizing">🧪 Incremental Feed (deviation from baseline)</option>
               <option value="repotting">Repotting</option>
               <option value="pruning">Pruning</option>
+              <option value="pest_discovery">🔍 Pest/Disease Discovery</option>
               <option value="pest_treatment">Pest Treatment</option>
               <option value="fungicide">Fungicide Application</option>
               <option value="other">Other</option>
             </select>
           </div>
+
+          {/* Baseline Feed Checkbox - Only show for watering */}
+          {careLogForm.activityType === 'watering' && (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={useBaselineFeed}
+                  onChange={(e) => {
+                    const checked = e.target.checked
+                    setUseBaselineFeed(checked)
+                    if (checked) {
+                      // Auto-populate baseline feed values
+                      setCareLogForm({
+                        ...careLogForm,
+                        inputPH: '6.1',
+                        inputEC: '1.0',
+                        notes: careLogForm.notes + (careLogForm.notes ? '\n\n' : '') + 'Baseline feed: CalMag 1ml/L, TPS One 1.5-2ml/L, K-Carb (pH Up) 0.4-0.6ml/L'
+                      })
+                    }
+                  }}
+                  className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
+                />
+                <div className="flex-1">
+                  <span className="font-medium text-emerald-900">Include baseline feed</span>
+                  <p className="text-xs text-emerald-700 mt-0.5">
+                    Auto-fills: pH 6.1, EC 1.0 (CalMag + TPS One + K-Carb)
+                  </p>
+                </div>
+              </label>
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
@@ -1544,17 +1703,6 @@ export default function PlantDetailPage() {
             <>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Input EC</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={careLogForm.inputEC}
-                    onChange={(e) => setCareLogForm({ ...careLogForm, inputEC: e.target.value })}
-                    className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    placeholder="e.g., 1.2"
-                  />
-                </div>
-                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Input pH</label>
                   <input
                     type="number"
@@ -1562,12 +1710,34 @@ export default function PlantDetailPage() {
                     value={careLogForm.inputPH}
                     onChange={(e) => setCareLogForm({ ...careLogForm, inputPH: e.target.value })}
                     className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    placeholder="e.g., 6.2"
+                    placeholder="e.g., 6.1"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Input EC</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={careLogForm.inputEC}
+                    onChange={(e) => setCareLogForm({ ...careLogForm, inputEC: e.target.value })}
+                    className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    placeholder="e.g., 1.0"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Output/Leachate pH (Optional)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={careLogForm.outputPH}
+                    onChange={(e) => setCareLogForm({ ...careLogForm, outputPH: e.target.value })}
+                    className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    placeholder="e.g., 5.8"
+                  />
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Output/Leachate EC (Optional)</label>
                   <input
@@ -1579,19 +1749,83 @@ export default function PlantDetailPage() {
                     placeholder="e.g., 1.5"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Output/Leachate pH (Optional)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={careLogForm.outputPH}
-                    onChange={(e) => setCareLogForm({ ...careLogForm, outputPH: e.target.value })}
-                    className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    placeholder="e.g., 6.5"
-                  />
-                </div>
               </div>
             </>
+          )}
+
+          {/* Pest/Disease Discovery Fields */}
+          {careLogForm.activityType === 'pest_discovery' && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-3">
+              <div className="flex items-start gap-2 mb-2">
+                <span className="text-2xl">🔍</span>
+                <div>
+                  <h4 className="font-semibold text-red-900">Pest or Disease Discovery</h4>
+                  <p className="text-xs text-red-700">Document what you found and where. Log treatments separately.</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Pest/Disease Type *</label>
+                <select
+                  value={careLogForm.pestType}
+                  onChange={(e) => setCareLogForm({ ...careLogForm, pestType: e.target.value })}
+                  className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+                  required
+                >
+                  <option value="">Select type...</option>
+                  <optgroup label="Common Pests">
+                    <option value="spider_mites">🕷️ Spider Mites</option>
+                    <option value="thrips">🦟 Thrips</option>
+                    <option value="aphids">🐛 Aphids</option>
+                    <option value="mealybugs">Mealybugs</option>
+                    <option value="scale">Scale Insects</option>
+                    <option value="fungus_gnats">Fungus Gnats</option>
+                    <option value="whiteflies">Whiteflies</option>
+                  </optgroup>
+                  <optgroup label="Diseases">
+                    <option value="root_rot">🍄 Root Rot</option>
+                    <option value="powdery_mildew">Powdery Mildew</option>
+                    <option value="bacterial_blight">Bacterial Blight</option>
+                    <option value="anthracnose">Anthracnose</option>
+                    <option value="rust">Rust</option>
+                    <option value="botrytis">Botrytis (Gray Mold)</option>
+                  </optgroup>
+                  <optgroup label="Symptoms">
+                    <option value="yellowing">Yellowing Leaves</option>
+                    <option value="brown_spots">Brown Spots</option>
+                    <option value="wilting">Wilting</option>
+                    <option value="stunted_growth">Stunted Growth</option>
+                  </optgroup>
+                  <option value="other">Other (describe in notes)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Severity</label>
+                <select
+                  value={careLogForm.severity}
+                  onChange={(e) => setCareLogForm({ ...careLogForm, severity: e.target.value })}
+                  className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="">Select severity...</option>
+                  <option value="mild">🟢 Mild - Early detection, isolated</option>
+                  <option value="moderate">🟡 Moderate - Spreading, visible damage</option>
+                  <option value="severe">🔴 Severe - Widespread, significant damage</option>
+                  <option value="critical">⚫ Critical - Plant health at risk</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Affected Area</label>
+                <input
+                  type="text"
+                  value={careLogForm.affectedArea}
+                  onChange={(e) => setCareLogForm({ ...careLogForm, affectedArea: e.target.value })}
+                  className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+                  placeholder="e.g., Lower leaves, new growth, roots"
+                />
+              </div>
+            </div>
           )}
 
           {(careLogForm.activityType === 'fertilizing' || careLogForm.activityType === 'pest_treatment' || careLogForm.activityType === 'fungicide') && (
@@ -1656,7 +1890,7 @@ export default function PlantDetailPage() {
               Save Log Entry
             </button>
             <button
-              onClick={() => setCareLogModalOpen(false)}
+              onClick={handleCloseCareLogModal}
               className="flex-1 px-4 py-2 border border-gray-200 rounded-xl hover:bg-gray-50"
             >
               Cancel
@@ -2327,43 +2561,87 @@ export default function PlantDetailPage() {
         </div>
       </Modal>
 
+      {/* Delete Care Log Confirmation Modal */}
+      <Modal
+        isOpen={!!careLogToDelete}
+        onClose={() => setCareLogToDelete(null)}
+        title="Delete Care Log"
+      >
+        <div className="space-y-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-red-800 font-medium mb-2">⚠️ Warning: This action cannot be undone!</p>
+            <p className="text-red-700 text-sm">
+              This care log entry will be permanently deleted from the plant's history.
+            </p>
+          </div>
+
+          <p className="text-gray-700">
+            Are you sure you want to delete this care log entry?
+          </p>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={() => setCareLogToDelete(null)}
+              className="flex-1 px-4 py-2 border border-gray-200 rounded-xl hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDeleteCareLog}
+              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </Modal>
+
       {/* Photo Upload Modal */}
       <Modal
         isOpen={photoUploadModalOpen}
         onClose={() => {
           setPhotoUploadModalOpen(false)
           setSelectedFiles([])
+          setPhotoForm({
+            photoId: '',
+            photoType: 'whole_plant',
+            growthStage: '',
+            notes: '',
+            dateTaken: new Date().toISOString().split('T')[0]
+          })
         }}
-        title="Upload Photos"
+        title={photoForm.photoId ? "Edit Photo Details" : "Upload Photos"}
       >
         <div className="space-y-4">
-          {/* Drag and Drop Area */}
-          <div
-            {...getRootProps()}
-            className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
-              isDragActive
-                ? 'border-emerald-500 bg-emerald-50'
-                : 'border-gray-300 hover:border-emerald-400 hover:bg-gray-50'
-            }`}
-          >
-            <input {...getInputProps()} />
-            <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-            {isDragActive ? (
-              <p className="text-emerald-600 font-medium">Drop photos here...</p>
-            ) : (
-              <>
-                <p className="text-gray-700 font-medium mb-1">
-                  Drag & drop photos here, or click to select
-                </p>
-                <p className="text-sm text-gray-500">
-                  Supports: JPG, PNG, WEBP, HEIC (iOS photos)
-                </p>
-                <p className="text-xs text-gray-400 mt-2">
-                  Multiple files supported for batch upload
-                </p>
-              </>
-            )}
-          </div>
+          {/* Drag and Drop Area - Only show when uploading new photos */}
+          {!photoForm.photoId && (
+            <div
+              {...getRootProps()}
+              className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
+                isDragActive
+                  ? 'border-emerald-500 bg-emerald-50'
+                  : 'border-gray-300 hover:border-emerald-400 hover:bg-gray-50'
+              }`}
+            >
+              <input {...getInputProps()} />
+              <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+              {isDragActive ? (
+                <p className="text-emerald-600 font-medium">Drop photos here...</p>
+              ) : (
+                <>
+                  <p className="text-gray-700 font-medium mb-1">
+                    Drag & drop photos here, or click to select
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Supports: JPG, PNG, WEBP, HEIC (iOS photos)
+                  </p>
+                  <p className="text-xs text-gray-400 mt-2">
+                    Multiple files supported for batch upload
+                  </p>
+                </>
+              )}
+            </div>
+          )}
 
           {/* Selected Files Preview */}
           {selectedFiles.length > 0 && (
@@ -2469,6 +2747,13 @@ export default function PlantDetailPage() {
               onClick={() => {
                 setPhotoUploadModalOpen(false)
                 setSelectedFiles([])
+                setPhotoForm({
+                  photoId: '',
+                  photoType: 'whole_plant',
+                  growthStage: '',
+                  notes: '',
+                  dateTaken: new Date().toISOString().split('T')[0]
+                })
               }}
               className="flex-1 px-4 py-2 border border-gray-200 rounded-xl hover:bg-gray-50"
               disabled={uploadingPhoto}
@@ -2476,19 +2761,28 @@ export default function PlantDetailPage() {
               Cancel
             </button>
             <button
-              onClick={handlePhotoUpload}
-              disabled={uploadingPhoto || selectedFiles.length === 0}
+              onClick={photoForm.photoId ? handleUpdatePhoto : handlePhotoUpload}
+              disabled={uploadingPhoto || (!photoForm.photoId && selectedFiles.length === 0)}
               className="flex-1 px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl hover:from-emerald-600 hover:to-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {uploadingPhoto ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Uploading...
+                  {photoForm.photoId ? 'Updating...' : 'Uploading...'}
                 </>
               ) : (
                 <>
-                  <Upload className="w-4 h-4" />
-                  Upload {selectedFiles.length > 0 && `(${selectedFiles.length})`}
+                  {photoForm.photoId ? (
+                    <>
+                      <Save className="w-4 h-4" />
+                      Save Changes
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4" />
+                      Upload {selectedFiles.length > 0 && `(${selectedFiles.length})`}
+                    </>
+                  )}
                 </>
               )}
             </button>

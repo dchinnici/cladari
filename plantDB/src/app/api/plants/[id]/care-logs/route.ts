@@ -9,13 +9,17 @@ export async function POST(
     const params = await context.params
     const body = await request.json()
 
-    // Build details JSON with EC/pH data and notes
+    // Build details JSON with EC/pH data, pest discovery, and notes
     const detailsObj: any = {}
     if (body.notes) detailsObj.notes = body.notes
     if (body.inputEC) detailsObj.inputEC = parseFloat(body.inputEC)
     if (body.inputPH) detailsObj.inputPH = parseFloat(body.inputPH)
     if (body.outputEC) detailsObj.outputEC = parseFloat(body.outputEC)
     if (body.outputPH) detailsObj.outputPH = parseFloat(body.outputPH)
+    // Pest/disease discovery fields
+    if (body.pestType) detailsObj.pestType = body.pestType
+    if (body.severity) detailsObj.severity = body.severity
+    if (body.affectedArea) detailsObj.affectedArea = body.affectedArea
 
     const careLog = await prisma.careLog.create({
       data: {

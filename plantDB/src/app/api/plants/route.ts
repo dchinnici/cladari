@@ -9,7 +9,7 @@ export async function GET() {
         currentLocation: true,
         careLogs: {
           orderBy: { date: 'desc' },
-          take: 1
+          take: 10  // Increased from 1 to 10 for care frequency calculations
         },
         measurements: {
           orderBy: { measurementDate: 'desc' },

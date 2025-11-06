@@ -40,6 +40,11 @@ model Plant {
   healthStatus      String    @default("healthy") // healthy, stressed, diseased, recovering
   conservationStatus String?  // CITES status, conservation priority
 
+  // Pot & Container
+  currentPotSize    Float?    // diameter in inches
+  currentPotType    String?   // plastic, terracotta, net_pot, etc.
+  lastRepotDate     DateTime?
+
   // Genetics
   genetics          Genetics?
   traits            Trait[]
@@ -48,6 +53,7 @@ model Plant {
   photos            Photo[]
   careLogs          CareLog[]
   measurements      Measurement[]
+  growthMetrics     GrowthMetric[]
   floweringCycles   FloweringCycle[]
 
   // Breeding
@@ -396,4 +402,36 @@ model FloweringCycle {
   @@index([femaleStart])
   @@index([maleStart])
   @@index([spatheEmergence])
+}
+
+model GrowthMetric {
+  id                String   @id @default(cuid())
+  plant             Plant    @relation(fields: [plantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  plantId           String
+
+  date              DateTime
+
+  // Quick growth assessment
+  leafCount         Int?
+  largestLeafLength Float?   // cm - for tracking max leaf size over time
+  largestLeafWidth  Float?   // cm
+  averageLeafSize   Float?   // cm - average of last 3 mature leaves
+  newGrowthRate     String?  // fast, normal, slow, stalled
+
+  // Visual health indicators (quick checkboxes)
+  hasStuntedGrowth  Boolean  @default(false)
+  hasCurledLeaves   Boolean  @default(false)
+  hasYellowing      Boolean  @default(false)
+  hasEdgeBurn       Boolean  @default(false)
+  hasSpiderMites    Boolean  @default(false)
+
+  // Growth context
+  potSize           Float?   // Capture pot size at time of measurement
+  daysSinceRepot    Int?     // Auto-calculated for pattern analysis
+
+  notes             String?
+  createdAt         DateTime @default(now())
+
+  @@index([plantId])
+  @@index([date])
 }

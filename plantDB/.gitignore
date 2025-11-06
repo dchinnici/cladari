@@ -41,6 +41,19 @@ prisma/*.db-journal
 prisma/*.db-shm
 prisma/*.db-wal
 
+# Database files (DO NOT commit live database)
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+dev.db*
+prisma/dev.db*
+
+# BUT allow text snapshots for AI assistant visibility
+!docs/db-snapshots/*.sql
+!docs/db-snapshots/*.json
+!docs/db-snapshots/*.txt
+
 # backups
 prisma/backups/
 
