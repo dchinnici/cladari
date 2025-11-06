@@ -698,13 +698,43 @@ export default function PlantDetailPage() {
                 </span>
               )}
             </div>
-            <button
-              onClick={() => setDeleteConfirmOpen(true)}
-              className="px-4 py-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 flex items-center gap-2 transition-colors"
-            >
-              <Trash2 className="w-4 h-4" />
-              Delete Plant
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  setCareLogModalOpen(true)
+                  setCareLogForm({
+                    logId: '',
+                    activityType: 'watering',
+                    notes: '',
+                    fertilizer: '',
+                    pesticide: '',
+                    fungicide: '',
+                    dosage: '',
+                    inputEC: '',
+                    inputPH: '',
+                    outputEC: '',
+                    outputPH: '',
+                    rainAmount: '',
+                    rainDuration: '',
+                    date: new Date().toISOString().split('T')[0],
+                    pestType: '',
+                    severity: '',
+                    affectedArea: ''
+                  })
+                }}
+                className="px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl hover:bg-emerald-100 flex items-center gap-2 transition-colors font-medium"
+              >
+                <Droplets className="w-4 h-4" />
+                Add Care Log
+              </button>
+              <button
+                onClick={() => setDeleteConfirmOpen(true)}
+                className="px-4 py-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 flex items-center gap-2 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete Plant
+              </button>
+            </div>
           </div>
         </div>
 
