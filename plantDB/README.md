@@ -27,10 +27,11 @@ Built with Next.js 15, Prisma, and SQLite for comprehensive Anthurium breeding p
 
 ### Fertigation Workflow
 Modern liquid feed management system:
-- **Baseline Feed** - Auto-fill pH 6.1 / EC 1.0 (CalMag + TPS One + K-Carb) with one checkbox
+- **Baseline Feed** - Auto-fill pH 5.9 / EC 1.1 (CalMag + TPS One + reduced K-Carb) with one checkbox
 - **Integrated Schedule** - Watering always includes baseline fertigation (no separate fertilization schedule)
 - **Incremental Feeds** - Log deviations from baseline (silica, dolomite, pH adjustments)
 - **Event-Based** - Special feeds are event-driven, not schedule-driven
+- **K-Carb Reduction** - Lower potassium carbonate to prevent cation nutrient lockout
 
 ### Care Recommendation Engine
 Intelligent scheduling system that learns from your patterns:
@@ -82,7 +83,8 @@ npx prisma db push
 npx prisma generate
 
 # Start development server
-npm run dev
+./scripts/dev           # Standard mode (localhost only)
+./scripts/dev --bg      # Tailscale mode (all interfaces, access via f1:3000)
 ```
 
 Visit `http://localhost:3000` to access the application.
@@ -151,13 +153,13 @@ See `prisma/schema.prisma` for complete schema definition.
 ## 🎯 Key Workflows
 
 ### Daily Care Logging
-1. Navigate to plant detail page
-2. Click **Add Care Log**
-3. Select **Watering** activity type
-4. Check **Include baseline feed** checkbox (auto-fills pH 6.1, EC 1.0)
-5. Adjust values if needed for this specific watering
-6. Add notes about plant condition
-7. Save - baseline feed recorded in 10 seconds!
+1. Press **Cmd+K** from anywhere for Quick Care modal
+2. Use **number keys 1-9** to select plants
+3. Press **W** for water, **F** for fertilize
+4. Press **B** to toggle baseline feed (auto-fills pH 5.9, EC 1.1)
+5. Press **Cmd+Enter** to save
+6. Or use traditional plant detail page for single-plant logging
+7. Save - baseline feed recorded in seconds!
 
 ### Recording Special Feeds
 1. Same as above, but select **Incremental Feed** instead
@@ -318,6 +320,16 @@ PATCH  /api/plants/[id]/location              # Update plant location
 
 ## 🎯 Roadmap
 
+### Phase 1.5 (Nov 10, 2025) ✅
+- **Automated Backup System** - Daily cron job with 30-day retention
+- **Quick Care Modal** - Cmd+K for rapid keyboard-driven care logging
+- **Actionable Dashboard** - Care Queue widget with Water/Feed/Critical tabs
+- **Database Performance** - 20+ indexes, <1ms query times
+- **Mobile PWA** - Installable app with offline support
+- **Service Worker** - Offline caching for field use
+- **Tailscale Support** - Access via f1:3000 on mobile devices
+- **Baseline Update** - pH 5.9, EC 1.1 (reduced K-Carb to prevent lockout)
+
 ### Phase 1 (Complete) ✅
 - Core plant database
 - Location management with advanced metrics
@@ -399,5 +411,5 @@ For technical issues or feature requests, refer to `docs/CLADARI_ENGINEER_MANUAL
 
 ---
 
-**Version:** 1.2.0 - Bug Fix & Workflow Optimization Release
+**Version:** 1.2.0 - Performance & Mobile Enhancement Release
 **Built with 🌿 for professional plant breeding and conservation**

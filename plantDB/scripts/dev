@@ -1,0 +1,44 @@
+#!/bin/bash
+# Quick start development server with Tailscale support
+
+# Check for background flag
+if [ "$1" = "--bg" ]; then
+  echo "🌐 Starting Cladari with Tailscale support (all interfaces)..."
+  echo "================================"
+  echo ""
+  echo "📱 Access from:"
+  echo "    Local: http://localhost:3000"
+  echo "    Tailscale: http://f1:3000"
+  echo "    LAN: http://$(ifconfig en0 | grep 'inet ' | awk '{print $2}'):3000"
+  echo ""
+  echo "⌨️  Shortcuts:"
+  echo "    Cmd+K - Quick Care"
+  echo "    / - Focus search"
+  echo "    N - New plant  |  F - Filter"
+  echo ""
+  echo "🔐 Baseline Feed: pH 5.9, EC 1.1 (reduced K-Carb)"
+  echo ""
+  echo "Starting server on all interfaces..."
+  echo ""
+
+  DATABASE_URL="file:./prisma/dev.db" npm run dev -- --hostname 0.0.0.0
+else
+  echo "🌱 Starting Cladari Plant Management (Standard Mode)..."
+  echo "================================"
+  echo ""
+  echo "📱 Access from: http://localhost:3000"
+  echo ""
+  echo "⌨️  Shortcuts:"
+  echo "    Cmd+K - Quick Care"
+  echo "    / - Focus search"
+  echo "    N - New plant  |  F - Filter"
+  echo ""
+  echo "🔐 Baseline Feed: pH 5.9, EC 1.1 (reduced K-Carb)"
+  echo ""
+  echo "💡 For Tailscale/mobile access, use: ./scripts/dev --bg"
+  echo ""
+  echo "Starting server on localhost..."
+  echo ""
+
+  DATABASE_URL="file:./prisma/dev.db" npm run dev
+fi

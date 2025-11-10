@@ -13,11 +13,15 @@ export async function POST(
       data: {
         plantId: params.id,
         measurementDate: body.measurementDate ? new Date(body.measurementDate + 'T00:00:00.000Z') : new Date(),
-        ecValue: body.ecValue ? parseFloat(body.ecValue) : null,
-        phValue: body.phValue ? parseFloat(body.phValue) : null,
-        tdsValue: body.tdsValue ? parseInt(body.tdsValue) : null,
-        notes: body.notes || null,
-        measurementType: body.measurementType || 'routine'
+        leafLength: body.leafLength ? parseFloat(body.leafLength) : null,
+        leafWidth: body.leafWidth ? parseFloat(body.leafWidth) : null,
+        petioleLength: body.petioleLength ? parseFloat(body.petioleLength) : null,
+        internodeLength: body.internodeLength ? parseFloat(body.internodeLength) : null,
+        leafCount: body.leafCount ? parseInt(body.leafCount) : null,
+        height: body.height ? parseFloat(body.height) : null,
+        vigorScore: body.vigorScore ? parseInt(body.vigorScore) : null,
+        texture: body.texture || null,
+        notes: body.notes || null
       }
     })
 

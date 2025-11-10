@@ -2,13 +2,22 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { Providers } from './providers'
 import Link from 'next/link'
-import { Leaf } from 'lucide-react'
+import { Leaf, Home, Trees, MapPin, Dna, Menu } from 'lucide-react'
 import { ToastContainer } from '@/components/toast'
+import ServiceWorker from '@/components/ServiceWorker'
 
 
 export const metadata: Metadata = {
   title: 'Cladari Plant Management',
   description: 'Cladari — professional plant management for breeding and conservation',
+  viewport: 'width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes',
+  themeColor: '#10b981',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Cladari'
+  }
 }
 
 export default function RootLayout({
@@ -63,8 +72,38 @@ export default function RootLayout({
                 </div>
               </div>
             </nav>
-            <main className="pt-16">{children}</main>
+
+            {/* Main Content */}
+            <main className="pt-16 pb-16 sm:pb-0">{children}</main>
+
+            {/* Mobile Bottom Navigation */}
+            <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-gray-200">
+              <div className="grid grid-cols-5 h-16">
+                <Link href="/dashboard" className="flex flex-col items-center justify-center text-gray-600 hover:text-emerald-600">
+                  <Home className="w-5 h-5" />
+                  <span className="text-xs mt-1">Home</span>
+                </Link>
+                <Link href="/plants" className="flex flex-col items-center justify-center text-gray-600 hover:text-emerald-600">
+                  <Trees className="w-5 h-5" />
+                  <span className="text-xs mt-1">Plants</span>
+                </Link>
+                <Link href="/batch-care" className="flex flex-col items-center justify-center text-gray-600 hover:text-emerald-600">
+                  <Leaf className="w-5 h-5" />
+                  <span className="text-xs mt-1">Care</span>
+                </Link>
+                <Link href="/locations" className="flex flex-col items-center justify-center text-gray-600 hover:text-emerald-600">
+                  <MapPin className="w-5 h-5" />
+                  <span className="text-xs mt-1">Locations</span>
+                </Link>
+                <Link href="/genetics" className="flex flex-col items-center justify-center text-gray-600 hover:text-emerald-600">
+                  <Dna className="w-5 h-5" />
+                  <span className="text-xs mt-1">Genetics</span>
+                </Link>
+              </div>
+            </nav>
+
             <ToastContainer />
+            <ServiceWorker />
           </div>
         </Providers>
       </body>

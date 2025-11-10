@@ -101,44 +101,6 @@ CREATE UNIQUE INDEX "Location_name_key" ON "Location"("name");
 CREATE INDEX "Location_name_idx" ON "Location"("name");
 CREATE INDEX "Species_section_idx" ON "Species"("section");
 CREATE UNIQUE INDEX "Species_genus_species_key" ON "Species"("genus", "species");
-CREATE TABLE IF NOT EXISTS "Plant" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "plantId" TEXT NOT NULL,
-    "accessionDate" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "genus" TEXT NOT NULL DEFAULT 'Anthurium',
-    "section" TEXT,
-    "species" TEXT,
-    "hybridName" TEXT,
-    "crossNotation" TEXT,
-    "femaleParentId" TEXT,
-    "maleParentId" TEXT,
-    "generation" TEXT,
-    "breeder" TEXT,
-    "breederCode" TEXT,
-    "vendorId" TEXT,
-    "acquisitionCost" REAL,
-    "propagationType" TEXT,
-    "locationId" TEXT,
-    "healthStatus" TEXT NOT NULL DEFAULT 'healthy',
-    "conservationStatus" TEXT,
-    "marketValue" REAL,
-    "isForSale" BOOLEAN NOT NULL DEFAULT false,
-    "isMother" BOOLEAN NOT NULL DEFAULT false,
-    "isEliteGenetics" BOOLEAN NOT NULL DEFAULT false,
-    "notes" TEXT,
-    "tags" TEXT NOT NULL DEFAULT '[]',
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL, "currentPotSize" REAL, "currentPotType" TEXT, "lastRepotDate" DATETIME,
-    CONSTRAINT "Plant_femaleParentId_fkey" FOREIGN KEY ("femaleParentId") REFERENCES "Plant" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT "Plant_maleParentId_fkey" FOREIGN KEY ("maleParentId") REFERENCES "Plant" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT "Plant_vendorId_fkey" FOREIGN KEY ("vendorId") REFERENCES "Vendor" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT "Plant_locationId_fkey" FOREIGN KEY ("locationId") REFERENCES "Location" ("id") ON DELETE SET NULL ON UPDATE CASCADE
-);
-CREATE UNIQUE INDEX "Plant_plantId_key" ON "Plant"("plantId");
-CREATE INDEX "Plant_plantId_idx" ON "Plant"("plantId");
-CREATE INDEX "Plant_vendorId_idx" ON "Plant"("vendorId");
-CREATE INDEX "Plant_locationId_idx" ON "Plant"("locationId");
-CREATE INDEX "Plant_section_idx" ON "Plant"("section");
 CREATE TABLE IF NOT EXISTS "CareLog" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "plantId" TEXT NOT NULL,
@@ -276,3 +238,48 @@ CREATE TABLE IF NOT EXISTS "GrowthMetric" (
 );
 CREATE INDEX "GrowthMetric_plantId_idx" ON "GrowthMetric"("plantId");
 CREATE INDEX "GrowthMetric_date_idx" ON "GrowthMetric"("date");
+CREATE TABLE IF NOT EXISTS "Plant" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "plantId" TEXT NOT NULL,
+    "accessionDate" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "genus" TEXT NOT NULL DEFAULT 'Anthurium',
+    "section" TEXT,
+    "species" TEXT,
+    "hybridName" TEXT,
+    "crossNotation" TEXT,
+    "femaleParentId" TEXT,
+    "maleParentId" TEXT,
+    "generation" TEXT,
+    "breeder" TEXT,
+    "breederCode" TEXT,
+    "vendorId" TEXT,
+    "acquisitionCost" REAL,
+    "propagationType" TEXT,
+    "locationId" TEXT,
+    "healthStatus" TEXT NOT NULL DEFAULT 'healthy',
+    "conservationStatus" TEXT,
+    "currentPotSize" REAL,
+    "currentPotType" TEXT,
+    "lastRepotDate" DATETIME,
+    "marketValue" REAL,
+    "isForSale" BOOLEAN NOT NULL DEFAULT false,
+    "isMother" BOOLEAN NOT NULL DEFAULT false,
+    "isEliteGenetics" BOOLEAN NOT NULL DEFAULT false,
+    "isArchived" BOOLEAN NOT NULL DEFAULT false,
+    "archivedAt" DATETIME,
+    "archiveReason" TEXT,
+    "notes" TEXT,
+    "tags" TEXT NOT NULL DEFAULT '[]',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "Plant_femaleParentId_fkey" FOREIGN KEY ("femaleParentId") REFERENCES "Plant" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "Plant_maleParentId_fkey" FOREIGN KEY ("maleParentId") REFERENCES "Plant" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "Plant_vendorId_fkey" FOREIGN KEY ("vendorId") REFERENCES "Vendor" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "Plant_locationId_fkey" FOREIGN KEY ("locationId") REFERENCES "Location" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+CREATE UNIQUE INDEX "Plant_plantId_key" ON "Plant"("plantId");
+CREATE INDEX "Plant_plantId_idx" ON "Plant"("plantId");
+CREATE INDEX "Plant_vendorId_idx" ON "Plant"("vendorId");
+CREATE INDEX "Plant_locationId_idx" ON "Plant"("locationId");
+CREATE INDEX "Plant_section_idx" ON "Plant"("section");
+CREATE INDEX "Plant_isArchived_idx" ON "Plant"("isArchived");

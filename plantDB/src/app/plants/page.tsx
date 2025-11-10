@@ -1,10 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowLeft, Search, Plus, Filter, Leaf, DollarSign, MapPin, Calendar, Droplets, AlertTriangle, Download } from 'lucide-react'
+import { ArrowLeft, Search, Plus, Filter, Leaf, DollarSign, MapPin, Calendar, Droplets, AlertTriangle, Download, Zap } from 'lucide-react'
 import { showToast } from '@/components/toast'
 import { Modal } from '@/components/modal'
-import { useEffect, useState } from 'react'
+import QuickCare from '@/components/QuickCare'
+import { useEffect, useState, useRef } from 'react'
 import { getDaysSinceLastWatering, getDaysSinceLastFertilizing, calculateWateringFrequency, calculateFertilizingFrequency } from '@/lib/careLogUtils'
 import { DEFAULT_INTERVALS } from '@/lib/care/types'
 
@@ -27,6 +28,8 @@ export default function PlantsPage() {
   const [createOpen, setCreateOpen] = useState(false)
   const [creating, setCreating] = useState(false)
   const [filterOpen, setFilterOpen] = useState(false)
+  const [quickCareOpen, setQuickCareOpen] = useState(false)
+  const searchInputRef = useRef<HTMLInputElement>(null)
   const [filters, setFilters] = useState({
     healthStatus: '',
     breederCode: '',
@@ -96,6 +99,43 @@ export default function PlantsPage() {
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [])
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return
+      }
+
+      // Cmd/Ctrl + K for Quick Care
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setQuickCareOpen(true)
+      }
+
+      // / to focus search (like GitHub)
+      if (e.key === '/' && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault()
+        searchInputRef.current?.focus()
+      }
+
+      // N for new plant
+      if (e.key === 'n' && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault()
+        setCreateOpen(true)
+      }
+
+      // F for filter
+      if (e.key === 'f' && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault()
+        setFilterOpen(true)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
   const fetchLocations = async () => {
@@ -236,8 +276,9 @@ export default function PlantsPage() {
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
+                ref={searchInputRef}
                 type="text"
-                placeholder="Search plants..."
+                placeholder="Search plants... (Press / to focus)"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -252,6 +293,14 @@ export default function PlantsPage() {
               <option value="newest">🕐 Recently Active</option>
               <option value="alphabetical">🔤 Alphabetical (A-Z)</option>
             </select>
+            <button
+              onClick={() => setQuickCareOpen(true)}
+              className="px-6 py-3 rounded-xl bg-yellow-100 hover:bg-yellow-200 flex items-center gap-2 transition-colors"
+              title="Cmd+K"
+            >
+              <Zap className="w-5 h-5 text-yellow-600" />
+              Quick Care
+            </button>
             <button onClick={() => setFilterOpen(true)} className="px-6 py-3 rounded-xl border border-gray-200 hover:bg-gray-50 flex items-center gap-2 relative">
               <Filter className="w-5 h-5" />
               Filters
@@ -539,6 +588,17 @@ export default function PlantsPage() {
             </div>
           </div>
         </Modal>
+
+        {/* Quick Care Modal */}
+        <QuickCare
+          isOpen={quickCareOpen}
+          onClose={() => setQuickCareOpen(false)}
+          plants={filteredPlants}
+          onSuccess={() => {
+            fetchPlants()
+            showToast({ type: 'success', title: 'Care logs saved successfully' })
+          }}
+        />
       </div>
     </div>
   )

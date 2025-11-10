@@ -1,18 +1,43 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import CareQueue from '@/components/care/CareQueue'
+import QuickCare from '@/components/QuickCare'
 import { DollarSign, Leaf, Users, TrendingUp, Activity, Package, Sparkles, Dna, FlaskConical, Award, Droplets } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Area, AreaChart } from 'recharts'
+import { showToast } from '@/components/toast'
 
 export default function Dashboard() {
-  const { data: stats, isLoading } = useQuery({
+  const [quickCareOpen, setQuickCareOpen] = useState(false)
+  const [selectedPlantIds, setSelectedPlantIds] = useState<string[]>([])
+  const [plants, setPlants] = useState<any[]>([])
+  const router = useRouter()
+
+  const { data: stats, isLoading, refetch } = useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: async () => {
       const res = await fetch('/api/dashboard/stats')
       return res.json()
     }
   })
+
+  const { data: plantsData } = useQuery({
+    queryKey: ['plants'],
+    queryFn: async () => {
+      const res = await fetch('/api/plants')
+      const data = await res.json()
+      setPlants(Array.isArray(data) ? data : [])
+      return data
+    }
+  })
+
+  const handleQuickCare = (plantIds: string[]) => {
+    setSelectedPlantIds(plantIds)
+    setQuickCareOpen(true)
+  }
 
   if (isLoading) {
     return (
@@ -112,99 +137,53 @@ export default function Dashboard() {
           })}
         </div>
 
-        {/* TODAY'S TASKS - POWER FEATURE */}
-        {(stats?.plantsNeedingWater?.length > 0 || stats?.plantsNeedingFertilizer?.length > 0 || stats?.stalePlants > 0) && (
-          <Card className="overflow-hidden bg-gradient-to-r from-orange-50 to-amber-50 border-orange-200/50 shadow-xl mb-8">
-            <CardHeader className="bg-gradient-to-r from-orange-100 to-amber-100">
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="w-6 h-6 text-orange-600" />
-                Today's Tasks - Plants Needing Attention
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {stats?.plantsNeedingWater?.length > 0 && (
-                  <div className="bg-white/80 rounded-xl p-4 border border-blue-200">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Droplets className="w-5 h-5 text-blue-600" />
-                      <h3 className="font-bold text-blue-900">Needs Water</h3>
+        {/* Care Queue and Actionable Items */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <div className="lg:col-span-2">
+            <CareQueue onQuickCare={handleQuickCare} />
+          </div>
+          <div className="space-y-4">
+            {/* Quick Stats Card */}
+            <Card className="overflow-hidden bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200/50 shadow-xl">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-purple-600" />
+                  Quick Stats
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-2">
+                <div className="space-y-3">
+                  {stats?.avgWateringFrequency && (
+                    <div className="flex justify-between items-center p-2">
+                      <span className="text-sm text-gray-600">Avg Watering</span>
+                      <span className="text-sm font-bold text-blue-600">
+                        Every {stats.avgWateringFrequency} days
+                      </span>
                     </div>
-                    <div className="space-y-2">
-                      {stats.plantsNeedingWater.slice(0, 5).map((plant: any) => (
-                        <a
-                          key={plant.id}
-                          href={`/plants/${plant.id}`}
-                          className="block text-sm hover:bg-blue-50 p-2 rounded-lg transition-colors"
-                        >
-                          <div className="font-medium text-gray-900">{plant.name || plant.plantId}</div>
-                          <div className="text-xs text-gray-500">{plant.daysSinceWater}+ days ago</div>
-                        </a>
-                      ))}
-                      {stats.plantsNeedingWater.length > 5 && (
-                        <div className="text-xs text-gray-500 pt-2">
-                          +{stats.plantsNeedingWater.length - 5} more plants
-                        </div>
-                      )}
-                    </div>
+                  )}
+                  <div className="flex justify-between items-center p-2">
+                    <span className="text-sm text-gray-600">Needs Water</span>
+                    <span className="text-sm font-bold text-blue-600">
+                      {stats?.plantsNeedingWater?.length || 0} plants
+                    </span>
                   </div>
-                )}
-
-                {stats?.plantsNeedingFertilizer?.length > 0 && (
-                  <div className="bg-white/80 rounded-xl p-4 border border-green-200">
-                    <div className="flex items-center gap-2 mb-3">
-                      <FlaskConical className="w-5 h-5 text-green-600" />
-                      <h3 className="font-bold text-green-900">Needs Feed</h3>
-                    </div>
-                    <div className="space-y-2">
-                      {stats.plantsNeedingFertilizer.slice(0, 5).map((plant: any) => (
-                        <a
-                          key={plant.id}
-                          href={`/plants/${plant.id}`}
-                          className="block text-sm hover:bg-green-50 p-2 rounded-lg transition-colors"
-                        >
-                          <div className="font-medium text-gray-900">{plant.name || plant.plantId}</div>
-                        </a>
-                      ))}
-                      {stats.plantsNeedingFertilizer.length > 5 && (
-                        <div className="text-xs text-gray-500 pt-2">
-                          +{stats.plantsNeedingFertilizer.length - 5} more plants
-                        </div>
-                      )}
-                    </div>
+                  <div className="flex justify-between items-center p-2">
+                    <span className="text-sm text-gray-600">Needs Feed</span>
+                    <span className="text-sm font-bold text-green-600">
+                      {stats?.plantsNeedingFertilizer?.length || 0} plants
+                    </span>
                   </div>
-                )}
-
-                {stats?.stalePlants > 0 && (
-                  <div className="bg-white/80 rounded-xl p-4 border border-amber-200">
-                    <div className="flex items-center gap-2 mb-3">
-                      <TrendingUp className="w-5 h-5 text-amber-600" />
-                      <h3 className="font-bold text-amber-900">No Activity</h3>
-                    </div>
-                    <div className="text-center py-4">
-                      <div className="text-3xl font-bold text-amber-600">{stats.stalePlants}</div>
-                      <div className="text-sm text-gray-600 mt-1">plants with no updates</div>
-                      <div className="text-xs text-gray-500">in 14+ days</div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {stats?.avgWateringFrequency && (
-                <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Droplets className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm font-medium text-blue-900">Collection Average</span>
-                    </div>
-                    <span className="text-sm font-bold text-blue-700">
-                      Watering every ~{stats.avgWateringFrequency} days
+                  <div className="flex justify-between items-center p-2">
+                    <span className="text-sm text-gray-600">Stale (14+ days)</span>
+                    <span className="text-sm font-bold text-amber-600">
+                      {stats?.stalePlants || 0} plants
                     </span>
                   </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
 
         {/* Species Distribution */}
         <Card className="overflow-hidden bg-white/80 backdrop-blur-xl border-gray-200/50 shadow-xl mb-8">
@@ -302,6 +281,20 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Quick Care Modal */}
+        <QuickCare
+          isOpen={quickCareOpen}
+          onClose={() => {
+            setQuickCareOpen(false)
+            setSelectedPlantIds([])
+          }}
+          plants={plants}
+          onSuccess={() => {
+            refetch()
+            showToast({ type: 'success', title: 'Care logs saved successfully' })
+          }}
+        />
       </div>
     </div>
   )

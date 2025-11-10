@@ -2,6 +2,39 @@
 
 All notable changes to the Cladari Plant Management System will be documented in this file.
 
+## [1.2.0] - 2025-11-10
+
+### Added
+- **Automated Backup System** - Daily cron job at 2 AM with 30-day retention and compression
+- **Quick Care Modal (Cmd+K)** - Keyboard-driven care logging with number key selection
+- **Actionable Dashboard** - CareQueue widget with Water/Feed/Critical tabs and bulk actions
+- **Database Performance Indexes** - 20+ optimized indexes for <1ms query times
+- **Mobile PWA Support** - Installable progressive web app with manifest and icons
+- **Service Worker** - Offline caching for field use without network connection
+- **Bottom Navigation** - Mobile-specific navigation bar for easier access
+- **Tailscale Support** - Server can bind to all interfaces for f1:3000 access
+- **Keyboard Shortcuts** - / for search, N for new plant, F for filter
+- **Stop Script** - Quick script to stop development server
+
+### Changed
+- **Baseline Feed Update** - Changed from pH 6.1/EC 1.0 to pH 5.9/EC 1.1
+- **K-Carb Reduction** - Lowered potassium carbonate to prevent cation nutrient lockout
+- **Dev Script Enhancement** - Added --bg flag for Tailscale/all interfaces mode
+- **Mobile Layout** - Added bottom padding for mobile navigation clearance
+
+### Fixed
+- **TypeScript Errors** - Fixed showToast parameter issues
+- **Measurement API** - Corrected field mapping for Prisma schema
+- **Care Log Form** - Fixed missing repotting fields in reset
+- **Photo Form** - Fixed photoId field in form reset
+- **macOS Hostname** - Fixed hostname command for IP detection on macOS
+
+### Technical
+- Created /public/manifest.json for PWA configuration
+- Added ServiceWorker component for offline support
+- Implemented background sync preparation for offline care logs
+- Added performance testing script for index validation
+
 ## [1.1.1] - 2025-10-20 (Later Update)
 
 ### Added

@@ -473,6 +473,7 @@ export default function PlantDetailPage() {
       setPhotoUploadModalOpen(false)
       setSelectedFiles([])
       setPhotoForm({
+        photoId: '',
         photoType: 'whole_plant',
         growthStage: '',
         notes: '',
@@ -748,7 +749,11 @@ export default function PlantDetailPage() {
                     date: new Date().toISOString().split('T')[0],
                     pestType: '',
                     severity: '',
-                    affectedArea: ''
+                    affectedArea: '',
+                    fromPotSize: '',
+                    toPotSize: '',
+                    fromPotType: '',
+                    toPotType: ''
                   })
                 }}
                 className="p-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 flex items-center justify-center transition-colors shadow-sm"
@@ -1701,8 +1706,8 @@ export default function PlantDetailPage() {
                       // Auto-populate baseline feed values
                       setCareLogForm({
                         ...careLogForm,
-                        inputPH: '6.1',
-                        inputEC: '1.0',
+                        inputPH: '5.9',
+                        inputEC: '1.1',
                         notes: careLogForm.notes + (careLogForm.notes ? '\n\n' : '') + 'Baseline feed: CalMag 1ml/L, TPS One 1.5-2ml/L, K-Carb (pH Up) 0.4-0.6ml/L'
                       })
                     }
@@ -1712,7 +1717,7 @@ export default function PlantDetailPage() {
                 <div className="flex-1">
                   <span className="font-medium text-emerald-900">Include baseline feed</span>
                   <p className="text-xs text-emerald-700 mt-0.5">
-                    Auto-fills: pH 6.1, EC 1.0 (CalMag + TPS One + K-Carb)
+                    Auto-fills: pH 5.9, EC 1.1 (CalMag + TPS One + reduced K-Carb)
                   </p>
                 </div>
               </label>
