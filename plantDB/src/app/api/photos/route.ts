@@ -4,8 +4,7 @@ import { existsSync } from 'fs'
 import path from 'path'
 import sharp from 'sharp'
 import prisma from '@/lib/prisma'
-// @ts-ignore
-import ExifParser from 'exif-parser'
+import { exiftool } from 'exiftool-vendored'
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,21 +34,46 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
-    // Extract EXIF date from photo (this is the actual capture date/time)
-    let exifDate: Date | null = null
-    try {
-      const parser = ExifParser.create(buffer)
-      const result = parser.parse()
+    // Generate temporary file path for EXIF extraction
+    const tempDir = path.join(process.cwd(), 'tmp')
+    if (!existsSync(tempDir)) {
+      await mkdir(tempDir, { recursive: true })
+    }
+    const tempFilePath = path.join(tempDir, `temp_${Date.now()}_${file.name}`)
 
-      if (result.tags?.DateTimeOriginal) {
-        // DateTimeOriginal is the best - it's when the photo was actually taken
-        exifDate = new Date(result.tags.DateTimeOriginal * 1000)
-      } else if (result.tags?.DateTime) {
-        // Fall back to DateTime if DateTimeOriginal isn't available
-        exifDate = new Date(result.tags.DateTime * 1000)
+    // Write buffer to temp file for exiftool processing
+    await writeFile(tempFilePath, buffer)
+
+    // Extract EXIF data from photo using exiftool (handles all formats: JPEG, DNG, RAW, HEIC, etc.)
+    let exifDate: Date | null = null
+    let exifTags: any = null
+    try {
+      exifTags = await exiftool.read(tempFilePath)
+
+      // Try DateTimeOriginal first (most accurate - when photo was taken)
+      if (exifTags.DateTimeOriginal) {
+        exifDate = exifTags.DateTimeOriginal instanceof Date ? exifTags.DateTimeOriginal : new Date(exifTags.DateTimeOriginal)
       }
+      // Fall back to CreateDate
+      else if (exifTags.CreateDate) {
+        exifDate = exifTags.CreateDate instanceof Date ? exifTags.CreateDate : new Date(exifTags.CreateDate)
+      }
+      // Last resort: DateTime
+      else if (exifTags.DateTime) {
+        exifDate = exifTags.DateTime instanceof Date ? exifTags.DateTime : new Date(exifTags.DateTime)
+      }
+
+      console.log(`EXIF extraction successful: ${exifDate?.toISOString() || 'No date found'}`)
     } catch (error) {
       console.log('Could not extract EXIF date, will use manual date:', error)
+    } finally {
+      // Clean up temp file
+      try {
+        const fs = await import('fs/promises')
+        await fs.unlink(tempFilePath)
+      } catch (cleanupError) {
+        console.error('Failed to cleanup temp file:', cleanupError)
+      }
     }
 
     // Determine final date: prefer EXIF date, fall back to manual or current date
@@ -86,12 +110,10 @@ export async function POST(request: NextRequest) {
       await mkdir(thumbnailsDir, { recursive: true })
     }
 
-    // Extract comprehensive EXIF metadata
+    // Build comprehensive metadata object using sharp + exiftool data
     let metadata: any = {}
     try {
       const imageMetadata = await sharp(buffer).metadata()
-      const parser = ExifParser.create(buffer)
-      const exifResult = parser.parse()
 
       metadata = {
         width: imageMetadata.width,
@@ -100,22 +122,22 @@ export async function POST(request: NextRequest) {
         space: imageMetadata.space,
         hasAlpha: imageMetadata.hasAlpha,
         orientation: imageMetadata.orientation,
-        exif: {
-          dateTimeOriginal: exifResult.tags?.DateTimeOriginal
-            ? new Date(exifResult.tags.DateTimeOriginal * 1000).toISOString()
+        exif: exifTags ? {
+          dateTimeOriginal: exifTags.DateTimeOriginal ?
+            (exifTags.DateTimeOriginal instanceof Date ? exifTags.DateTimeOriginal.toISOString() : new Date(exifTags.DateTimeOriginal).toISOString())
             : null,
-          make: exifResult.tags?.Make,
-          model: exifResult.tags?.Model,
-          software: exifResult.tags?.Software,
-          lensModel: exifResult.tags?.LensModel,
-          focalLength: exifResult.tags?.FocalLength,
-          fNumber: exifResult.tags?.FNumber,
-          iso: exifResult.tags?.ISO,
-          exposureTime: exifResult.tags?.ExposureTime,
-          flash: exifResult.tags?.Flash,
-          gpsLatitude: exifResult.tags?.GPSLatitude,
-          gpsLongitude: exifResult.tags?.GPSLongitude
-        }
+          make: exifTags.Make || null,
+          model: exifTags.Model || null,
+          software: exifTags.Software || null,
+          lensModel: exifTags.LensModel || null,
+          focalLength: exifTags.FocalLength || null,
+          fNumber: exifTags.FNumber || null,
+          iso: exifTags.ISO || null,
+          exposureTime: exifTags.ExposureTime || null,
+          flash: exifTags.Flash || null,
+          gpsLatitude: exifTags.GPSLatitude || null,
+          gpsLongitude: exifTags.GPSLongitude || null
+        } : {}
       }
     } catch (error) {
       console.error('Error extracting metadata:', error)

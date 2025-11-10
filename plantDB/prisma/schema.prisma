@@ -68,6 +68,11 @@ model Plant {
   isMother          Boolean  @default(false)
   isEliteGenetics   Boolean  @default(false)
 
+  // Archive / Graveyard (soft delete - preserve data for ML training)
+  isArchived        Boolean  @default(false)
+  archivedAt        DateTime?
+  archiveReason     String?  // died, sold, culled, divided, lost, etc.
+
   // Metadata
   notes             String?
   tags              String   @default("[]") // JSON array stored as string
@@ -78,6 +83,7 @@ model Plant {
   @@index([vendorId])
   @@index([locationId])
   @@index([section])
+  @@index([isArchived])
 }
 
 model BreedingRecord {

@@ -4,6 +4,9 @@ import prisma from '@/lib/prisma'
 export async function GET() {
   try {
     const plants = await prisma.plant.findMany({
+      where: {
+        isArchived: false  // Exclude archived plants from main collection view
+      },
       include: {
         vendor: true,
         currentLocation: true,
