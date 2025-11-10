@@ -64,7 +64,12 @@ export default function PlantDetailPage() {
     // Pest/disease discovery fields
     pestType: '',
     severity: '',
-    affectedArea: ''
+    affectedArea: '',
+    // Repotting fields
+    fromPotSize: '',
+    toPotSize: '',
+    fromPotType: '',
+    toPotType: ''
   })
 
   const [useBaselineFeed, setUseBaselineFeed] = useState(false)
@@ -277,6 +282,19 @@ export default function PlantDetailPage() {
       })
 
       if (response.ok) {
+        // If this is a repotting action, update the plant's pot information
+        if (careLogForm.activityType === 'repotting' && careLogForm.toPotSize) {
+          await fetch(`/api/plants/${params.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              currentPotSize: parseFloat(careLogForm.toPotSize),
+              currentPotType: careLogForm.toPotType || null,
+              lastRepotDate: careLogForm.date
+            })
+          })
+        }
+
         await preserveScrollPosition(fetchPlant)
         setCareLogModalOpen(false)
         showToast({ type: 'success', title: isEditing ? 'Care log updated' : 'Care log added' })
@@ -295,7 +313,14 @@ export default function PlantDetailPage() {
           outputPH: '',
           rainAmount: '',
           rainDuration: '',
-          date: new Date().toISOString().split('T')[0]
+          date: new Date().toISOString().split('T')[0],
+          pestType: '',
+          severity: '',
+          affectedArea: '',
+          fromPotSize: '',
+          toPotSize: '',
+          fromPotType: '',
+          toPotType: ''
         })
       } else {
         showToast({ type: 'error', title: isEditing ? 'Failed to update care log' : 'Failed to add care log' })
@@ -348,7 +373,11 @@ export default function PlantDetailPage() {
       date: new Date().toISOString().split('T')[0],
       pestType: '',
       severity: '',
-      affectedArea: ''
+      affectedArea: '',
+      fromPotSize: '',
+      toPotSize: '',
+      fromPotType: '',
+      toPotType: ''
     })
   }
 
@@ -1628,11 +1657,21 @@ export default function PlantDetailPage() {
             <select
               value={careLogForm.activityType}
               onChange={(e) => {
-                setCareLogForm({ ...careLogForm, activityType: e.target.value })
+                const newActivityType = e.target.value
+                const updates: any = { activityType: newActivityType }
+
                 // Reset baseline feed when changing activity type
-                if (e.target.value !== 'watering') {
+                if (newActivityType !== 'watering') {
                   setUseBaselineFeed(false)
                 }
+
+                // Auto-populate repotting fields from current plant data
+                if (newActivityType === 'repotting' && plant) {
+                  updates.fromPotSize = plant.currentPotSize?.toString() || ''
+                  updates.fromPotType = plant.currentPotType || ''
+                }
+
+                setCareLogForm({ ...careLogForm, ...updates })
               }}
               className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
@@ -1910,6 +1949,76 @@ export default function PlantDetailPage() {
                 />
               </div>
             </>
+          )}
+
+          {/* Repotting Fields */}
+          {careLogForm.activityType === 'repotting' && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+              <div className="flex items-start gap-2 mb-2">
+                <span className="text-2xl">🪴</span>
+                <div>
+                  <h4 className="font-semibold text-blue-900">Repotting Details</h4>
+                  <p className="text-xs text-blue-700">Track pot size and type changes</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">From Pot Size (inches)</label>
+                  <input
+                    type="number"
+                    step="0.5"
+                    value={careLogForm.fromPotSize}
+                    onChange={(e) => setCareLogForm({ ...careLogForm, fromPotSize: e.target.value })}
+                    className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                    placeholder="e.g., 4"
+                    readOnly
+                    title="Auto-populated from current pot size"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">To Pot Size (inches) *</label>
+                  <input
+                    type="number"
+                    step="0.5"
+                    value={careLogForm.toPotSize}
+                    onChange={(e) => setCareLogForm({ ...careLogForm, toPotSize: e.target.value })}
+                    className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., 6"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">From Pot Type</label>
+                  <input
+                    type="text"
+                    value={careLogForm.fromPotType}
+                    onChange={(e) => setCareLogForm({ ...careLogForm, fromPotType: e.target.value })}
+                    className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                    placeholder="e.g., plastic"
+                    readOnly
+                    title="Auto-populated from current pot type"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">To Pot Type</label>
+                  <select
+                    value={careLogForm.toPotType}
+                    onChange={(e) => setCareLogForm({ ...careLogForm, toPotType: e.target.value })}
+                    className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select pot type...</option>
+                    <option value="plastic">Plastic</option>
+                    <option value="terracotta">Terracotta</option>
+                    <option value="ceramic">Ceramic</option>
+                    <option value="net_pot">Net Pot</option>
+                    <option value="fabric">Fabric Pot</option>
+                  </select>
+                </div>
+              </div>
+            </div>
           )}
 
           <div className="flex gap-3 pt-2">
