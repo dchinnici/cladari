@@ -11,7 +11,7 @@ export async function POST(
     const body = await request.json()
 
     // Create NEW observation with current date
-    const observationDate = body.observationDate ? new Date(body.observationDate) : new Date()
+    const observationDate = body.observationDate ? new Date(body.observationDate + 'T00:00:00.000Z') : new Date()
     const traitData = []
 
     if (body.leafShape) {

@@ -16,7 +16,7 @@ export async function PATCH(
       data: {
         value: body.value,
         notes: body.notes,
-        observationDate: body.observationDate ? new Date(body.observationDate) : undefined,
+        observationDate: body.observationDate ? new Date(body.observationDate + 'T00:00:00.000Z') : undefined,
       }
     })
 

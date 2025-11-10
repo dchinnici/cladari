@@ -24,7 +24,7 @@ export async function POST(
     const careLog = await prisma.careLog.create({
       data: {
         plantId: params.id,
-        date: body.date ? new Date(body.date + 'T12:00:00') : new Date(),
+        date: body.date ? new Date(body.date + 'T00:00:00.000Z') : new Date(),
         action: body.activityType, // Map activityType to action field
         details: Object.keys(detailsObj).length > 0 ? JSON.stringify(detailsObj) : null,
         dosage: body.dosage ? parseFloat(String(body.dosage).replace(/[^0-9.]/g, '')) : null,

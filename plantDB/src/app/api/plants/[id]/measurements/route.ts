@@ -12,7 +12,7 @@ export async function POST(
     const measurement = await prisma.measurement.create({
       data: {
         plantId: params.id,
-        measurementDate: body.measurementDate ? new Date(body.measurementDate + 'T12:00:00') : new Date(),
+        measurementDate: body.measurementDate ? new Date(body.measurementDate + 'T00:00:00.000Z') : new Date(),
         ecValue: body.ecValue ? parseFloat(body.ecValue) : null,
         phValue: body.phValue ? parseFloat(body.phValue) : null,
         tdsValue: body.tdsValue ? parseInt(body.tdsValue) : null,

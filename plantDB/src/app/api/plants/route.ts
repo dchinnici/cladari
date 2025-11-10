@@ -92,7 +92,7 @@ export async function POST(request: Request) {
     const created = await prisma.plant.create({
       data: {
         plantId,
-        accessionDate: body.accessionDate ? new Date(body.accessionDate) : new Date(),
+        accessionDate: body.accessionDate ? new Date(body.accessionDate + 'T00:00:00.000Z') : new Date(),
         genus: 'Anthurium',
         section: body.section || null,
         species: body.species || null,

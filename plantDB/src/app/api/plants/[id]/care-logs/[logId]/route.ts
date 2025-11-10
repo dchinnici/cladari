@@ -24,7 +24,7 @@ export async function PATCH(
     const careLog = await prisma.careLog.update({
       where: { id: params.logId },
       data: {
-        date: body.date ? new Date(body.date + 'T12:00:00') : undefined,
+        date: body.date ? new Date(body.date + 'T00:00:00.000Z') : undefined,
         action: body.activityType || undefined,
         details: Object.keys(detailsObj).length > 0 ? JSON.stringify(detailsObj) : undefined,
         dosage: body.dosage ? parseFloat(String(body.dosage).replace(/[^0-9.]/g, '')) : undefined,

@@ -46,6 +46,9 @@ export default function PlantsPage() {
   })
 
   useEffect(() => {
+    // Check if we're returning from plant detail (flag indicates care may have been added)
+    const returningFromDetail = sessionStorage.getItem('plantsPageScroll') !== null
+
     fetchPlants()
     fetchLocations()
 
@@ -80,6 +83,18 @@ export default function PlantsPage() {
       setSearchTerm(savedSearch)
       sessionStorage.removeItem('plantsPageSearch')
     }
+  }, [])
+
+  // Refetch plants when page becomes visible (handles back navigation)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchPlants()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [])
 
   const fetchLocations = async () => {

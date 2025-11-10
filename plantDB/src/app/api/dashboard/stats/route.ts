@@ -271,17 +271,20 @@ export async function GET() {
       count: item._count
     }))
 
-    // Plants with no activity in 14+ days (stale plants)
+    // Plants with no care activity in 14+ days (stale plants)
     const fourteenDaysAgo = new Date()
     fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14)
 
-    const stalePlants = await prisma.plant.count({
-      where: {
-        updatedAt: {
-          lt: fourteenDaysAgo
-        }
+    // Count plants where last care log is older than 14 days OR no care logs at all
+    const stalePlantCount = plantsWithCare.filter(plant => {
+      if (plant.careLogs.length === 0) {
+        // No care logs = stale if plant created more than 14 days ago
+        return new Date(plant.createdAt) < fourteenDaysAgo
       }
-    })
+      // Check most recent care log date
+      const lastCareLog = plant.careLogs[0] // Already sorted desc
+      return new Date(lastCareLog.date) < fourteenDaysAgo
+    }).length
 
     // Care frequency insights (avg days between watering across collection)
     const avgWateringFrequency = plantsWithCare
@@ -318,7 +321,7 @@ export async function GET() {
       // POWER FEATURES - Today's Tasks
       plantsNeedingWater,
       plantsNeedingFertilizer,
-      stalePlants,
+      stalePlants: stalePlantCount,
 
       // Insights
       avgWateringFrequency: Math.round(avgWateringFrequency),
