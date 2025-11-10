@@ -340,7 +340,20 @@ export function analyzeECPHContext(
   const { avgInputEC, avgInputPH, avgOutputEC, avgOutputPH } = averages
 
   // Calculate variance and drift
-  const ecVariance = calculateECVariance(avgInputEC, avgOutputEC)
+  // IMPORTANT: EC variance should only be calculated from PAIRED readings (logs with both input and output)
+  // This prevents false alerts when rain water flushes (input only) artificially lower the average
+  const pairedReadings = careLogs
+    .slice(0, 10)
+    .map(log => parseECPHData(log.details))
+    .filter(data => data && data.inputEC != null && data.outputEC != null) as ECPHData[]
+
+  let ecVariance: number | null = null
+  if (pairedReadings.length > 0) {
+    const avgPairedInputEC = pairedReadings.reduce((sum, data) => sum + data.inputEC!, 0) / pairedReadings.length
+    const avgPairedOutputEC = pairedReadings.reduce((sum, data) => sum + data.outputEC!, 0) / pairedReadings.length
+    ecVariance = calculateECVariance(avgPairedInputEC, avgPairedOutputEC)
+  }
+
   const phDrift = calculatePHDriftRate(careLogs)
 
   // Determine trend

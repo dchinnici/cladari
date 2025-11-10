@@ -722,17 +722,17 @@ export default function PlantDetailPage() {
                     affectedArea: ''
                   })
                 }}
-                className="px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl hover:bg-emerald-100 flex items-center gap-2 transition-colors font-medium"
+                className="p-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 flex items-center justify-center transition-colors shadow-sm"
+                title="Add Care Log"
               >
-                <Droplets className="w-4 h-4" />
-                Add Care Log
+                <Droplets className="w-5 h-5" />
               </button>
               <button
                 onClick={() => setDeleteConfirmOpen(true)}
-                className="px-4 py-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 flex items-center gap-2 transition-colors"
+                className="p-3 bg-red-500 text-white rounded-xl hover:bg-red-600 flex items-center justify-center transition-colors shadow-sm"
+                title="Delete Plant"
               >
-                <Trash2 className="w-4 h-4" />
-                Delete Plant
+                <Trash2 className="w-5 h-5" />
               </button>
             </div>
           </div>
