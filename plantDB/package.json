@@ -10,7 +10,9 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
-    "db:seed": "node prisma/seed.js"
+    "db:seed": "node prisma/seed.js",
+    "ml:setup": "./scripts/prepare-pgvector-migration.sh",
+    "ml:test": "curl -X GET http://localhost:3000/api/ml/semantic-search"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
