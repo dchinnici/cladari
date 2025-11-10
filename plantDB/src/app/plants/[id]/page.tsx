@@ -2832,6 +2832,9 @@ export default function PlantDetailPage() {
                 <option value="leaf">Leaf Detail</option>
                 <option value="spathe">Spathe</option>
                 <option value="spadix">Spadix</option>
+                <option value="stem">Stem</option>
+                <option value="catophyl">Catophyl</option>
+                <option value="base">Base/Petiole</option>
                 <option value="roots">Roots</option>
               </select>
             </div>
