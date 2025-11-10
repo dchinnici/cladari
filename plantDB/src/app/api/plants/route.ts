@@ -25,6 +25,10 @@ export async function GET() {
         floweringCycles: {
           orderBy: { createdAt: 'desc' },
           take: 1
+        },
+        photos: {
+          orderBy: { dateTaken: 'desc' },
+          take: 1  // Most recent photo for plant card display
         }
       }
     })

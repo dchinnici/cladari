@@ -323,20 +323,35 @@ export default function PlantsPage() {
                     sessionStorage.setItem('plantsPageSort', sortBy)
                     sessionStorage.setItem('plantsPageSearch', searchTerm)
                   }}
-                  className="bg-white/50 rounded-2xl p-5 hover:bg-white/80 transition-all hover-lift cursor-pointer block"
+                  className="bg-white/50 rounded-2xl overflow-hidden hover:bg-white/80 transition-all hover-lift cursor-pointer block"
                 >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-green-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                          <Leaf className="w-5 h-5 text-white" />
-                        </div>
-                        <h3 className="font-bold text-lg text-gray-900">
-                          {plant.hybridName || plant.species || 'Unknown Species'}
-                        </h3>
+                  {/* Plant Photo Header */}
+                  {plant.photos && plant.photos.length > 0 ? (
+                    <div className="relative h-40 w-full mb-3">
+                      <img
+                        src={plant.photos[0].thumbnailUrl || plant.photos[0].url}
+                        alt={plant.hybridName || plant.species || 'Plant'}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm rounded-lg px-2 py-1">
+                        <span className="text-xs font-medium text-gray-700">{plant.plantId}</span>
                       </div>
-                      <div className="flex items-center gap-2 ml-12">
-                        <p className="text-sm text-gray-600">{plant.plantId}</p>
+                    </div>
+                  ) : (
+                    <div className="relative h-40 w-full mb-3 bg-gradient-to-br from-emerald-100 to-green-100 flex items-center justify-center">
+                      <Leaf className="w-16 h-16 text-emerald-300" />
+                      <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm rounded-lg px-2 py-1">
+                        <span className="text-xs font-medium text-gray-700">{plant.plantId}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="px-5 pb-5">
+                    <div className="mb-3">
+                      <h3 className="font-bold text-lg text-gray-900 mb-2">
+                        {plant.hybridName || plant.species || 'Unknown Species'}
+                      </h3>
+                      <div className="flex items-center gap-2 flex-wrap">
                         {plant.breederCode && (
                           <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full">
                             {plant.breederCode}
@@ -350,7 +365,6 @@ export default function PlantsPage() {
                         )}
                       </div>
                     </div>
-                  </div>
 
                   {plant.crossNotation && (
                     <p className="text-xs text-gray-600 italic mb-1">{plant.crossNotation}</p>
@@ -381,16 +395,17 @@ export default function PlantsPage() {
                     )}
                   </div>
 
-                  <div className="mt-3 pt-3 border-t border-gray-200">
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      plant.healthStatus === 'healthy'
-                        ? 'bg-green-100 text-green-700'
-                        : plant.healthStatus === 'struggling'
-                        ? 'bg-yellow-100 text-yellow-700'
-                        : 'bg-gray-100 text-gray-700'
-                    }`}>
-                      {plant.healthStatus || 'Unknown'}
-                    </span>
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        plant.healthStatus === 'healthy'
+                          ? 'bg-green-100 text-green-700'
+                          : plant.healthStatus === 'struggling'
+                          ? 'bg-yellow-100 text-yellow-700'
+                          : 'bg-gray-100 text-gray-700'
+                      }`}>
+                        {plant.healthStatus || 'Unknown'}
+                      </span>
+                    </div>
                   </div>
                 </Link>
               ))}
