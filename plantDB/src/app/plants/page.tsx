@@ -31,7 +31,8 @@ export default function PlantsPage() {
     healthStatus: '',
     breederCode: '',
     locationId: '',
-    section: ''
+    section: '',
+    needsAttention: false
   })
   const [sortBy, setSortBy] = useState('oldest') // Default to oldest = plants needing attention first
   const [locations, setLocations] = useState<any[]>([])
@@ -144,8 +145,9 @@ export default function PlantsPage() {
       const matchesBreeder = !filters.breederCode || plant.breederCode === filters.breederCode
       const matchesLocation = !filters.locationId || plant.locationId === filters.locationId
       const matchesSection = !filters.section || plant.section === filters.section
+      const matchesAttention = !filters.needsAttention || isStale(plant)
 
-      return matchesSearch && matchesHealth && matchesBreeder && matchesLocation && matchesSection
+      return matchesSearch && matchesHealth && matchesBreeder && matchesLocation && matchesSection && matchesAttention
     })
     .sort((a, b) => {
       if (sortBy === 'oldest') {
@@ -190,7 +192,8 @@ export default function PlantsPage() {
       healthStatus: '',
       breederCode: '',
       locationId: '',
-      section: ''
+      section: '',
+      needsAttention: false
     })
   }
 
@@ -217,7 +220,7 @@ export default function PlantsPage() {
     }
   }
 
-  const activeFilterCount = Object.values(filters).filter(v => v !== '').length
+  const activeFilterCount = Object.values(filters).filter(v => v !== '' && v !== false).length
   const stalePlantCount = plants.filter(isStale).length
 
   return (
@@ -234,10 +237,18 @@ export default function PlantsPage() {
           <div className="flex items-center gap-3">
             <p className="text-gray-600">Manage your {plants.length} anthurium specimens</p>
             {stalePlantCount > 0 && (
-              <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-medium flex items-center gap-1">
+              <button
+                onClick={() => setFilters({ ...filters, needsAttention: !filters.needsAttention })}
+                className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 transition-all ${
+                  filters.needsAttention
+                    ? 'bg-orange-500 text-white shadow-md'
+                    : 'bg-orange-100 text-orange-700 hover:bg-orange-200'
+                }`}
+                title="Click to filter plants needing attention"
+              >
                 <AlertTriangle className="w-4 h-4" />
                 {stalePlantCount} need attention
-              </span>
+              </button>
             )}
           </div>
         </div>
@@ -315,32 +326,31 @@ export default function PlantsPage() {
                   className="bg-white/50 rounded-2xl p-5 hover:bg-white/80 transition-all hover-lift cursor-pointer block"
                 >
                   <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-green-600 rounded-xl flex items-center justify-center">
-                        <Leaf className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <p className="font-bold text-gray-900">{plant.plantId}</p>
-                        <div className="flex gap-1">
-                          {plant.breederCode && (
-                            <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full">
-                              {plant.breederCode}
-                            </span>
-                          )}
-                          {isStale(plant) && (
-                            <span className="text-xs px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full flex items-center gap-1" title="No activity (care, measurements, etc.) in 7+ days">
-                              <AlertTriangle className="w-3 h-3" />
-                              Stale
-                            </span>
-                          )}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-green-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                          <Leaf className="w-5 h-5 text-white" />
                         </div>
+                        <h3 className="font-bold text-lg text-gray-900">
+                          {plant.hybridName || plant.species || 'Unknown Species'}
+                        </h3>
+                      </div>
+                      <div className="flex items-center gap-2 ml-12">
+                        <p className="text-sm text-gray-600">{plant.plantId}</p>
+                        {plant.breederCode && (
+                          <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full">
+                            {plant.breederCode}
+                          </span>
+                        )}
+                        {isStale(plant) && (
+                          <span className="text-xs px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full flex items-center gap-1" title="No activity (care, measurements, etc.) in 7+ days">
+                            <AlertTriangle className="w-3 h-3" />
+                            Stale
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
-
-                  <h3 className="font-semibold text-gray-900 mb-1">
-                    {plant.hybridName || plant.species || 'Unknown Species'}
-                  </h3>
 
                   {plant.crossNotation && (
                     <p className="text-xs text-gray-600 italic mb-1">{plant.crossNotation}</p>
