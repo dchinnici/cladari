@@ -1,5 +1,5 @@
 # Cladari Plant Database - Engineering Manual
-**Version:** 1.1.2
+**Version:** 1.1.3
 **Last Updated:** November 10, 2025
 **Status:** FOUNDATION PHASE - Data Hygiene & Standardization
 **Architecture:** SQLite + Next.js 15 + Prisma ORM
@@ -997,6 +997,19 @@ const plants = await prisma.plant.findMany({
 - Changed Add Care/Delete buttons to icon-only (water droplet blue, trash red)
 - Added hover tooltips for accessibility
 - **File:** `/src/app/plants/[id]/page.tsx:725-736`
+
+**P1: Sorting Logic Simplification**
+- **Problem:** "Needs Attention" sort used complex care frequency calculations, didn't match label
+- **Root Cause:** Sort calculated overdue watering/fertilizing based on historical frequencies
+- **Fix:** Simplified to sort by last activity date (oldest activity = needs attention)
+- **Impact:** Sort now matches label "No Recent Activity" - plants with oldest activity appear first
+- **File:** `/src/app/plants/page.tsx:152-156`
+
+**P1: Database Schema Sync Fix**
+- **Problem:** "Failed to fetch plants" error - `isArchived` column doesn't exist
+- **Root Cause:** Archive system added to Prisma schema but not pushed to database
+- **Fix:** Ran `npx prisma db push` to sync schema with database
+- **Impact:** All archive features now working correctly
 
 ---
 

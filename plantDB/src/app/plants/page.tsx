@@ -151,30 +151,8 @@ export default function PlantsPage() {
     })
     .sort((a, b) => {
       if (sortBy === 'oldest') {
-        // Plants needing care first - based on watering/fertilizing frequency
-        const aWaterDays = getDaysSinceLastWatering(a.careLogs || [])
-        const aWaterFreq = calculateWateringFrequency(a.careLogs || []) || DEFAULT_INTERVALS.water
-        const aWaterOverdue = (aWaterDays === null ? 999 : aWaterDays) - aWaterFreq
-
-        const aFertDays = getDaysSinceLastFertilizing(a.careLogs || [])
-        const aFertFreq = calculateFertilizingFrequency(a.careLogs || []) || DEFAULT_INTERVALS.fertilize
-        const aFertOverdue = (aFertDays === null ? 999 : aFertDays) - aFertFreq
-
-        // Use the worst overdue status (watering or fertilizing)
-        const aMaxOverdue = Math.max(aWaterOverdue, aFertOverdue)
-
-        const bWaterDays = getDaysSinceLastWatering(b.careLogs || [])
-        const bWaterFreq = calculateWateringFrequency(b.careLogs || []) || DEFAULT_INTERVALS.water
-        const bWaterOverdue = (bWaterDays === null ? 999 : bWaterDays) - bWaterFreq
-
-        const bFertDays = getDaysSinceLastFertilizing(b.careLogs || [])
-        const bFertFreq = calculateFertilizingFrequency(b.careLogs || []) || DEFAULT_INTERVALS.fertilize
-        const bFertOverdue = (bFertDays === null ? 999 : bFertDays) - bFertFreq
-
-        const bMaxOverdue = Math.max(bWaterOverdue, bFertOverdue)
-
-        // Sort by most overdue first (descending)
-        return bMaxOverdue - aMaxOverdue
+        // Plants with oldest activity first (no recent activity = needs attention)
+        return getLastActivityDate(a).getTime() - getLastActivityDate(b).getTime()
       } else if (sortBy === 'newest') {
         // Newest activity first - considers ALL activity
         return getLastActivityDate(b).getTime() - getLastActivityDate(a).getTime()
