@@ -1,10 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowLeft, Search, Plus, Filter, Leaf, DollarSign, MapPin, Calendar, Droplets, AlertTriangle, Download, Zap } from 'lucide-react'
+import { ArrowLeft, Leaf, DollarSign, MapPin, Calendar, AlertTriangle } from 'lucide-react'
 import { showToast } from '@/components/toast'
 import { Modal } from '@/components/modal'
 import QuickCare from '@/components/QuickCare'
+import CompactControls from './CompactControls'
 import { useEffect, useState, useRef } from 'react'
 import { getDaysSinceLastWatering, getDaysSinceLastFertilizing, calculateWateringFrequency, calculateFertilizingFrequency } from '@/lib/careLogUtils'
 import { DEFAULT_INTERVALS } from '@/lib/care/types'
@@ -271,60 +272,21 @@ export default function PlantsPage() {
           </div>
         </div>
 
+        {/* Compact Controls */}
+        <CompactControls
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          sortBy={sortBy}
+          setSortBy={setSortBy}
+          onFilterClick={() => setFilterOpen(true)}
+          onQuickCareClick={() => setQuickCareOpen(true)}
+          onExportClick={handleExport}
+          onAddPlantClick={() => setCreateOpen(true)}
+          activeFilterCount={activeFilterCount}
+          searchInputRef={searchInputRef}
+        />
+
         <div className="glass rounded-3xl p-6 mb-8">
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder="Search plants... (Press / to focus)"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-            </div>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
-            >
-              <option value="oldest">⚠️ Needs Attention (No Recent Activity)</option>
-              <option value="newest">🕐 Recently Active</option>
-              <option value="alphabetical">🔤 Alphabetical (A-Z)</option>
-            </select>
-            <button
-              onClick={() => setQuickCareOpen(true)}
-              className="px-6 py-3 rounded-xl bg-yellow-100 hover:bg-yellow-200 flex items-center gap-2 transition-colors"
-              title="Cmd+K"
-            >
-              <Zap className="w-5 h-5 text-yellow-600" />
-              Quick Care
-            </button>
-            <button onClick={() => setFilterOpen(true)} className="px-6 py-3 rounded-xl border border-gray-200 hover:bg-gray-50 flex items-center gap-2 relative">
-              <Filter className="w-5 h-5" />
-              Filters
-              {activeFilterCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-emerald-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
-                  {activeFilterCount}
-                </span>
-              )}
-            </button>
-            <button onClick={handleExport} className="px-6 py-3 rounded-xl border border-gray-200 hover:bg-gray-50 flex items-center gap-2">
-              <Download className="w-5 h-5" />
-              Export CSV
-            </button>
-            <Link
-              href="/batch-care"
-              className="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700 flex items-center gap-2">
-              <Droplets className="w-5 h-5" />
-              Batch Care
-            </Link>
-            <button onClick={() => setCreateOpen(true)} className="px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:from-emerald-600 hover:to-green-700 flex items-center gap-2">
-              <Plus className="w-5 h-5" />
-              Add Plant
-            </button>
-          </div>
 
           {loading ? (
             <div className="text-center py-12 text-gray-500">

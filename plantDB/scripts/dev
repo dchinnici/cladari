@@ -21,7 +21,7 @@ if [ "$1" = "--bg" ]; then
   echo "Starting server on all interfaces..."
   echo ""
 
-  DATABASE_URL="file:./prisma/dev.db" npm run dev -- --hostname 0.0.0.0
+  npm run dev -- --hostname 0.0.0.0
 else
   echo "🌱 Starting Cladari Plant Management (Standard Mode)..."
   echo "================================"
@@ -40,5 +40,5 @@ else
   echo "Starting server on localhost..."
   echo ""
 
-  DATABASE_URL="file:./prisma/dev.db" npm run dev
+  npm run dev
 fi

@@ -5,13 +5,7 @@ declare global {
 }
 
 const prismaClientSingleton = () => {
-  return new PrismaClient({
-    datasources: {
-      db: {
-        url: process.env.DATABASE_URL || 'file:./prisma/dev.db'
-      }
-    }
-  })
+  return new PrismaClient()
 }
 
 const prisma = globalThis.prisma ?? prismaClientSingleton()
