@@ -1,6 +1,6 @@
 # Cladari Plant Database - Engineering Manual
-**Version:** 1.0
-**Last Updated:** October 17, 2025
+**Version:** 1.1.2
+**Last Updated:** November 10, 2025
 **Status:** FOUNDATION PHASE - Data Hygiene & Standardization
 **Architecture:** SQLite + Next.js 15 + Prisma ORM
 
@@ -865,3 +865,159 @@ PlantDB becomes another "sense" for Sovria, enabling queries like:
 **Confidence Level**: High - System is stable and well-documented
 
 **Remember:** This is YOUR database. You built it. You understand it. This manual is here to help you remember how it works when you come back to it later. Don't be intimidated - you know more than you think.
+
+---
+
+## Recent Updates (November 2025)
+
+### v1.1.2 - Production Hardening & ML Data Preservation (Nov 10, 2025)
+
+#### EXIF Date Extraction - Commercial Grade
+**Problem:** Photo dates were inconsistent, especially for DNG files which were actually JPEGs with wrong extensions.
+
+**Solution:** Upgraded from `exif-parser` to `exiftool-vendored` (industry standard Perl ExifTool wrapper)
+
+**Technical Details:**
+```typescript
+// Old approach (fragile)
+import ExifParser from 'exif-parser'
+const parser = ExifParser.create(buffer)
+const result = parser.parse()
+
+// New approach (production-ready)
+import { exiftool } from 'exiftool-vendored'
+const tags = await exiftool.read(tempFilePath)
+// Handles: JPEG, DNG, RAW (CR2/NEF/ARW), HEIC, PNG
+// Auto-detects via magic bytes, not extension
+```
+
+**Benefits:**
+- Handles ALL image formats correctly
+- Detects actual file type via magic bytes (not fooled by wrong extensions)
+- Proper fallback: DateTimeOriginal → CreateDate → DateTime
+- Commercial/consumer release ready
+
+**Files Modified:**
+- `/src/app/api/photos/route.ts` - Photo upload with EXIF extraction
+- `package.json` - Added `exiftool-vendored` dependency
+
+---
+
+#### Archive/Graveyard System - ML Training Data Preservation
+**Problem:** Delete operations permanently destroyed all plant data, losing valuable training data for future ML models.
+
+**Solution:** Implemented soft delete with archive system
+
+**Schema Changes:**
+```prisma
+model Plant {
+  // ... existing fields ...
+  
+  // Archive / Graveyard (soft delete - preserve data for ML training)
+  isArchived        Boolean  @default(false)
+  archivedAt        DateTime?
+  archiveReason     String?  // died, sold, culled, divided, lost, etc.
+  
+  @@index([isArchived])
+}
+```
+
+**API Implementation:**
+```typescript
+// DELETE /api/plants/[id] - Archives instead of deleting
+export async function DELETE(request, context) {
+  const archived = await prisma.plant.update({
+    where: { id: params.id },
+    data: {
+      isArchived: true,
+      archivedAt: new Date(),
+      archiveReason: body.reason || 'deleted'
+    }
+  })
+  // All related data retained: photos, care logs, measurements, traits
+}
+
+// GET /api/plants - Auto-filters archived plants
+const plants = await prisma.plant.findMany({
+  where: { isArchived: false }  // Only show active plants
+})
+```
+
+**Archive Reasons:**
+- `died` - Plant death (disease, pest, environmental)
+- `sold` - Sold to customer
+- `culled` - Removed during F1 selection
+- `divided` - Parent plant divided into offshoots
+- `lost` - Lost/stolen/destroyed
+- `deleted` - User-initiated removal
+
+**Benefits:**
+- **ML training data preserved:** All historical care, growth, and trait data retained
+- **Reversible:** Can restore archived plants if needed
+- **Analytics:** Track mortality rates, cull reasons, success patterns
+- **Audit trail:** Full history of collection changes
+
+**Files Created/Modified:**
+- `prisma/schema.prisma` - Added archive fields
+- `/src/app/api/plants/[id]/route.ts` - New endpoint with archive logic
+- `/src/app/api/plants/route.ts` - Filter archived plants from list
+
+---
+
+#### Bug Fixes (Nov 6-10, 2025)
+
+**P0: Date Shifting Bug (UTC Mismatch)**
+- **Problem:** Care entries showed wrong dates (afternoon entries appeared as tomorrow)
+- **Root Cause:** `new Date(body.date + 'T12:00:00')` interpreted as local time, shifted to UTC
+- **Fix:** Changed to `new Date(body.date + 'T00:00:00.000Z')` for explicit UTC midnight
+- **Impact:** Fixed across 8 API endpoints (care logs, measurements, flowering, traits, plants)
+
+**P1: False EC Buildup Alert (Plant 0046)**
+- **Problem:** EC variance 0.62 triggered critical alert despite healthy values
+- **Root Cause:** Rain water flush (EC 0.05) artificially lowered average input EC
+  - Input EC avg: (1.17 + 0.05 + 0.37) / 3 = 0.53
+  - Output EC avg: 1.15 / 1 = 1.15  
+  - Variance: 0.62 > 0.5 threshold ❌
+- **Fix:** Calculate EC variance only from **paired readings** (logs with BOTH input and output)
+- **Result:** Plant 0046 variance now 0.02 (healthy) ✓
+- **File:** `/src/lib/care/ecPhUtils.ts:343-355`
+
+**P1: Dashboard Stale Plants Calculation**
+- **Problem:** Showed "53 plants not updated in 14+ days" incorrectly
+- **Root Cause:** Used `plant.updatedAt` (record edits) instead of care activity
+- **Fix:** Check `lastCareLog.date` for actual care activity
+- **File:** `/src/app/api/dashboard/stats/route.ts:274-287`
+
+**P1: Plant Page Not Refreshing After Care**
+- **Problem:** Back navigation showed stale data (care-based sorting incorrect)
+- **Fix:** Added visibility change listener to refetch on page focus
+- **File:** `/src/app/plants/page.tsx:88-98`
+
+**P1: UI Button Updates**
+- Changed Add Care/Delete buttons to icon-only (water droplet blue, trash red)
+- Added hover tooltips for accessibility
+- **File:** `/src/app/plants/[id]/page.tsx:725-736`
+
+---
+
+#### ML/AI System Status (Clarification)
+
+**Current State:** The "ML" system is a **placeholder/stub** with adaptive logic:
+- ✅ Adaptive averaging (historical frequency calculations)
+- ✅ Environmental adjustments (temp >24°C, humidity >60%)  
+- ✅ Threshold-based alerts (EC variance, pH drift)
+- ❌ NOT actual machine learning (no regression, no neural networks)
+
+**Future Vision:** Replace with real ML models trained on collected data:
+- **Scikit-learn:** Regression models for care schedules
+- **TensorFlow.js:** Trait prediction, growth forecasting
+- **Feature engineering:** VPD, DLI, growth rate correlations
+- **Training pipeline:** Historical care/growth/environmental data
+
+**Why Preserve All Data:**
+- Every deleted plant = lost training examples
+- Archive system retains: care patterns, failure modes, trait expressions
+- Enables future ML: mortality prediction, optimal care schedules, trait inheritance models
+
+---
+
