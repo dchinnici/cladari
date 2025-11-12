@@ -2,174 +2,180 @@
 
 All notable changes to the Cladari Plant Management System will be documented in this file.
 
-## [1.2.0] - 2025-11-10
+## [1.2.0] - 2025-11-12
 
 ### Added
-- **Automated Backup System** - Daily cron job at 2 AM with 30-day retention and compression
-- **Quick Care Modal (Cmd+K)** - Keyboard-driven care logging with number key selection
-- **Actionable Dashboard** - CareQueue widget with Water/Feed/Critical tabs and bulk actions
-- **Database Performance Indexes** - 20+ optimized indexes for <1ms query times
-- **Mobile PWA Support** - Installable progressive web app with manifest and icons
-- **Service Worker** - Offline caching for field use without network connection
-- **Bottom Navigation** - Mobile-specific navigation bar for easier access
-- **Tailscale Support** - Server can bind to all interfaces for f1:3000 access
-- **Keyboard Shortcuts** - / for search, N for new plant, F for filter
-- **Stop Script** - Quick script to stop development server
+- **Cover Photo Selection** - Choose which photo displays on plant cards
+  - Star icon to set/change cover photo
+  - Visual "Cover" badge indicator
+  - Falls back to most recent photo if none selected
+  - Supports both PUT and PATCH API methods
+
+### Fixed
+- **Pest Critical Status** - Only shows active (untreated) issues, not historical
+- **EC/pH Averaging** - Now uses last 3 logs instead of 10 for current values
+- **pH Drift Detection** - No longer triggers false warnings for improvements
+- **Dropdown Z-Index** - Sort/filter menus now properly appear above cards
+- **Timezone Handling** - Standardized to EST across all date operations
+- **Repotting Fields** - "From" pot size now properly editable when empty
+- **UI Refinements** - Removed activity type emojis per user preference
 
 ### Changed
-- **Baseline Feed Update** - Changed from pH 6.1/EC 1.0 to pH 5.9/EC 1.1
-- **K-Carb Reduction** - Lowered potassium carbonate to prevent cation nutrient lockout
-- **Dev Script Enhancement** - Added --bg flag for Tailscale/all interfaces mode
-- **Mobile Layout** - Added bottom padding for mobile navigation clearance
+- EC/pH calculations optimized for accuracy
+- Paired reading analysis for EC variance
+- Critical alerts logic improved
 
-### Fixed
-- **TypeScript Errors** - Fixed showToast parameter issues
-- **Measurement API** - Corrected field mapping for Prisma schema
-- **Care Log Form** - Fixed missing repotting fields in reset
-- **Photo Form** - Fixed photoId field in form reset
-- **macOS Hostname** - Fixed hostname command for IP detection on macOS
-
-### Technical
-- Created /public/manifest.json for PWA configuration
-- Added ServiceWorker component for offline support
-- Implemented background sync preparation for offline care logs
-- Added performance testing script for index validation
-
-## [1.1.1] - 2025-10-20 (Later Update)
+## [1.2.0-beta] - 2025-11-11
 
 ### Added
-- **Batch Care: Select by Location** - Quick selection of all plants in a specific location
-  - Dropdown shows all locations with plant counts
-  - "Select" button to instantly select/deselect all plants in that location
-  - Perfect for location-based care operations (e.g., outdoor rain watering)
+- **Photo Management System** - Complete photo workflow
+  - Multi-photo upload with drag-and-drop
+  - EXIF metadata extraction
+  - Automatic thumbnail generation
+  - 8 photo categories (whole plant, leaf, spathe, spadix, stem, catophyl, base, roots)
+  - Edit/delete photo functionality
+  - Growth stage tracking
 
-- **Rain Activity Type** - New batch care option for tracking natural rainfall
-  - Rainfall Amount: Light, Medium, Heavy
-  - Duration: Brief (<15 min), Short (15-30 min), Medium (30-60 min), Long (1-2 hrs), Extended (2+ hrs)
-  - Rain data saved to care log details JSON
-  - Ideal for outdoor plants on balconies, patios, etc.
-
-### Fixed
-- **Elite Genetics Toast Message** - Fixed backwards notification
-  - Was showing "Unmarked" when marking and vice versa
-  - Now correctly reads actual saved value from API response
-  - Toast message accurately reflects database state
-
-### Technical
-- Updated batch care API to accept `rainAmount` and `rainDuration` fields
-- Enhanced batch care UI with conditional rain-specific form fields
-- Fixed elite genetics checkbox event handler to use API response value
-
----
-
-## [1.1.0] - 2025-10-20
-
-### Added
-- **CSV Export** - Export entire plant database to CSV file for backup and analysis
-  - 23-column comprehensive export including plant info, care logs, measurements
-  - Automatic filename with date stamp
-  - One-click download from Plants page
-
-- **Plant Deletion** - Ability to delete plants with safety confirmation
-  - Confirmation modal with warning about permanent data loss
-  - Cascading deletion of all related records (care logs, measurements, photos, etc.)
-  - Automatic redirect to plants list after deletion
-
-- **Sort and Filter Improvements**
-  - Sort by: Needs Attention (oldest first), Recently Updated, Alphabetical
-  - Default sort shows plants needing updates first
-  - Stale plant alerts (7+ days without updates)
-  - Orange "Stale" badges on plant cards
-  - Header count showing total plants needing attention
-
-- **Elite Genetics Tracking**
-  - New `isEliteGenetics` boolean field in database schema
-  - Inline checkbox on plant overview for quick marking
-  - Instant save with toast notifications
-
-- **Care Log Editing**
-  - Edit existing care logs after creation
-  - New PATCH endpoint at `/api/plants/[id]/care-logs/[logId]`
-  - Modal supports both create and edit modes
-  - Essential for adding output EC/pH after watering
-
-- **Comprehensive Recent Activity**
-  - Dashboard now shows all activity types
-  - Tracks: plant additions, updates, care logs, measurements, flowering
-  - Merged timeline sorted by timestamp
-  - Shows top 15 most recent activities
+- **EC/pH Analysis System** - Advanced substrate monitoring
+  - EC variance detection between input/output
+  - pH drift rate calculations
+  - Substrate health scoring (0-100 scale)
+  - Critical alerts for EC buildup
+  - Trend-based recommendations
 
 ### Changed
-- **Breeder Code Updates**
-  - Consolidated codes: OG5 → OG
-  - Added new breeder code: FP
-  - Updated all dropdowns (plant detail, filters)
+- Plant cards now display photos prominently (3:2 aspect ratio)
+- PlantID badge overlays on photo
+- Photo-first design for better visual identification
 
-- **Navigation Improvements**
-  - Top right button changed from "Add Plant" to "Batch Care"
-  - Better workflow access to batch operations
+## [1.1.9] - 2025-11-10
 
-- **Dashboard Cleanup**
-  - Removed Vendors and Financials sections
-  - Focused on breeding and genetics metrics
-  - Updated elite genetics codes (RA, OG instead of numbered variants)
+### Added
+- **Automated Backup System** - Daily cron job at 2 AM with 30-day retention
+- **Quick Care Modal (Cmd+K)** - Keyboard-driven care logging
+- **Actionable Dashboard** - CareQueue widget with Water/Feed/Critical tabs
+- **Database Performance Indexes** - 20+ optimized indexes
+- **Batch Care Location Selection** - Select all plants in a location
+- **Rain Activity Type** - Track natural rainfall with amount/duration
+- **Substrate Details for Repotting** - Track PON, moss, drainage type
+
+### Changed
+- **Baseline Feed Update** - pH 5.9/EC 1.1 (from pH 6.1/EC 1.0)
+- **K-Carb Reduction** - Lowered to prevent nutrient lockout
+- Repotting now includes substrate mix details
 
 ### Fixed
-- **Timezone Bug** - Care log dates and measurements now save correctly
-  - Added 'T12:00:00' to interpret dates as local noon
-  - Prevents dates from appearing as previous day
+- TypeScript errors in showToast
+- Measurement API field mapping
+- Care log form repotting fields
+- Photo form reset issues
 
-- **EC/pH Submission** - Fixed measurement form submission failures
-  - Applied same timezone fix to measurements endpoint
+## [1.1.8] - 2025-11-09
 
-- **Plants Filter** - Filter modal now fully operational
-  - Filter by: Health Status, Breeder Code, Location, Section
-  - Active filter count badge
-  - Clear filters functionality
-
-- **Scroll Position** - Page no longer resets scroll after edits
-  - Implemented `preserveScrollPosition` helper
-  - Applied to all data refresh operations
-  - Better UX for long pages with many plants
-
-- **Custom Breeder Code Bug** - Fixed "custom" appearing as actual breeder code
-  - Modified save logic to prevent "custom" from being stored
-  - Cleared existing "custom" values from database
-  - Prevents UI selection trigger value from becoming data
+### Added
+- **ML Foundation** - Infrastructure for AI features
+  - PlantJournal unified activity log
+  - Vector embedding support in schema
+  - ML diagnosis routes prepared
+  - Care prediction algorithms
 
 ### Technical
-- Database schema update: Added `isEliteGenetics` field to Plant model
-- New API endpoints:
-  - `GET /api/plants/export` - CSV export
-  - `DELETE /api/plants/[id]` - Plant deletion
-  - `PATCH /api/plants/[id]/care-logs/[logId]` - Care log editing
-- Enhanced dashboard stats endpoint with comprehensive activity tracking
-- Improved scroll preservation across all update operations
+- Journal system for NLP training data
+- Photo metadata extraction for vision models
+- Prepared for semantic search capabilities
 
-### Database
-- Ran `npx prisma db push` and `npx prisma generate` for schema updates
-- Added isEliteGenetics column to Plant table
+## [1.1.7] - 2025-11-08
 
----
+### Added
+- **Batch Care Operations** - Apply care to multiple plants
+- **Location-Based Selection** - Quick select by growing area
+- **Care Frequency Analysis** - ML-powered scheduling
 
-## [1.0.0] - 2025-10-17
+## [1.1.6] - 2025-10-18
+
+### Added
+- **Location Management System** - Environmental tracking
+  - DLI (Daily Light Integral)
+  - VPD (Vapor Pressure Deficit)
+  - CO₂ monitoring (PPM)
+  - Equipment tracking (lights, fans)
+  - Occupancy and capacity planning
+
+- **Reproductive Phenology** - Breeding cycle tracking
+  - Spathe emergence dates
+  - Female/male phase windows
+  - Pollen viability tracking
+  - Cross success rates
+
+- **Temporal Morphology** - Track trait changes over time
+  - Multiple observations per trait
+  - Edit historical entries
+  - Timeline visualization
+
+### Technical
+- Added comprehensive documentation
+- Implemented 3-2-1 backup strategy
+- SSH key authentication for NAS
+
+## [1.1.5] - 2025-10-17
+
+### Added
+- **Data Standardization**
+  - Section dropdown (13 Anthurium sections)
+  - Health status standardization
+  - Propagation type tracking
+  - Generation fields (F1, F2, etc.)
+
+### Fixed
+- Database connection issues (absolute path)
+- Schema mismatches
+- Removed variegationType field
+
+## [1.1.4] - 2025-10-16
+
+### Added
+- **Vendor Management** - Source tracking and reputation
+- **Financial Tracking** - Acquisition costs, market values
+- **Elite Genetics Flag** - Premium breeding lines
+- **Mother Plant Tracking** - Breeding stock management
+
+## [1.1.3] - 2025-10-15
+
+### Added
+- **Care Logging System** - Complete care history
+- **EC/pH Tracking** - Input/output measurements
+- **Pest Management** - Discovery and treatment
+- **Growth Measurements** - Time-series data
+
+## [1.1.2] - 2025-10-14
+
+### Added
+- **Breeding Records** - Parent/offspring relationships
+- **Cross Tracking** - Female × male → F1
+- **Trait System** - Morphological characteristics
+
+## [1.1.1] - 2025-10-13
+
+### Added
+- **Plant Database** - Core CRUD operations
+- **SQLite Integration** - Local database
+- **Next.js 15 App** - Modern React framework
+- **Prisma ORM** - Type-safe database access
+
+### Initial Features
+- Plant management (67 initial plants)
+- Basic UI with glassmorphism
+- API endpoints for all operations
+- Excel data import script
+
+## [1.0.0] - 2025-10-12
 
 ### Initial Release
-- Core plant database functionality
-- Location management with advanced environmental metrics
-- Flowering cycle tracking
-- Temporal morphology documentation
-- Care logging and batch operations
-- EC & pH tracking
-- Breeding record management
-- Dashboard analytics
-- Excel data import from 67-plant collection
+- Project inception
+- Database schema design
+- Technology stack selection
+- Migration from Excel spreadsheet
 
-### Features
-- Next.js 15 with App Router
-- Prisma ORM with SQLite
-- TypeScript throughout
-- TailwindCSS with glassmorphism effects
-- React Query for data management
-- Toast notifications
-- Modal-based editing
+---
+
+*Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)*

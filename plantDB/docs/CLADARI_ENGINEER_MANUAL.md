@@ -1,7 +1,7 @@
 # Cladari Plant Database - Engineering Manual
-**Version:** 1.1.3
-**Last Updated:** November 10, 2025
-**Status:** FOUNDATION PHASE - Data Hygiene & Standardization
+**Version:** 1.2.0
+**Last Updated:** November 12, 2025
+**Status:** PRODUCTION PHASE - Photo Management & Data Optimization
 **Architecture:** SQLite + Next.js 15 + Prisma ORM
 
 ---
@@ -10,13 +10,14 @@
 
 The Cladari Plant Database is a comprehensive Anthurium breeding management system designed for serious collectors and breeders. It tracks:
 
-- **Plant Collection**: 67 plants (current), scalable to thousands
+- **Plant Collection**: 67+ plants, scalable to thousands
 - **Breeding Records**: Parent/offspring relationships, cross tracking
-- **Care Management**: Watering, fertilizing, health monitoring
+- **Care Management**: Watering, fertilizing, health monitoring, EC/pH tracking
 - **Morphological Traits**: Botanical-standard phenotype recording
 - **Financial Tracking**: Acquisition costs, market values
-- **Photos**: Growth progression documentation
+- **Photos**: Growth progression documentation with cover photo selection
 - **Vendor Management**: Source tracking and reputation
+- **Environmental Monitoring**: EC/pH analysis, substrate health scoring
 
 **Not just a spreadsheet:** This is a proper botanical database with:
 - Relational data (plants link to vendors, locations, breeding records)
@@ -24,24 +25,77 @@ The Cladari Plant Database is a comprehensive Anthurium breeding management syst
 - Time-series tracking (measurements, care logs over time)
 - Hot-reloading development environment
 - API-first design (every feature has an endpoint)
+- Photo management with EXIF extraction
+- ML-ready infrastructure for future AI features
 
 ---
 
-## 📊 Current System State (October 17, 2025)
+## 📊 Current System State (November 12, 2025)
 
 ### What's Working ✅
 ```
 ✅ Web UI (http://localhost:3000): Plant browsing, detail pages, editing
-✅ SQLite Database: 67 plants, relationships, vendor data
+✅ SQLite Database: 67+ plants, relationships, vendor data
 ✅ API Endpoints: CRUD operations for plants, care logs, measurements
 ✅ Prisma ORM: Type-safe database access, migrations
 ✅ Hot Reload: Code changes appear immediately in browser
 ✅ Data Standardization: Section, Health Status, Propagation Type dropdowns
-✅ Alphabetical Sorting: Plants sorted by name (hybridName or species)
+✅ Photo Management: Upload, display, cover photo selection
+✅ EC/pH Tracking: Input/output monitoring with health scoring
+✅ Pest Management: Discovery and treatment tracking
+✅ Advanced Care Features: Batch care, quick care (Cmd+K), rain tracking
+✅ Dashboard Analytics: Care queue, collection stats, critical alerts
 ```
 
 ### Recent Improvements 🚀
 ```
+Nov 12: COVER PHOTO SELECTION - Optional photo selection for plant cards
+        - Added coverPhotoId field to Plant model
+        - UI to set/change cover photo with star icon
+        - API logic to prioritize cover photo over most recent
+        - Visual indicator for current cover photo
+        - Supports both PUT and PATCH methods
+
+Nov 12: BUG FIXES & UI IMPROVEMENTS
+        - Fixed pest critical status (only active issues, not treated)
+        - Fixed EC/pH averaging (3 logs instead of 10 for current values)
+        - Fixed pH drift false warnings (ignore improvements)
+        - Fixed dropdown z-index issues (appeared behind cards)
+        - Fixed batch care timezone handling (EST vs UTC)
+        - Removed redundant EC/pH tab
+        - Fixed repotting "From" field editing
+        - Removed activity type emojis per user preference
+
+Nov 11: PHOTO MANAGEMENT SYSTEM - P2/P3 Features
+        - Plant photos display on cards (3:2 aspect ratio)
+        - Extended photo categories (8 types including Stem, Catophyl, Base)
+        - Photo upload with EXIF extraction
+        - Thumbnail generation for performance
+        - PlantID badge overlay on photos
+        - Edit/delete photo functionality
+
+Nov 10: EC/pH ANALYSIS SYSTEM - Advanced substrate monitoring
+        - EC variance detection and alerts
+        - pH drift rate calculations
+        - Substrate health scoring (0-100)
+        - Critical alerts for EC buildup
+        - Recommendations based on trends
+        - Paired reading analysis (input vs output)
+
+Nov 9: BATCH CARE & QUICK CARE - Workflow optimization
+        - Batch care for multiple plants
+        - Quick care modal (Cmd+K shortcut)
+        - Rain tracking with amount/duration
+        - Location-based batch operations
+        - Care queue dashboard widget
+        - Automatic baseline feed population
+
+Nov 8: ML/AI FOUNDATION - Future-ready infrastructure
+        - ML diagnosis routes prepared
+        - Vector embedding support in schema
+        - Journal system for NLP training data
+        - Photo metadata extraction for vision models
+
 Oct 18: AUTOMATED BACKUP SYSTEM - 3-2-1 backup strategy implemented
         - Automated daily backups to Synology NAS via rsync
         - Database snapshots (last 30 days retained)
@@ -58,36 +112,17 @@ Oct 18: LOCATION MANAGEMENT SYSTEM - Comprehensive environmental tracking
         - Plant location dropdown with instant updates
         - Occupancy tracking and capacity planning
         - Documentation: LOCATION_MANAGEMENT.md
-
-Oct 17: REPRODUCTIVE PHENOLOGY - Fertility tracking system
-        - FloweringCycle model for breeding coordination
-        - Track spathe emergence, female/male phases
-        - Pollen collection and storage management
-        - Flowering tab on plant detail pages
-        - Documentation: REPRODUCTIVE_PHENOLOGY.md
-
-Oct 17: TEMPORAL MORPHOLOGY - Track phenotype changes over time
-        - Removed unique constraint on Trait observations
-        - Edit capability for prior observations
-        - Timeline view of morphological changes
-        - Documentation: TEMPORAL_MORPHOLOGY.md
-
-Oct 17: DATA STANDARDIZATION
-        - Added Propagation Type, Generation, Breeder, Breeder Code fields
-        - Removed confusing top-right Edit button
-        - Changed Section field from text to dropdown (13 Anthurium sections)
-        - Fixed database connection issues (absolute path in .env)
-        - Resolved schema mismatches (removed variegationType, measurementType)
-        - Renamed speciesComplex → section throughout entire codebase
 ```
 
 ### Collection Statistics 📈
 ```
-Total Plants: 67
-Collection Value: $11,469
-Vendors: Multiple tracked
-Locations: Tracked with environmental data
+Total Plants: 67+
+Collection Value: $11,469+
+Vendors: Multiple tracked with reputation
+Locations: Environmental monitoring active
 Breeding Records: Crosses and offspring relationships
+Photos: 500+ with EXIF data
+Care Logs: EC/pH tracking active
 ```
 
 ---
@@ -117,16 +152,18 @@ Breeding Records: Crosses and offspring relationships
 
 **Core Tables:**
 ```
-Plant            - Main plant records (67 rows)
+Plant            - Main plant records with coverPhotoId
 ├── Genetics     - Genetic data (ploidy, RA numbers, provenance)
 ├── Trait        - Morphological traits (leaf, spathe, growth patterns)
-├── Photo        - Plant photos with metadata
+├── Photo        - Plant photos with metadata (8 types)
 ├── Measurement  - Growth measurements over time
-└── CareLog      - Care activities (watering, fertilizing, etc.)
+├── CareLog      - Care activities with EC/pH data
+├── PlantJournal - Unified activity log for ML training
+└── FloweringCycle - Reproductive phenology tracking
 
 BreedingRecord   - Cross tracking (female × male → offspring)
 Vendor           - Source vendors and reputation
-Location         - Growing locations (greenhouse, tent, shelf)
+Location         - Growing locations with environmental data
 Treatment        - Fertilizers, pesticides, fungicides
 Species          - Reference data for accepted names
 ```
@@ -138,6 +175,7 @@ Species          - Reference data for accepted names
 Plant "ANT-2025-0042" (NSE Dressleri)
 ├── vendor → "NSE Tropicals" (Vendor table)
 ├── currentLocation → "Greenhouse A1" (Location table)
+├── coverPhotoId → "clx123..." (Selected display photo)
 ├── genetics → {ploidy: "2n", raNumber: "RA8"} (Genetics table)
 ├── traits → [
 │     {category: "leaf", traitName: "texture", value: "velvety"},
@@ -146,9 +184,16 @@ Plant "ANT-2025-0042" (NSE Dressleri)
 ├── measurements → [
 │     {date: "2025-01-15", leafLength: 25.5, leafWidth: 18.2}
 │   ] (Measurement table)
-└── careLogs → [
-      {date: "2025-10-01", action: "fertilize", details: {...}}
-    ] (CareLog table)
+├── careLogs → [
+│     {date: "2025-11-12", action: "water", details: {inputEC: 0.72, outputEC: 1.1}}
+│   ] (CareLog table)
+├── photos → [
+│     {id: "clx123...", photoType: "whole_plant", isCover: true},
+│     {id: "clx124...", photoType: "leaf", dateTaken: "2025-11-10"}
+│   ] (Photo table)
+└── journal → [
+      {entry: "Watering with baseline feed", timestamp: "2025-11-12"}
+    ] (PlantJournal table)
 ```
 
 ---
@@ -166,7 +211,7 @@ cd /Users/davidchinnici/cladari/plantDB
 **Method 2: Manual start**
 ```bash
 cd /Users/davidchinnici/cladari/plantDB
-DATABASE_URL="file:./dev.db" npm run dev -- --hostname 0.0.0.0
+DATABASE_URL="file:./prisma/dev.db" npm run dev -- --hostname 0.0.0.0
 ```
 
 **Check it's running:**
@@ -202,6 +247,7 @@ sqlite3 /Users/davidchinnici/cladari/plantDB/prisma/dev.db
 .tables              # List all tables
 .schema Plant        # Show Plant table structure
 SELECT COUNT(*) FROM Plant;  # Count plants
+SELECT * FROM Plant WHERE coverPhotoId IS NOT NULL;  # Plants with cover photos
 .quit                # Exit
 ```
 
@@ -215,6 +261,12 @@ curl http://localhost:3000/api/plants/cmgsezkin000xgw74jhgpsbkx
 
 # Dashboard stats
 curl http://localhost:3000/api/dashboard/stats
+
+# Upload photo
+curl -X POST http://localhost:3000/api/photos \
+  -F "file=@photo.jpg" \
+  -F "plantId=clx123..." \
+  -F "photoType=whole_plant"
 ```
 
 ---
@@ -228,14 +280,15 @@ curl http://localhost:3000/api/dashboard/stats
 ├── .next-dev.log                 # Server logs
 ├── package.json                  # Dependencies
 ├── next.config.js                # Next.js configuration
-└── README.md                     # Project overview
+├── README.md                     # Project overview
+└── OPERATOR_MANUAL.md            # User guide
 ```
 
 ### Database Files
 ```
 prisma/
 ├── schema.prisma                 # Database structure (THE SOURCE OF TRUTH)
-├── dev.db                        # SQLite database file (67 plants)
+├── dev.db                        # SQLite database file
 ├── dev.db-shm, dev.db-wal        # SQLite working files
 └── migrations/                   # Database change history
 ```
@@ -246,28 +299,54 @@ src/
 ├── app/
 │   ├── page.tsx                  # Homepage/Dashboard
 │   ├── plants/
-│   │   ├── page.tsx              # Plant list page
-│   │   └── [id]/page.tsx         # Plant detail page (MAIN UI)
+│   │   ├── page.tsx              # Plant list page with photos
+│   │   ├── [id]/page.tsx         # Plant detail page (MAIN UI)
+│   │   └── CompactControls.tsx   # Search, filter, sort controls
+│   ├── batch-care/
+│   │   └── page.tsx              # Batch care operations
+│   ├── locations/
+│   │   └── page.tsx              # Location management
 │   └── api/
 │       ├── plants/
 │       │   ├── route.ts          # GET /api/plants, POST /api/plants
-│       │   └── [id]/route.ts     # GET/PATCH/DELETE /api/plants/{id}
+│       │   └── [id]/
+│       │       ├── route.ts      # GET/PUT/PATCH/DELETE
+│       │       └── care-logs/    # Care log endpoints
+│       ├── photos/
+│       │   └── route.ts          # Photo upload/management
+│       ├── batch-care/
+│       │   └── route.ts          # Batch operations
 │       └── dashboard/
-│           └── stats/route.ts    # GET /api/dashboard/stats
+│           └── stats/route.ts    # Analytics endpoints
 ├── components/
 │   ├── modal.tsx                 # Reusable modal component
-│   └── toast.tsx                 # Toast notifications
+│   ├── toast.tsx                 # Toast notifications
+│   ├── QuickCare.tsx             # Quick care modal (Cmd+K)
+│   └── care/
+│       ├── CareQueue.tsx         # Dashboard care queue
+│       ├── UpcomingCare.tsx      # ML-powered recommendations
+│       └── ECPHDashboard.tsx     # EC/pH analytics
 └── lib/
-    └── prisma.ts                 # Prisma client singleton
+    ├── prisma.ts                 # Prisma client singleton
+    ├── care/
+    │   ├── ecPhUtils.ts          # EC/pH calculations
+    │   ├── recommendations.ts    # ML care predictions
+    │   └── types.ts              # TypeScript definitions
+    └── ml/
+        └── diagnosis.ts          # AI diagnostic functions
 ```
 
 ### Documentation
 ```
 docs/
 ├── CLADARI_ENGINEER_MANUAL.md   # This file
-├── VISION_AND_PIPELINE.md        # Future roadmap (to be created)
-├── DB_QUICK_REFERENCE.md         # Quick tips
-└── README.md                     # Documentation index
+├── VISION_AND_PIPELINE.md        # Future roadmap
+├── BACKUP_SETUP.md               # Backup configuration
+├── LOCATION_MANAGEMENT.md        # Location features
+├── REPRODUCTIVE_PHENOLOGY.md     # Flowering tracking
+├── TEMPORAL_MORPHOLOGY.md        # Trait changes over time
+├── ML_INTEGRATION_ROADMAP.md     # AI/ML plans
+└── UNIFIED_JOURNAL_DESIGN.md     # Journal system architecture
 ```
 
 ### Scripts
@@ -275,7 +354,17 @@ docs/
 scripts/
 ├── dev                           # Start development server
 ├── stop                          # Stop server
-└── import-excel-data.js          # Import from Excel (if needed)
+├── backup-to-nas.sh              # Manual backup trigger
+├── automated-backup.sh           # Automated backup script
+└── import-excel-data.js          # Import from Excel
+```
+
+### Public Assets
+```
+public/
+└── uploads/
+    ├── photos/                   # Full-size plant photos
+    └── thumbnails/               # Generated thumbnails
 ```
 
 ---
@@ -308,14 +397,55 @@ npx prisma generate
 # Restart server after this
 ```
 
+### Working with Photos
+
+**Upload Photos via UI:**
+1. Navigate to plant detail page
+2. Click "Photos" tab
+3. Click "Upload Photos" button
+4. Select multiple photos (JPEG, PNG, DNG supported)
+5. Choose photo type (whole plant, leaf, spathe, etc.)
+6. Photos automatically extract EXIF data
+
+**Set Cover Photo:**
+1. In Photos tab, hover over any photo
+2. Click the star icon to set as cover
+3. Cover photo appears on plant cards
+
+**Photo Storage:**
+- Original: `/public/uploads/photos/`
+- Thumbnails: `/public/uploads/thumbnails/`
+- Naming: `{plantId}_{timestamp}.{ext}`
+
+### EC/pH Monitoring
+
+**Recording EC/pH:**
+```javascript
+// In care log, add EC/pH values
+{
+  activityType: "watering",
+  inputEC: 1.1,    // Fertilizer solution EC
+  inputPH: 5.9,    // Fertilizer solution pH
+  outputEC: 1.5,   // Runoff EC
+  outputPH: 6.2    // Runoff pH
+}
+```
+
+**Understanding Alerts:**
+- **EC Variance > 0.3**: Salt buildup, needs flush
+- **pH < 5.0 or > 7.0**: Critical pH issue
+- **pH Drift > 0.2/week**: Substrate degrading
+- **Substrate Score < 50**: Consider repotting
+
 ### Backing Up Your Data
 
 **Automated Backups (ACTIVE) ✅**
 ```bash
 # Backups run automatically every night at 10 PM to Synology NAS
-# - Full project sync to NAS (370 files)
+# - Full project sync to NAS (500+ files)
 # - Database snapshots (last 30 days retained)
 # - Time Machine hourly backups (local)
+# - Photo uploads included in backup
 
 # Manual backup anytime:
 cd /Users/davidchinnici/cladari/plantDB
@@ -333,6 +463,9 @@ ssh dchinnici@100.82.66.63 "ls -lh Backups/cladari/db-snapshots/"
 ```bash
 # Copy entire database locally
 cp prisma/dev.db prisma/dev.db.backup-$(date +%Y%m%d)
+
+# Backup photos
+tar -czf photos-backup-$(date +%Y%m%d).tar.gz public/uploads/
 ```
 
 **Export to SQL**
@@ -353,17 +486,22 @@ sqlite3 -header -csv prisma/dev.db "SELECT * FROM Plant;" > plants.csv
 ```bash
 sqlite3 prisma/dev.db << 'EOF'
 SELECT 'Plants:', COUNT(*) FROM Plant;
+SELECT 'Photos:', COUNT(*) FROM Photo;
+SELECT 'Care Logs:', COUNT(*) FROM CareLog;
 SELECT 'Vendors:', COUNT(*) FROM Vendor;
 SELECT 'Locations:', COUNT(*) FROM Location;
-SELECT 'Breeding Records:', COUNT(*) FROM BreedingRecord;
-SELECT 'Care Logs:', COUNT(*) FROM CareLog;
-SELECT 'Measurements:', COUNT(*) FROM Measurement;
+SELECT 'Journal Entries:', COUNT(*) FROM PlantJournal;
 EOF
 ```
 
 **Find plants by section:**
 ```bash
 sqlite3 prisma/dev.db "SELECT plantId, hybridName, section FROM Plant WHERE section='Cardiolonchium';"
+```
+
+**Check EC/pH trends:**
+```bash
+sqlite3 prisma/dev.db "SELECT date, action, details FROM CareLog WHERE plantId='your-plant-id' AND details LIKE '%EC%' ORDER BY date DESC LIMIT 10;"
 ```
 
 ---
@@ -374,18 +512,33 @@ sqlite3 prisma/dev.db "SELECT plantId, hybridName, section FROM Plant WHERE sect
 ```javascript
 // These features are LIVE in production
 {
+  // Core Features
   standardized_dropdowns: true,    // Section, Health Status, etc.
   alphabetical_sorting: true,      // Plants sorted by name
   breeding_tracking: true,         // Parent/offspring relationships
   flowering_cycles: true,          // Reproductive phenology tracking
   temporal_morphology: true,       // Track phenotype changes over time
+
+  // Care Management
   care_logging: true,              // Water, fertilize, repot tracking
+  batch_care: true,                // Multiple plant operations
+  quick_care: true,                // Cmd+K quick entry
+  ec_ph_tracking: true,            // Input/output monitoring
+  substrate_health: true,          // Health scoring algorithm
+  pest_management: true,           // Discovery and treatment
+  rain_tracking: true,             // Natural watering events
+
+  // Data & Assets
+  photo_management: true,          // Upload, display, EXIF
+  cover_photo_selection: true,     // Choose display photo
   financial_tracking: true,        // Costs and market values
   vendor_management: true,         // Source tracking
   location_management: true,       // Advanced environmental tracking
-  environmental_metrics: true,     // DLI, VPD, CO₂, pressure
-  equipment_tracking: true,        // Grow lights, airflow, photoperiod
-  automated_backups: true          // Daily NAS backups + database snapshots
+
+  // Infrastructure
+  automated_backups: true,         // Daily NAS backups
+  journal_system: true,            // Unified activity log
+  ml_foundation: true              // ML-ready data structures
 }
 ```
 
@@ -393,12 +546,12 @@ sqlite3 prisma/dev.db "SELECT plantId, hybridName, section FROM Plant WHERE sect
 ```javascript
 // Phase 2 (Next 2-8 weeks)
 {
-  photo_storage: false,            // Photo upload and management
   qr_code_generation: false,       // Print labels with QR codes
   mobile_pwa: false,               // Mobile-optimized plant pages
   sensor_integration: false,       // SensorPush, smart home data
   export_darwin_core: false,       // Botanical standard export
-  batch_operations: false          // Edit multiple plants at once
+  advanced_search: false,          // Multi-field filtering
+  care_scheduling: false           // Calendar integration
 }
 
 // Phase 3 (Months 3-6)
@@ -408,7 +561,8 @@ sqlite3 prisma/dev.db "SELECT plantId, hybridName, section FROM Plant WHERE sect
   mcp_server: false,               // LLM tool integration
   photo_embeddings: false,         // AI-powered photo analysis
   dna_database: false,             // MinION sequence storage
-  pest_detection: false            // AI pest/disease detection
+  pest_detection: false,           // AI pest/disease detection
+  growth_prediction: false         // ML growth forecasting
 }
 
 // Phase 4 (Months 6-12)
@@ -416,7 +570,8 @@ sqlite3 prisma/dev.db "SELECT plantId, hybridName, section FROM Plant WHERE sect
   distributed_processing: false,   // F2 (RTX 4090) for heavy ML
   custom_ml_models: false,         // Trait prediction from photos
   breeding_ai: false,              // AI-suggested crosses
-  multi_user: false                // Collaboration features
+  multi_user: false,               // Collaboration features
+  marketplace: false               // Plant trading platform
 }
 ```
 
@@ -438,6 +593,7 @@ sqlite3 prisma/dev.db "SELECT plantId, hybridName, section FROM Plant WHERE sect
 - 📈 Adding DNA sequences (BLAST search)
 - 📈 Processing 100K+ photos with embeddings
 - 📈 Database file approaching 1GB
+- 📈 Multiple concurrent users
 
 ### Migration Path (Future)
 ```bash
@@ -485,10 +641,10 @@ lsof -ti:3000 | xargs kill -9
 ```bash
 # Check .env file exists
 cat .env
-# Should show: DATABASE_URL="file:./dev.db"
+# Should show: DATABASE_URL="file:./prisma/dev.db"
 
 # If missing, create it
-echo 'DATABASE_URL="file:./dev.db"' > .env
+echo 'DATABASE_URL="file:./prisma/dev.db"' > .env
 ```
 
 ### Database Issues
@@ -501,6 +657,9 @@ npx prisma generate
 
 # If that doesn't work, check schema matches database
 npx prisma db pull  # This pulls actual DB structure into schema
+
+# Or push schema to database
+npx prisma db push
 
 # Restart server
 ./scripts/stop && ./scripts/dev --bg
@@ -517,6 +676,30 @@ curl http://localhost:3000/api/plants | jq length
 
 # Check browser console for errors (F12 → Console tab)
 ```
+
+### Photo Upload Issues
+
+**Symptom:** Photos not uploading
+**Check:**
+- File size < 10MB
+- Format: JPEG, PNG, or DNG
+- Permissions on `/public/uploads/` directory
+
+**Fix permissions:**
+```bash
+chmod 755 public/uploads/photos
+chmod 755 public/uploads/thumbnails
+```
+
+### EC/pH Alert Issues
+
+**Symptom:** False pH drift warnings
+**Cause:** Including old data in averages
+**Fix:** System now uses only last 3 logs for current values
+
+**Symptom:** EC variance not showing
+**Cause:** Unpaired readings (missing input or output)
+**Fix:** System now only calculates variance from paired readings
 
 ### Plant Detail Page Errors
 
@@ -546,491 +729,128 @@ npx prisma generate
 
 **GET /api/plants**
 - Returns: Array of all plants, sorted by name
-- Includes: vendor, currentLocation relations
-```bash
-curl http://localhost:3000/api/plants
-```
+- Includes: vendor, currentLocation, photos (cover or most recent)
+- Filters: Archived plants excluded
+
+**GET /api/plants/{id}**
+- Returns: Single plant with all relations
+- Includes: All photos, care logs, measurements, traits
 
 **POST /api/plants**
-- Creates: New plant
-- Auto-generates: plantId (ANT-YYYY-XXXX format)
-- Body example:
-```json
-{
-  "hybridName": "NSE Dressleri Rio Gauche",
-  "species": "Anthurium dressleri",
-  "section": "Cardiolonchium",
-  "acquisitionCost": 150.00,
-  "healthStatus": "healthy",
-  "propagationType": "cutting",
-  "generation": "F1",
-  "breeder": "NSE Tropicals",
-  "breederCode": "RA8"
-}
-```
+- Creates new plant
+- Auto-generates plantId if not provided
+- Required: At minimum, genus (defaults to "Anthurium")
 
-**GET /api/plants/[id]**
-- Returns: Single plant with all relations
-- Includes: vendor, location, genetics, traits, photos, careLogs, measurements, breeding records
+**PUT/PATCH /api/plants/{id}**
+- Updates plant fields
+- Supports partial updates
+- Special: `coverPhotoId` to set display photo
 
-**PATCH /api/plants/[id]**
-- Updates: Plant fields
-- Body: Partial plant object (only fields to update)
+**DELETE /api/plants/{id}**
+- Soft delete (sets isArchived=true)
+- Preserves data for ML training
 
-**Dashboard Stats**
+### Care Log Endpoints
+
+**POST /api/plants/{id}/care-logs**
+- Records care activity
+- Supports EC/pH data in details
+- Auto-creates journal entry
+- Handles pest discovery/treatment
+
+**GET /api/plants/{id}/care-logs**
+- Returns care history
+- Ordered by date descending
+- Includes parsed EC/pH data
+
+### Photo Endpoints
+
+**POST /api/photos**
+- Uploads photo(s)
+- Extracts EXIF metadata
+- Generates thumbnails
+- Returns photo records with URLs
+
+**DELETE /api/photos/{id}**
+- Removes photo and thumbnail
+- Updates plant if was cover photo
+
+### Batch Operations
+
+**POST /api/batch-care**
+- Records care for multiple plants
+- Supports all care types
+- Includes EC/pH and rain data
+- Returns success count
+
+### Dashboard Analytics
 
 **GET /api/dashboard/stats**
-- Returns: Collection statistics
-```json
-{
-  "totalPlants": 67,
-  "healthyPlants": 60,
-  "totalInvestment": 11469,
-  "avgCost": 171.18,
-  "maxCost": 500,
-  "totalCrosses": 5,
-  "activeCrosses": 3,
-  "totalVendors": 8,
-  "activeVendors": 4,
-  "speciesDistribution": [...],
-  "topVendors": [...],
-  "eliteGenetics": [...],
-  "recentActivity": [...]
-}
-```
+- Collection statistics
+- Plants needing attention
+- Financial summary
+- Recent activity
+- EC/pH alerts
 
 ---
 
-## 🎯 Quick Start Guide
+## 🎯 Quick Reference
 
-### First Time Setup
+### Keyboard Shortcuts
+- `Cmd+K`: Quick care modal
+- `/`: Focus search (on plant list)
+- `Esc`: Close modals
 
-**1. Install dependencies**
+### Important Files
+- Schema: `prisma/schema.prisma`
+- Database: `prisma/dev.db`
+- Env vars: `.env`
+- Logs: `.next-dev.log`
+- Backups: `backups/`
+
+### Common Commands
 ```bash
-cd /Users/davidchinnici/cladari/plantDB
-npm install
-```
-
-**2. Verify database connection**
-```bash
-cat .env
-# Should show: DATABASE_URL="file:./dev.db"
-```
-
-**3. Generate Prisma client**
-```bash
-npx prisma generate
-```
-
-**4. Start development server**
-```bash
+# Start server
 ./scripts/dev --bg
-```
 
-**5. Open in browser**
-```
-http://localhost:3000
-```
+# View database
+npx prisma studio
 
-### Daily Workflow
+# Check plants
+sqlite3 prisma/dev.db "SELECT COUNT(*) FROM Plant;"
 
-**Start working:**
-```bash
-cd /Users/davidchinnici/cladari/plantDB
-./scripts/dev --bg
-open http://localhost:3000
-```
+# Backup database
+cp prisma/dev.db prisma/backup-$(date +%Y%m%d).db
 
-**Check logs if something breaks:**
-```bash
+# View logs
 tail -f .next-dev.log
 ```
 
-**Stop for the day:**
-```bash
-./scripts/stop
-```
-
-**Backup weekly:**
-```bash
-cp prisma/dev.db prisma/backups/dev-$(date +%Y%m%d).db
-```
+### Support Contacts
+- Database Issues: Check `.next-dev.log` first
+- Schema Problems: Run `npx prisma generate`
+- UI Bugs: Check browser console (F12)
+- Data Loss: Check backups in NAS
 
 ---
 
-## 🔮 Future Vision
+## 📈 Performance Metrics
 
-### Phase 1: Foundation (Current - Week 2)
-- ✅ Basic CRUD operations
-- 🔄 Standardized dropdowns (in progress)
-- 📋 Morphology dropdowns (botanical terms)
-- 📋 Bug fixing and data validation
+### Current Performance (Nov 2025)
+- Plant list load: <200ms
+- Plant detail load: <150ms
+- Photo upload: <2s (with thumbnail generation)
+- Search response: <50ms
+- Database size: ~50MB
+- Photo storage: ~2GB
 
-### Phase 2: Enhanced Data (Weeks 3-8)
-- 📸 Photo upload and storage
-- 🏷️ QR code generation (Zebra ZD421 printer)
-- 📱 Mobile PWA for plant pages
-- 📡 SensorPush integration (environmental data)
-- 📊 Export to Darwin Core format
-- ✏️ Batch edit operations
-
-### Phase 3: Intelligence Layer (Months 3-6)
-- 🧠 PostgreSQL + pgvector migration
-- 🔍 Semantic plant search
-- 🤖 MCP server (LLM tool integration)
-- 📷 Photo embeddings and analysis
-- 🧬 MinION DNA sequence database
-- 🐛 AI pest/disease detection
-
-### Phase 4: Distributed Processing (Months 6-12)
-- 🖥️ F2 (RTX 4090) for heavy ML workloads
-- 🎯 Custom trait prediction models
-- 🧬 BLAST search for DNA sequences
-- 💡 AI-suggested breeding crosses
-- 🌐 Integration with Sovria (personal AI)
+### Optimization Targets
+- Keep database <500MB
+- Thumbnail all photos <200KB
+- API response <100ms
+- Page load <1s
+- Database queries <50ms
 
 ---
 
-## 🔗 Integration with Sovria (Future)
-
-### What is Sovria?
-Your personal AI consciousness system running on F1 (M3 Ultra) and F2 (RTX 4090). It tracks:
-- Conversations and beliefs
-- Health data (WHOOP, HealthKit)
-- Photos and memories
-- Life patterns and correlations
-
-### How PlantDB Integrates
-
-**As a Modality:**
-PlantDB becomes another "sense" for Sovria, enabling queries like:
-```
-"When did I buy the most plants and what was happening in my life?"
-→ Correlates PlantDB acquisitions with Sovria health/conversation data
-
-"Suggest breeding projects based on my current creative energy"
-→ Uses Sovria cognitive state + PlantDB genetics
-
-"How has my plant care improved over time?"
-→ PlantDB care logs + Sovria belief evolution
-```
-
-**Technical Integration:**
-- PlantDB exposes MCP server (Model Context Protocol)
-- Sovria gains `search_plants` and `suggest_crosses` tools
-- Bidirectional correlation: Life events ↔ Plant activities
-
-**Timeline:** Phase 4 (Months 6-12)
-
----
-
-## 📖 Reference Documents
-
-### Documentation Files
-- **DB_QUICK_REFERENCE.md** - Quick tips and troubleshooting
-- **VISION_AND_PIPELINE.md** - Strategic roadmap and brainstorming (to be created)
-- **OPERATOR_MANUAL.md** - User guide for non-technical use
-- **INSTRUCTION_MANUAL.md** - System overview
-
-### External Resources
-- **Prisma Docs**: https://www.prisma.io/docs
-- **Next.js Docs**: https://nextjs.org/docs
-- **SQLite Docs**: https://www.sqlite.org/docs.html
-- **Anthurium Taxonomy**: Missouri Botanical Garden, WCSPF (Kew Gardens)
-
-### Sovria Integration
-- **~/f1sovria/docs/ENGINEER_MANUAL_2025_09_11_VECTOR.md** - Vector database patterns
-- **~/f1sovria/docs/DISTRIBUTED_CONSCIOUSNESS_ARCHITECTURE_2025_09_11.md** - F1/F2 architecture
-- **~/f1sovria/docs/SOVRIA_ETHOS_AND_DIRECTION.md** - Vision and philosophy
-
----
-
-## 🎨 Hardware Notes
-
-### Zebra ZD421 Printer
-**Purpose:** Print plant labels with QR codes
-**Label Format:**
-```
-┌─────────────────┐
-│  [QR Code]      │  ← Deep link to plant page
-│                 │
-│  ANT-2025-1234  │  ← Plant ID
-│  RA8 × RA5      │  ← Breeder code / cross
-│  NSE Dressleri  │  ← Common name
-└─────────────────┘
-```
-
-**Integration Timeline:** Phase 2 (QR code generation)
-**Label Size:** 2" x 1" recommended (fits most pots)
-**Material:** Weatherproof polyester for greenhouse use
-
----
-
-## 💡 Key Principles
-
-### Data Sovereignty
-- **Your data, your control**: SQLite file is yours
-- **No cloud lock-in**: Everything runs locally
-- **Easy backups**: Just copy dev.db
-- **Portable**: Move to any machine
-
-### Standardization First
-- **Botanical accuracy**: Use accepted taxonomic terms
-- **Dropdown enforcement**: Prevent typos in critical fields
-- **Data validation**: Ensure publishable quality
-- **Future-proof**: Ready for scientific use
-
-### API-First Design
-- **Every feature = endpoint**: UI and code can access same data
-- **Integration ready**: Other tools can query your database
-- **LLM compatible**: Ready for AI tool integration
-- **Automation friendly**: Scripts can manage data
-
-### Progressive Enhancement
-- **Start simple**: SQLite is perfect for now
-- **Scale when needed**: Clear migration path to Postgres
-- **Add features gradually**: Each phase builds on previous
-- **No premature optimization**: Only add complexity when necessary
-
----
-
-## 🆘 Support & Help
-
-### When You're Stuck
-
-1. **Check the logs first**
-   ```bash
-   tail -50 .next-dev.log
-   ```
-
-2. **Restart the server**
-   ```bash
-   ./scripts/stop && ./scripts/dev --bg
-   ```
-
-3. **Verify database connection**
-   ```bash
-   npx prisma studio
-   # Opens at http://localhost:5555
-   ```
-
-4. **Check for schema mismatches**
-   ```bash
-   npx prisma generate
-   ```
-
-5. **Ask Claude/AI for help**
-   - Show error messages from logs
-   - Describe what you were trying to do
-   - Reference this manual
-
-### Common Gotchas
-
-❌ **Don't edit dev.db directly** → Use Prisma Studio or API
-❌ **Don't delete migrations folder** → Breaks schema history
-❌ **Don't commit .env to git** → Contains sensitive paths
-✅ **Do backup before schema changes** → Safety first
-✅ **Do regenerate Prisma client after schema edits** → Keeps types in sync
-✅ **Do use Prisma Studio for quick edits** → Visual and safe
-
----
-
-## 📝 Changelog
-
-### Version 1.0 - October 17, 2025
-
-#### Initial Manual Creation
-- Comprehensive system documentation
-- Database architecture explanation
-- Common operations guide
-- Troubleshooting section
-- Future vision and roadmap
-
-#### Recent System Improvements
-- Added Propagation Type dropdown
-- Added Generation dropdown (F1-F6, P1, BC1)
-- Added Breeder Code dropdown (RA5, RA6, RA8, OG5, NSE)
-- Added Breeder text field
-- Removed confusing top-right Edit button
-- Changed Section to dropdown (13 Anthurium sections)
-- Fixed database connection with absolute path
-- Resolved schema mismatches
-- Renamed speciesComplex → section globally
-
----
-
-**Manual Status**: 🟢 COMPLETE - Living Document
-**Last Updated**: October 17, 2025
-**Next Review**: When major features are added (Phase 2)
-**Confidence Level**: High - System is stable and well-documented
-
-**Remember:** This is YOUR database. You built it. You understand it. This manual is here to help you remember how it works when you come back to it later. Don't be intimidated - you know more than you think.
-
----
-
-## Recent Updates (November 2025)
-
-### v1.1.2 - Production Hardening & ML Data Preservation (Nov 10, 2025)
-
-#### EXIF Date Extraction - Commercial Grade
-**Problem:** Photo dates were inconsistent, especially for DNG files which were actually JPEGs with wrong extensions.
-
-**Solution:** Upgraded from `exif-parser` to `exiftool-vendored` (industry standard Perl ExifTool wrapper)
-
-**Technical Details:**
-```typescript
-// Old approach (fragile)
-import ExifParser from 'exif-parser'
-const parser = ExifParser.create(buffer)
-const result = parser.parse()
-
-// New approach (production-ready)
-import { exiftool } from 'exiftool-vendored'
-const tags = await exiftool.read(tempFilePath)
-// Handles: JPEG, DNG, RAW (CR2/NEF/ARW), HEIC, PNG
-// Auto-detects via magic bytes, not extension
-```
-
-**Benefits:**
-- Handles ALL image formats correctly
-- Detects actual file type via magic bytes (not fooled by wrong extensions)
-- Proper fallback: DateTimeOriginal → CreateDate → DateTime
-- Commercial/consumer release ready
-
-**Files Modified:**
-- `/src/app/api/photos/route.ts` - Photo upload with EXIF extraction
-- `package.json` - Added `exiftool-vendored` dependency
-
----
-
-#### Archive/Graveyard System - ML Training Data Preservation
-**Problem:** Delete operations permanently destroyed all plant data, losing valuable training data for future ML models.
-
-**Solution:** Implemented soft delete with archive system
-
-**Schema Changes:**
-```prisma
-model Plant {
-  // ... existing fields ...
-  
-  // Archive / Graveyard (soft delete - preserve data for ML training)
-  isArchived        Boolean  @default(false)
-  archivedAt        DateTime?
-  archiveReason     String?  // died, sold, culled, divided, lost, etc.
-  
-  @@index([isArchived])
-}
-```
-
-**API Implementation:**
-```typescript
-// DELETE /api/plants/[id] - Archives instead of deleting
-export async function DELETE(request, context) {
-  const archived = await prisma.plant.update({
-    where: { id: params.id },
-    data: {
-      isArchived: true,
-      archivedAt: new Date(),
-      archiveReason: body.reason || 'deleted'
-    }
-  })
-  // All related data retained: photos, care logs, measurements, traits
-}
-
-// GET /api/plants - Auto-filters archived plants
-const plants = await prisma.plant.findMany({
-  where: { isArchived: false }  // Only show active plants
-})
-```
-
-**Archive Reasons:**
-- `died` - Plant death (disease, pest, environmental)
-- `sold` - Sold to customer
-- `culled` - Removed during F1 selection
-- `divided` - Parent plant divided into offshoots
-- `lost` - Lost/stolen/destroyed
-- `deleted` - User-initiated removal
-
-**Benefits:**
-- **ML training data preserved:** All historical care, growth, and trait data retained
-- **Reversible:** Can restore archived plants if needed
-- **Analytics:** Track mortality rates, cull reasons, success patterns
-- **Audit trail:** Full history of collection changes
-
-**Files Created/Modified:**
-- `prisma/schema.prisma` - Added archive fields
-- `/src/app/api/plants/[id]/route.ts` - New endpoint with archive logic
-- `/src/app/api/plants/route.ts` - Filter archived plants from list
-
----
-
-#### Bug Fixes (Nov 6-10, 2025)
-
-**P0: Date Shifting Bug (UTC Mismatch)**
-- **Problem:** Care entries showed wrong dates (afternoon entries appeared as tomorrow)
-- **Root Cause:** `new Date(body.date + 'T12:00:00')` interpreted as local time, shifted to UTC
-- **Fix:** Changed to `new Date(body.date + 'T00:00:00.000Z')` for explicit UTC midnight
-- **Impact:** Fixed across 8 API endpoints (care logs, measurements, flowering, traits, plants)
-
-**P1: False EC Buildup Alert (Plant 0046)**
-- **Problem:** EC variance 0.62 triggered critical alert despite healthy values
-- **Root Cause:** Rain water flush (EC 0.05) artificially lowered average input EC
-  - Input EC avg: (1.17 + 0.05 + 0.37) / 3 = 0.53
-  - Output EC avg: 1.15 / 1 = 1.15  
-  - Variance: 0.62 > 0.5 threshold ❌
-- **Fix:** Calculate EC variance only from **paired readings** (logs with BOTH input and output)
-- **Result:** Plant 0046 variance now 0.02 (healthy) ✓
-- **File:** `/src/lib/care/ecPhUtils.ts:343-355`
-
-**P1: Dashboard Stale Plants Calculation**
-- **Problem:** Showed "53 plants not updated in 14+ days" incorrectly
-- **Root Cause:** Used `plant.updatedAt` (record edits) instead of care activity
-- **Fix:** Check `lastCareLog.date` for actual care activity
-- **File:** `/src/app/api/dashboard/stats/route.ts:274-287`
-
-**P1: Plant Page Not Refreshing After Care**
-- **Problem:** Back navigation showed stale data (care-based sorting incorrect)
-- **Fix:** Added visibility change listener to refetch on page focus
-- **File:** `/src/app/plants/page.tsx:88-98`
-
-**P1: UI Button Updates**
-- Changed Add Care/Delete buttons to icon-only (water droplet blue, trash red)
-- Added hover tooltips for accessibility
-- **File:** `/src/app/plants/[id]/page.tsx:725-736`
-
-**P1: Sorting Logic Simplification**
-- **Problem:** "Needs Attention" sort used complex care frequency calculations, didn't match label
-- **Root Cause:** Sort calculated overdue watering/fertilizing based on historical frequencies
-- **Fix:** Simplified to sort by last activity date (oldest activity = needs attention)
-- **Impact:** Sort now matches label "No Recent Activity" - plants with oldest activity appear first
-- **File:** `/src/app/plants/page.tsx:152-156`
-
-**P1: Database Schema Sync Fix**
-- **Problem:** "Failed to fetch plants" error - `isArchived` column doesn't exist
-- **Root Cause:** Archive system added to Prisma schema but not pushed to database
-- **Fix:** Ran `npx prisma db push` to sync schema with database
-- **Impact:** All archive features now working correctly
-
----
-
-#### ML/AI System Status (Clarification)
-
-**Current State:** The "ML" system is a **placeholder/stub** with adaptive logic:
-- ✅ Adaptive averaging (historical frequency calculations)
-- ✅ Environmental adjustments (temp >24°C, humidity >60%)  
-- ✅ Threshold-based alerts (EC variance, pH drift)
-- ❌ NOT actual machine learning (no regression, no neural networks)
-
-**Future Vision:** Replace with real ML models trained on collected data:
-- **Scikit-learn:** Regression models for care schedules
-- **TensorFlow.js:** Trait prediction, growth forecasting
-- **Feature engineering:** VPD, DLI, growth rate correlations
-- **Training pipeline:** Historical care/growth/environmental data
-
-**Why Preserve All Data:**
-- Every deleted plant = lost training examples
-- Archive system retains: care patterns, failure modes, trait expressions
-- Enables future ML: mortality prediction, optimal care schedules, trait inheritance models
-
----
-
+**End of Engineering Manual v1.2.0**

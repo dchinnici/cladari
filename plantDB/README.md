@@ -1,60 +1,67 @@
-# Cladari - Plant Management System
+# 🌿 Cladari PlantDB
 
-**Professional plant management platform for breeding, conservation, and environmental optimization**
+## Advanced Anthurium Collection Management System
 
-Built with Next.js 15, Prisma, and SQLite for comprehensive Anthurium breeding program management.
+A production-grade web application for managing high-value Anthurium collections with comprehensive tracking of genetics, morphology, care schedules, and breeding programs.
+
+![Version](https://img.shields.io/badge/version-1.2.0-green.svg)
+![Status](https://img.shields.io/badge/status-production-brightgreen.svg)
+![Plants](https://img.shields.io/badge/plants-67+-blue.svg)
+![Value](https://img.shields.io/badge/value-$11,469-yellow.svg)
 
 ---
 
-## 🌱 Features
+## ✨ Features
 
-### Core Functionality
-- **Plant Database** - Track accessions, lineage, genetics, and breeding records
-- **CSV Export** - One-click export of entire database to CSV for backup and analysis
-- **Smart Filtering & Sorting** - Adaptive care-based sorting, persistent filters across navigation
-- **Location Management** - Monitor environmental conditions across multiple growing areas
-- **Reproductive Phenology** - Track flowering cycles and fertility windows for breeding optimization
+### 📸 Photo Management
+- **Multi-photo upload** with EXIF extraction
+- **Cover photo selection** for plant cards
+- **8 photo categories** including stem, catophyl, base
+- **Automatic thumbnail generation**
+- **Growth stage tracking**
+
+### 🧪 EC/pH Monitoring
+- **Input/output tracking** for substrate analysis
+- **Automated health scoring** (0-100 scale)
+- **Drift detection** and trend analysis
+- **Critical alerts** for pH/EC issues
+- **Paired reading analysis**
+
+### 📦 Batch Operations
+- **Quick Care (Cmd+K)** for rapid logging
+- **Batch care** for multiple plants
+- **Location-based operations**
+- **Rain tracking** with amount/duration
+- **Baseline feed automation**
+
+### 🤖 ML-Ready Infrastructure
+- **Journal system** for training data
+- **Vector embeddings** in schema
+- **Care prediction algorithms**
+- **Photo metadata extraction**
+- **Substrate health analysis**
+
+### 📊 Analytics Dashboard
+- **Care queue** with priority sorting
+- **Collection statistics** and value tracking
+- **EC/pH trends** visualization
+- **Vendor performance** metrics
+- **Critical plant alerts**
+
+### 🔒 Data Protection
+- **Automated daily backups** to NAS
+- **30-day snapshot retention**
+- **Time Machine integration**
+- **Export to CSV/SQL**
+- **Photo backup included**
+
+### 🌱 Core Plant Management
+- **Plant Database** - Track accessions, lineage, genetics, breeding records
+- **Smart Filtering & Sorting** - Adaptive care-based sorting, persistent filters
+- **Location Management** - Monitor environmental conditions (DLI, VPD, CO₂)
+- **Reproductive Phenology** - Track flowering cycles and fertility windows
 - **Temporal Morphology** - Document phenotypic changes over time
-- **Care Logging** - Record watering (with baseline fertigation), special feeds, treatments
-- **Care Log Management** - Full CRUD: Create, edit, and delete care logs with confirmation
-- **Batch Care Operations** - Apply same care to multiple plants with location-based selection
-- **Rain Tracking** - Log natural rainfall with amount and duration for outdoor plants
-- **EC & pH Tracking** - Monitor nutrient and substrate chemistry with input/output measurements
-- **Adaptive Care Recommendations** - ML-powered watering schedules based on historical patterns
-- **Pest/Disease Discovery** - Structured workflow for logging pest findings separately from treatments
-- **Elite Genetics Flagging** - Mark and track elite breeding stock
-- **Photo Management** - Upload photos with EXIF extraction, edit metadata, organize by type/growth stage
-
-### Fertigation Workflow
-Modern liquid feed management system:
-- **Baseline Feed** - Auto-fill pH 5.9 / EC 1.1 (CalMag + TPS One + reduced K-Carb) with one checkbox
-- **Integrated Schedule** - Watering always includes baseline fertigation (no separate fertilization schedule)
-- **Incremental Feeds** - Log deviations from baseline (silica, dolomite, pH adjustments)
-- **Event-Based** - Special feeds are event-driven, not schedule-driven
-- **K-Carb Reduction** - Lower potassium carbonate to prevent cation nutrient lockout
-
-### Care Recommendation Engine
-Intelligent scheduling system that learns from your patterns:
-- **Adaptive Watering Frequency** - Calculates average interval from your last 10 care logs
-- **Environmental Adjustments** - Modifies intervals based on temperature (>24°C) and humidity (>60%)
-- **Confidence Levels** - High/Medium/Low based on data availability
-- **EC/pH Context** - Substrate health scoring and trend analysis
-- **Substrate Alerts** - Automatic warnings for EC buildup, pH drift, salt accumulation
-- **No Fixed Schedules** - System learns YOUR specific watering patterns per plant
-
-### Location Management
-Comprehensive environmental tracking with advanced metrics:
-- **Basic Monitoring:** Temperature, humidity (RH%), light levels
-- **Advanced Metrics:** DLI (Daily Light Integral), VPD (Vapor Pressure Deficit), CO₂, atmospheric pressure
-- **Equipment Tracking:** Grow lights, photoperiod, airflow, fan systems
-- **Capacity Planning:** Track plant counts, prevent overcrowding
-- **Organization:** Zone, shelf, position hierarchies
-
-### Breeding Program
-- **Flowering Cycle Tracking** - Monitor spathe emergence, female/male phases, pollen collection
-- **Pollen Management** - Track quality, storage, viability for coordinated crosses
-- **Lineage Tracking** - F1, F2, F3+ generations with parent relationships
-- **Breeding Goals** - Document selection criteria and outcomes
+- **Pest Management** - Discovery and treatment tracking
 
 ---
 
@@ -62,32 +69,54 @@ Comprehensive environmental tracking with advanced metrics:
 
 ### Prerequisites
 - Node.js 18+
-- npm or yarn
+- macOS (optimized for Mac)
+- 4GB RAM minimum
 
 ### Installation
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/yourusername/plantdb.git
 cd plantDB
 
 # Install dependencies
 npm install
 
-# Set up environment variables
-cp .env.example .env
-# Edit .env with your configuration
-
-# Initialize database
-npx prisma db push
+# Set up database
 npx prisma generate
+npx prisma db push
 
 # Start development server
-./scripts/dev           # Standard mode (localhost only)
-./scripts/dev --bg      # Tailscale mode (all interfaces, access via f1:3000)
+./scripts/dev --bg
 ```
 
-Visit `http://localhost:3000` to access the application.
+### Access the Application
+
+- **Main App**: http://localhost:3000
+- **Database UI**: `npx prisma studio` → http://localhost:5555
+
+---
+
+## 📚 Documentation
+
+- **[Operator Manual](OPERATOR_MANUAL.md)** - User guide for daily operations
+- **[Engineer Manual](docs/CLADARI_ENGINEER_MANUAL.md)** - Technical documentation
+- **[Backup Setup](docs/BACKUP_SETUP.md)** - Automated backup configuration
+- **[Location Management](docs/LOCATION_MANAGEMENT.md)** - Environmental tracking
+- **[ML Integration Roadmap](docs/ML_INTEGRATION_ROADMAP.md)** - AI/ML plans
+- **[Reproductive Phenology](docs/REPRODUCTIVE_PHENOLOGY.md)** - Breeding cycles
+
+---
+
+## 🛠️ Technology Stack
+
+- **Framework**: Next.js 15.5.6 (App Router)
+- **Database**: SQLite + Prisma ORM
+- **UI**: Tailwind CSS + Glassmorphism
+- **Language**: TypeScript
+- **Icons**: Lucide React
+- **Charts**: Recharts
+- **Photos**: Sharp for image processing
 
 ---
 
@@ -95,321 +124,233 @@ Visit `http://localhost:3000` to access the application.
 
 ```
 plantDB/
-├── src/
-│   ├── app/                    # Next.js 15 App Router
-│   │   ├── api/               # API routes
-│   │   │   ├── locations/    # Location management endpoints
-│   │   │   ├── plants/       # Plant CRUD + flowering/traits/photos
-│   │   │   └── dashboard/    # Analytics endpoints
-│   │   ├── plants/           # Plant pages
-│   │   ├── locations/        # Location management UI
-│   │   ├── breeding/         # Breeding records
-│   │   ├── genetics/         # Genetic analysis
-│   │   ├── batch-care/       # Batch operations
-│   │   └── dashboard/        # Overview dashboard
-│   ├── components/           # Reusable React components
-│   │   └── care/            # Care recommendation components
-│   └── lib/                  # Utilities
-│       ├── care/            # Care recommendation engine
-│       ├── careLogUtils.ts  # Care frequency calculations
-│       └── prisma.ts        # Prisma client
 ├── prisma/
-│   ├── schema.prisma         # Database schema
-│   └── dev.db               # SQLite database
-├── docs/                     # Documentation
-│   ├── LOCATION_MANAGEMENT.md
-│   ├── REPRODUCTIVE_PHENOLOGY.md
-│   ├── TEMPORAL_MORPHOLOGY.md
-│   ├── CLADARI_ENGINEER_MANUAL.md
-│   └── OPERATOR_MANUAL.md
+│   ├── schema.prisma     # Database schema
+│   └── dev.db           # SQLite database
+├── src/
+│   ├── app/             # Next.js app routes
+│   │   ├── plants/      # Plant management
+│   │   ├── batch-care/  # Batch operations
+│   │   ├── locations/   # Location management
+│   │   └── api/        # API endpoints
+│   ├── components/      # React components
+│   │   └── care/       # Care-related components
+│   └── lib/            # Utilities & helpers
+│       ├── care/       # Care algorithms
+│       └── ml/         # ML functions
 ├── public/
-│   └── uploads/            # Photo storage
-│       ├── photos/         # Full-size images
-│       └── thumbnails/     # Optimized thumbnails
-└── scripts/                # Utility scripts
+│   └── uploads/        # Photo storage
+│       ├── photos/     # Original photos
+│       └── thumbnails/ # Generated thumbnails
+├── scripts/            # Automation scripts
+├── docs/              # Documentation
+└── backups/           # Backup directory
 ```
 
 ---
 
-## 🗄️ Database Schema
+## 🎯 Key Features in Detail
 
-### Core Models
-- **Plant** - Central entity with lineage, genetics, location
-- **Location** - Growing environments with environmental metrics
-- **FloweringCycle** - Reproductive phenology tracking
-- **Trait** - Temporal morphology observations
-- **CareLog** - Care activities and interventions
-- **Photo** - Plant photos with EXIF metadata
-- **Measurement** - EC, pH, nutrient tracking
-- **GrowthMetric** - Quick growth assessments
-- **BreedingRecord** - Cross documentation
-- **Vendor** - Source tracking
-- **Treatment** - Fertilizers, pesticides, fungicides
+### Plant Management
+- **Unique IDs**: ANT-2025-XXXX format
+- **13 Anthurium sections**: Full taxonomic support
+- **Parent/offspring tracking**: Complete lineage
+- **Morphological traits**: Detailed phenotyping
+- **Financial valuation**: Market value tracking
 
-See `prisma/schema.prisma` for complete schema definition.
+### Care Tracking
+- **Smart scheduling**: ML-powered predictions
+- **Fertilizer management**: Baseline + incremental
+- **Pest tracking**: Discovery to treatment
+- **Repotting logs**: Substrate details included
+- **Growth measurements**: Time-series data
 
----
+### Photo System
+- **Multi-upload**: Batch photo processing
+- **EXIF extraction**: Camera metadata preserved
+- **Cover selection**: Choose display photo
+- **8 categories**: Comprehensive documentation
+- **Auto-thumbnails**: Performance optimized
 
-## 🎯 Key Workflows
+### EC/pH Analysis
+- **Paired readings**: Input vs output analysis
+- **Variance detection**: Salt buildup alerts
+- **pH drift tracking**: Substrate aging monitor
+- **Health scoring**: 0-100 substrate health
+- **Trend visualization**: Historical patterns
 
-### Daily Care Logging
-1. Press **Cmd+K** from anywhere for Quick Care modal
-2. Use **number keys 1-9** to select plants
-3. Press **W** for water, **F** for fertilize
-4. Press **B** to toggle baseline feed (auto-fills pH 5.9, EC 1.1)
-5. Press **Cmd+Enter** to save
-6. Or use traditional plant detail page for single-plant logging
-7. Save - baseline feed recorded in seconds!
-
-### Recording Special Feeds
-1. Same as above, but select **Incremental Feed** instead
-2. System knows this is a deviation from baseline
-3. Describe what was added (silica, pH down, extra nutrients)
-4. No schedule needed - these are event-based
-
-### Managing Locations
-1. Navigate to **Locations** in top navigation
-2. **Add Location** to create new growing area
-3. Document environmental conditions:
-   - Basic: Temperature, humidity
-   - Advanced: DLI, VPD, CO₂, pressure
-   - Equipment: Grow lights, airflow, photoperiod
-4. Assign plants via dropdown in plant detail pages
-
-### Tracking Flowering Cycles
-1. Open plant detail page → **Flowering** tab
-2. **Log Flowering Event** when spathe emerges
-3. Update cycle as phases progress:
-   - Spathe emergence → Female receptive → Male pollen → Cycle complete
-4. Track pollen collection and storage
-5. Coordinate crosses using fertility windows
-
-### Recording Pest Discoveries
-1. Plant detail → **Add Care Log**
-2. Select **Pest/Disease Discovery**
-3. Choose pest type from comprehensive dropdown (spider mites, thrips, root rot, etc.)
-4. Select severity level (Mild, Moderate, Severe, Critical)
-5. Specify affected area (lower leaves, new growth, roots)
-6. Log treatment separately using **Pest Treatment** action
-
-### Photo Management
-1. Plant detail → **Photos** tab
-2. Drag and drop images or click to select
-3. System extracts EXIF date automatically
-4. Edit photo metadata:
-   - Photo type (whole plant, leaf, spathe, spadix, roots)
-   - Growth stage (seedling, juvenile, mature)
-   - Notes
-   - Date taken (manual override if needed)
-5. Delete photos with confirmation
-
-### Batch Care Operations
-1. Navigate to **Batch Care** from top navigation
-2. **Select by Location:**
-   - Choose location from dropdown (shows plant count)
-   - Click "Select" to select all plants in that location
-3. Choose activity type (Watering, Rain, Fertilizing, etc.)
-4. For **Rain** activity:
-   - Select rainfall amount: Light, Medium, or Heavy
-   - Select duration: Brief, Short, Medium, Long, or Extended
-5. Add notes and click **Save to Selected Plants**
+### Environmental Monitoring
+- **DLI tracking**: Daily light integral
+- **VPD calculation**: Vapor pressure deficit
+- **CO₂ monitoring**: PPM tracking
+- **Temperature/humidity**: Full climate data
+- **Equipment tracking**: Lights, fans, timers
 
 ---
 
-## 📊 Environmental Metrics
+## 📈 Performance Metrics
 
-### Daily Light Integral (DLI)
-- **Units:** mol/m²/day
-- **Optimal for Anthuriums:** 10-20 mol/m²/day
-- Measures total light energy plants receive per day
+- **Plant list load**: <200ms
+- **Photo upload**: <2s with thumbnails
+- **Search response**: <50ms
+- **Database size**: ~50MB
+- **Photo storage**: ~2GB
+- **Backup size**: ~2.5GB total
 
-### Vapor Pressure Deficit (VPD)
-- **Units:** kPa (kilopascals)
-- **Optimal for Anthuriums:** 0.8-1.2 kPa
-- Indicates transpiration driving force
+---
 
-### CO₂ Concentration
-- **Units:** ppm (parts per million)
-- **Ambient:** ~400 ppm
-- **Enriched:** 800-1200 ppm (20-30% faster growth)
+## ⌨️ Keyboard Shortcuts
 
-See `docs/LOCATION_MANAGEMENT.md` for detailed environmental metrics reference.
+- `Cmd+K` - Quick care modal
+- `/` - Focus search (on plant list)
+- `Esc` - Close modals
+- `Enter` - Submit forms
 
 ---
 
 ## 🔧 Development
 
-### Available Scripts
-
+### Running Tests
 ```bash
-# Development server with hot reload
-npm run dev
+npm test
+```
 
-# Production build
+### Database Migrations
+```bash
+# Create migration
+npx prisma migrate dev --name your_migration_name
+
+# Apply migrations
+npx prisma migrate deploy
+
+# Push schema changes (development)
+npx prisma db push
+```
+
+### Building for Production
+```bash
 npm run build
 npm start
-
-# Database management
-npx prisma studio          # Visual database editor
-npx prisma db push         # Sync schema to database
-npx prisma generate        # Regenerate Prisma Client
-
-# Code quality
-npm run lint               # ESLint checks
 ```
 
-### API Routes
+### Backup Management
+```bash
+# Manual backup
+./scripts/backup-to-nas.sh
 
-All API routes follow RESTful conventions:
+# Check backup status
+launchctl list | grep cladari
 
-```
-GET    /api/plants                            # List all plants
-POST   /api/plants                            # Create plant
-GET    /api/plants/[id]                       # Get plant details
-PATCH  /api/plants/[id]                       # Update plant
-DELETE /api/plants/[id]                       # Delete plant
-GET    /api/plants/export                     # Export database to CSV
-GET    /api/plants/[id]/recommendations      # Get adaptive care recommendations
-
-GET    /api/locations           # List locations with counts
-POST   /api/locations           # Create location
-PATCH  /api/locations/[id]      # Update location
-DELETE /api/locations/[id]      # Delete location (if no plants)
-
-GET    /api/plants/[id]/flowering             # Get flowering cycles
-POST   /api/plants/[id]/flowering             # Create cycle
-PATCH  /api/plants/[id]/flowering/[cycleId]   # Update cycle
-DELETE /api/plants/[id]/flowering/[cycleId]   # Delete cycle
-
-POST   /api/plants/[id]/care-logs             # Create care log
-PATCH  /api/plants/[id]/care-logs/[logId]     # Edit care log
-DELETE /api/plants/[id]/care-logs/[logId]     # Delete care log (with confirmation)
-
-POST   /api/photos                            # Upload photo
-GET    /api/photos?plantId=[id]               # Get plant photos
-PATCH  /api/photos?id=[photoId]               # Edit photo metadata
-DELETE /api/photos?id=[photoId]               # Delete photo
-
-PATCH  /api/plants/[id]/location              # Update plant location
+# View backup logs
+tail -20 logs/backup.log
 ```
 
 ---
 
-## 📚 Documentation
+## 🐛 Recent Fixes (v1.2.0)
 
-- **Location Management:** `docs/LOCATION_MANAGEMENT.md`
-- **Reproductive Phenology:** `docs/REPRODUCTIVE_PHENOLOGY.md`
-- **Temporal Morphology:** `docs/TEMPORAL_MORPHOLOGY.md`
-- **Engineer Manual:** `docs/CLADARI_ENGINEER_MANUAL.md`
-- **Operator Manual:** `OPERATOR_MANUAL.md`
-- **Vision & Pipeline:** `docs/VISION_AND_PIPELINE.md`
-
----
-
-## 🛠️ Technology Stack
-
-- **Framework:** Next.js 15.5.6 (App Router)
-- **Database:** Prisma ORM + SQLite
-- **UI:** React 19, TailwindCSS, Lucide Icons
-- **Charts:** Recharts
-- **Image Processing:** Sharp (resize, thumbnails, EXIF extraction)
-- **File Upload:** React Dropzone
-- **TypeScript:** Full type safety
+- ✅ **Dropdown z-index**: Menus now appear above cards
+- ✅ **Timezone handling**: EST standardized across system
+- ✅ **pH drift detection**: False positives eliminated
+- ✅ **EC averaging**: Uses last 3 logs for accuracy
+- ✅ **Pest status**: Only shows active issues
+- ✅ **Repotting fields**: Proper editing behavior
+- ✅ **Cover photo**: New selection feature added
 
 ---
 
-## 🎯 Roadmap
+## 📅 Roadmap
 
-### Phase 1.5 (Nov 10, 2025) ✅
-- **Automated Backup System** - Daily cron job with 30-day retention
-- **Quick Care Modal** - Cmd+K for rapid keyboard-driven care logging
-- **Actionable Dashboard** - Care Queue widget with Water/Feed/Critical tabs
-- **Database Performance** - 20+ indexes, <1ms query times
-- **Mobile PWA** - Installable app with offline support
-- **Service Worker** - Offline caching for field use
-- **Tailscale Support** - Access via f1:3000 on mobile devices
-- **Baseline Update** - pH 5.9, EC 1.1 (reduced K-Carb to prevent lockout)
+### Phase 2 (Q1 2026)
+- [ ] QR code generation for plant labels
+- [ ] Mobile PWA for field work
+- [ ] SensorPush integration
+- [ ] Darwin Core export format
+- [ ] Advanced search filters
+- [ ] Care calendar view
 
-### Phase 1 (Complete) ✅
-- Core plant database
-- Location management with advanced metrics
-- Flowering cycle tracking
-- Temporal morphology
-- Care logging with full CRUD capabilities
-- Adaptive care recommendation engine
-- Baseline feed checkbox with auto-fill
-- Pest/disease discovery workflow
-- Photo management with EXIF support
-- Batch care with location-based selection
-- Rain activity tracking with amount/duration
-- CSV export functionality
-- Plant deletion with safety checks
-- Smart filtering and sorting with persistence
-- Stale plant alerts
-- Elite genetics tracking
-- EC/pH tracking with substrate health analysis
+### Phase 3 (Q2 2026)
+- [ ] Vector search capabilities
+- [ ] PostgreSQL migration (>1000 plants)
+- [ ] Photo AI analysis
+- [ ] Automated pest detection
+- [ ] Growth prediction models
+- [ ] MCP server integration
 
-### Phase 2 (Next)
-- Dashboard with fertility windows widget
-- Pollen inventory management
-- Cycle prediction algorithms
-- Environmental correlation analytics
-- Advanced photo analysis (growth rate from images)
-- Mobile-optimized PWA
-
-### Phase 3 (Future)
-- Sensor integration for real-time data
-- Automated environmental alerts
-- LLM-powered breeding recommendations (Sovria integration)
-- AI pest/disease detection from photos
-- Breeding program genetics calculator
-- DNA sequence database (MinION integration)
-
----
-
-## 📝 License
-
-Proprietary - Cladari Plant Management System
+### Phase 4 (Q3 2026)
+- [ ] Custom ML models
+- [ ] Breeding recommendations AI
+- [ ] Multi-user collaboration
+- [ ] Marketplace features
+- [ ] DNA sequence storage
+- [ ] BLAST search integration
 
 ---
 
 ## 🤝 Contributing
 
-This is a private breeding program management system. For access or questions, contact the project maintainer.
+This is currently a private project for managing a personal Anthurium collection. If you're interested in similar features for your collection, feel free to fork and adapt!
 
 ---
 
-## 📧 Support
+## 📄 License
 
-For technical issues or feature requests, refer to `docs/CLADARI_ENGINEER_MANUAL.md` or contact the development team.
-
----
-
-## 🤖 For AI Assistants (Claude, GPT, etc.)
-
-**IMPORTANT:** When helping with debugging, feature development, or data analysis:
-
-1. **Always remind the user to run the database snapshot:**
-   ```bash
-   ./scripts/snapshot-db.sh
-   ```
-
-2. **Request these files be uploaded to the conversation:**
-   - `docs/db-snapshots/latest-stats.json` - Quick overview
-   - `docs/db-snapshots/sample-plants.json` - Recent plant data
-   - `docs/db-snapshots/sample-care-logs.json` - Recent care logs
-   - `docs/db-snapshots/schema-info.txt` - Current schema (if schema questions arise)
-
-3. **Why this matters:**
-   - Text snapshots are easier to analyze than binary `.db` files
-   - Provides real-time visibility into actual data state
-   - Helps identify data quality issues, patterns, and edge cases
-   - Essential for making informed recommendations
-
-**Example prompt to user:**
-> "Before we debug this, can you run `./scripts/snapshot-db.sh` and upload the files from `docs/db-snapshots/` (especially latest-stats.json and sample-plants.json) so I can see your current data state?"
+Private project - All rights reserved
 
 ---
 
-**Version:** 1.2.0 - Performance & Mobile Enhancement Release
-**Built with 🌿 for professional plant breeding and conservation**
+## 🙏 Acknowledgments
+
+- Built for the Cladari Anthurium collection
+- Inspired by botanical database standards
+- Optimized for serious plant collectors
+- Developed with assistance from Claude AI
+
+---
+
+## 📞 Support
+
+For issues or questions:
+1. Check the [Operator Manual](OPERATOR_MANUAL.md)
+2. Review the [Engineer Manual](docs/CLADARI_ENGINEER_MANUAL.md)
+3. Check logs: `tail -50 .next-dev.log`
+4. Database issues: `npx prisma studio`
+
+### Common Commands
+```bash
+# Start server
+./scripts/dev --bg
+
+# Stop server
+./scripts/stop
+
+# View database
+npx prisma studio
+
+# Check plant count
+sqlite3 prisma/dev.db "SELECT COUNT(*) FROM Plant;"
+
+# Export to CSV
+curl http://localhost:3000/api/plants/export > plants.csv
+```
+
+---
+
+## 🌟 Recent Updates (November 2025)
+
+- **v1.2.0** - Cover photo selection, bug fixes
+- **v1.1.9** - Photo management system
+- **v1.1.8** - EC/pH analysis system
+- **v1.1.7** - Batch care & quick care
+- **v1.1.6** - ML foundation & journal
+- **v1.1.5** - Automated backups
+- **v1.1.4** - Location management
+- **v1.1.3** - Reproductive phenology
+- **v1.1.2** - Temporal morphology
+- **v1.1.1** - Data standardization
+
+---
+
+**Happy Growing! 🌱**
+
+*Last Updated: November 12, 2025*

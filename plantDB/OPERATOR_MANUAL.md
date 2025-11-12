@@ -1,439 +1,453 @@
-# Cladari Plant Management - Operator Manual
+# Cladari PlantDB - Operator Manual
+**Version 1.2.0** | **Updated: November 12, 2025**
 
-## Table of Contents
-1. [System Overview](#system-overview)
-2. [Project History & Evolution](#project-history--evolution)
-3. [Technology Stack](#technology-stack)
-4. [Database Architecture](#database-architecture)
-5. [Application Structure](#application-structure)
-6. [Key Features](#key-features)
-7. [Known Issues & Solutions](#known-issues--solutions)
-8. [Development Guide](#development-guide)
-9. [Troubleshooting](#troubleshooting)
+## 🌿 Welcome to Your Plant Management System
+
+This guide will help you use all the features of your Anthurium collection database. No technical knowledge required!
 
 ---
 
-## System Overview
+## 📑 Table of Contents
 
-Cladari Plant Management is a comprehensive web application designed to track and manage an anthurium plant collection worth over $11,000. The system manages 67+ plants with detailed tracking of genetics, morphology, breeding history, care requirements, and market values.
-
-### Core Purpose
-- Track individual plant specimens with unique IDs (ANT-2025-XXXX format)
-- Monitor plant health through EC/pH measurements
-- Document morphological traits for breeding programs
-- Manage breeding crosses and genetic lineages
-- Schedule and log care activities
-- Predict market values based on traits
-
----
-
-## Project History & Evolution
-
-### Initial State
-- Started with Excel spreadsheet (`Anthurium_Collection_Enhanced-2.xlsx`) containing 67 plants
-- Data included basic info: names, sources, prices, acquisition dates
-- Total collection value: $11,469
-
-### Migration Path
-1. **PostgreSQL Intent**: Originally planned for PostgreSQL with pgvector for AI-powered trait analysis
-2. **Docker Issues**: Docker daemon wasn't running, preventing PostgreSQL setup
-3. **SQLite Pivot**: Successfully migrated to SQLite for immediate functionality
-4. **Data Import**: Built custom import script to migrate Excel data to database
-
-### Key Development Milestones
-1. Database schema design with 12+ interconnected models
-2. Next.js 15 app with TypeScript implementation
-3. Beautiful UI with glassmorphism effects
-4. Functional CRUD operations for all entities
-5. Batch care logging for efficiency
-6. EC/pH tracking with input/output measurements
-7. Next.js 15 compatibility fixes (async params)
+1. [Quick Start Guide](#-quick-start-guide)
+2. [Managing Your Plants](#-managing-your-plants)
+3. [Care Management](#-care-management)
+4. [Photo Management](#-photo-management)
+5. [EC/pH Monitoring](#-ecph-monitoring)
+6. [Batch Operations](#-batch-operations)
+7. [Dashboard Features](#-dashboard-features)
+8. [Keyboard Shortcuts](#-keyboard-shortcuts)
+9. [Troubleshooting](#-troubleshooting)
 
 ---
 
-## Technology Stack
+## 🚀 Quick Start Guide
 
-### Core Technologies
-- **Framework**: Next.js 15.5.5 (App Router)
-- **Language**: TypeScript
-- **Database**: SQLite (via Prisma ORM)
-- **Styling**: Tailwind CSS with glassmorphism
-- **Icons**: Lucide React
-- **Data Import**: xlsx library
+### Starting the System
 
-### File Structure
-```
-anthurium-breeding-system/
-├── prisma/
-│   ├── schema.prisma       # Database schema
-│   └── dev.db             # SQLite database
-├── src/
-│   ├── app/               # Next.js app directory
-│   │   ├── api/          # API routes
-│   │   ├── plants/       # Plant pages
-│   │   ├── batch-care/   # Batch operations
-│   │   └── dashboard/    # Analytics
-│   ├── components/       # React components
-│   └── lib/             # Utilities
-├── scripts/
-│   └── import-excel-data.js  # Data migration
-└── public/              # Static assets
-```
+1. **Open Terminal** on your Mac
+2. **Navigate to the project**:
+   ```bash
+   cd /Users/davidchinnici/cladari/plantDB
+   ```
+3. **Start the server**:
+   ```bash
+   ./scripts/dev --bg
+   ```
+4. **Open your browser** and go to: http://localhost:3000
 
----
+### Stopping the System
 
-## Database Architecture
-
-### Core Models
-
-#### Plant
-- Central entity with unique plantId (ANT-2025-XXXX)
-- Stores: name, species, variety, source, price, acquisition date
-- Uses `notes` field as JSON storage for care requirements
-- Links to all other entities
-
-#### Trait (Morphological Data)
-- Category-based system (leaf, spathe, spadix, growth)
-- Trait names (shape, color, texture, size)
-- Values stored as strings with optional expression levels
-- Multiple traits per plant
-
-#### CareLog
-- Tracks all care activities (watering, fertilizing, etc.)
-- Stores EC/pH measurements in `details` JSON field
-- Supports batch operations across multiple plants
-
-#### Measurement
-- Dedicated EC/pH tracking with timestamps
-- Types: routine, pre-water, post-water
-- Separate from care logs for detailed monitoring
-
-#### Breeding
-- Tracks crosses between plants
-- Parent relationships (female/male)
-- F1 generation tracking
-- Success metrics
-
-### Data Storage Patterns
-- **JSON Fields**: Used for flexible data (care requirements, EC/pH details)
-- **Normalized Relations**: Proper foreign keys for data integrity
-- **Temporal Data**: All entities track creation/update times
-
----
-
-## Application Structure
-
-### API Routes (All Next.js 15 Compatible)
-
-#### `/api/plants`
-- GET: List all plants with relationships
-- POST: Create new plant
-
-#### `/api/plants/[id]`
-- GET: Single plant with full details
-- PATCH: Update plant info (including care requirements as JSON)
-
-#### `/api/plants/[id]/traits`
-- POST: Create/update morphological traits
-- Maps UI fields to database structure
-
-#### `/api/plants/[id]/care-logs`
-- POST: Add care log with EC/pH data
-
-#### `/api/plants/[id]/measurements`
-- POST: Record EC/pH measurements
-
-#### `/api/plants/[id]/care-logs/[logId]`
-- PATCH: Edit existing care log (NEW in v1.1.0)
-
-#### `/api/plants/export`
-- GET: Export database to CSV (NEW in v1.1.0)
-
-#### `/api/batch-care`
-- POST: Apply same care to multiple plants
-
-### Key UI Components
-
-#### Plant Detail Page (`/plants/[id]`)
-- 7 tabs: Overview, Care & Notes, EC & pH, Morphology, Photos, Breeding, Care Logs
-- Modal-based editing for all sections
-- Real-time data updates
-
-#### Plant List (`/plants`)
-- Card-based layout with glassmorphism
-- Quick stats display
-- Search and filter capabilities
-
-#### Batch Care (`/batch-care`)
-- Multi-plant selection with manual or location-based selection
-- Select by Location dropdown for quick bulk operations
-- Single form for multiple plants
-- EC/pH input with separate in/out fields
-- Rain activity type with amount and duration tracking
-
----
-
-## Key Features
-
-### 1. Plant Management
-- Unique ID generation
-- Comprehensive plant profiles
-- Photo management (placeholder)
-- QR code support (planned)
-
-### 2. Care Tracking
-- Individual care logs
-- Batch care operations with location-based selection
-- Rain tracking with amount and duration
-- Fertigation tracking (input/output EC/pH)
-- Care scheduling
-
-### 3. Morphological Documentation
-- Structured trait recording
-- Category-based organization
-- Breeding selection support
-
-### 4. Breeding Program
-- Cross documentation
-- Parent tracking
-- F1 generation records
-- Success rate analytics
-
-### 5. Data Analytics
-- Dashboard with statistics
-- Comprehensive recent activity tracking (all change types)
-- Value tracking
-- Growth monitoring
-- Collection insights
-- Stale plant alerts (7+ days without updates)
-
-### 6. Data Management
-- CSV export (23-column comprehensive export)
-- Plant deletion with safety confirmation
-- Smart sorting (oldest first for update queue)
-- Advanced filtering (health, breeder, location, section)
-
-### 7. Elite Genetics
-- Mark elite breeding stock with checkbox
-- Inline instant save
-- Filter and sort by elite status
-
----
-
-## Recent Updates (v1.1.1) - Latest
-
-### New Features Added
-1. **Batch Care: Select by Location** - Instantly select all plants in a specific location
-   - Dropdown shows all locations with plant counts
-   - Perfect for applying care to outdoor plants (balcony, patio) after rain
-2. **Rain Activity Type** - Track natural rainfall for outdoor plants
-   - Rainfall Amount: Light, Medium, Heavy
-   - Duration: Brief, Short, Medium, Long, Extended
-   - Saved to care log details JSON for analytics
-
-### Bugs Fixed
-1. **Elite Genetics Toast** - Fixed backwards notification message
-   - Now correctly reflects actual database state
-   - Uses API response value instead of event target
-
----
-
-## Previous Updates (v1.1.0)
-
-### New Features Added
-1. **CSV Export** - Export entire database to CSV from Plants page
-2. **Plant Deletion** - Delete plants with confirmation modal
-3. **Care Log Editing** - Edit existing care logs (essential for adding output EC/pH)
-4. **Sort by Update Age** - Default sort shows plants needing attention first
-5. **Stale Plant Alerts** - Orange badges for plants not updated in 7+ days
-6. **Elite Genetics Tracking** - Mark and filter elite breeding stock
-7. **Comprehensive Activity Feed** - Dashboard shows all changes (plants, care, measurements, flowering)
-
-### Bugs Fixed
-1. **Timezone Bug** - Care logs and measurements now save correct dates
-2. **EC/pH Submission** - Fixed measurement form failures
-3. **Filter Functionality** - Plants filter modal now fully operational
-4. **Scroll Position** - Page preserves scroll after edits
-5. **Custom Breeder Code** - Fixed "custom" appearing as actual value
-6. **Breeder Codes** - Consolidated OG5→OG, added FP
-
----
-
-## Known Issues & Solutions
-
-### 1. Next.js 15 Async Params
-**Issue**: Dynamic routes require awaiting params
-**Solution**: All routes updated with:
-```typescript
-const params = await context.params
-```
-
-### 2. Database Schema Mismatches
-**Issue**: Trait model structure differs from UI expectations
-**Solution**: Implemented mapping layer between UI fields and database structure
-
-### 3. Care Requirements Storage
-**Issue**: No dedicated database fields for care requirements
-**Solution**: Store as JSON in plant.notes field
-
-### 4. Field Name Inconsistencies
-**Issue**: API expects different field names than UI sends
-**Solution**: Field mapping in API routes (e.g., activityType vs action)
-
----
-
-## Development Guide
-
-### Starting Development Server
 ```bash
-cd plantDB
-DATABASE_URL="file:./prisma/dev.db" npm run dev
+cd /Users/davidchinnici/cladari/plantDB
+./scripts/stop
 ```
 
-### Running Data Import
+---
+
+## 🌱 Managing Your Plants
+
+### Viewing Your Collection
+
+- **Main Plants Page**: See all your plants with photos in a beautiful card layout
+- **Search**: Use the search bar to find plants quickly (press `/` to focus)
+- **Sort Options**:
+  - ⚠️ **Needs Attention**: Plants requiring care
+  - 🕐 **Recently Active**: Latest updates first
+  - 🔤 **Alphabetical**: A-Z by name
+- **Filters**: Click the filter icon to narrow down by location, health, etc.
+
+### Plant Details Page
+
+Click any plant card to see full details with these tabs:
+
+1. **Overview**: Basic info, location, health status
+2. **Care Logs**: Complete care history with EC/pH data
+3. **Traits**: Morphological characteristics
+4. **Genetics**: Breeding info, parent plants
+5. **Measurements**: Growth tracking over time
+6. **Photos**: All plant photos (NEW: with cover photo selection!)
+7. **Flowering**: Reproductive cycles
+8. **Journal**: Complete activity timeline
+9. **Recommendations**: AI-powered care suggestions
+
+### Adding a New Plant
+
+1. Click the **"Add Plant"** button (green button in top controls)
+2. Fill in the details:
+   - PlantID is auto-generated (ANT-2025-XXXX format)
+   - Select section from dropdown (prevents typos)
+   - Add hybrid name or species
+   - Set acquisition cost and date
+3. Click **Save**
+
+### Editing Plant Information
+
+1. On the plant detail page, click **"Edit"** (top right)
+2. Update any fields
+3. Click **"Save"** to confirm or **"Cancel"** to discard
+
+---
+
+## 💧 Care Management
+
+### Quick Care (Cmd+K)
+
+The fastest way to log care:
+
+1. Press **Cmd+K** anywhere in the app
+2. Select plants to care for
+3. Choose activity type
+4. Add optional details (EC/pH, notes)
+5. Click **"Log Care"**
+
+### Recording Individual Care
+
+1. Go to the plant's detail page
+2. Click **"Care Logs"** tab
+3. Click **"Add Care Log"**
+4. Fill in details:
+   - **Activity Type**: Watering, Fertilizing, Repotting, etc.
+   - **Baseline Feed**: Check this for standard nutrient mix
+   - **EC/pH Values**: Optional but recommended
+   - **Notes**: Any observations
+
+### Understanding Care Types
+
+- **Watering**: Regular water, can include baseline nutrients
+- **Rain**: Natural watering (tracks amount/duration)
+- **Incremental Feed**: Extra nutrients beyond baseline
+- **Repotting**: Includes pot size, substrate details
+- **Pest Discovery/Treatment**: Track issues and solutions
+- **Pruning**: Maintenance activities
+
+### Repotting Details
+
+When logging repotting:
+- **From/To Pot Size**: Automatically fills current size
+- **Substrate Type**: PON, moss, bark mix, etc.
+- **Drainage Type**: Drainage holes, net pot, semi-hydro
+- **Substrate Mix**: Custom blend details
+
+---
+
+## 📸 Photo Management
+
+### Uploading Photos
+
+1. Go to plant's **Photos** tab
+2. Click **"Upload Photos"**
+3. Select multiple files (JPEG, PNG, DNG supported)
+4. Choose photo type:
+   - Whole Plant
+   - Leaf Detail
+   - Spathe
+   - Spadix
+   - Stem
+   - Catophyl
+   - Base/Petiole
+   - Roots
+5. Add growth stage and notes (optional)
+6. Photos automatically extract EXIF data
+
+### Setting a Cover Photo (NEW!)
+
+The cover photo appears on plant cards in the main view:
+
+1. In the Photos tab, hover over any photo
+2. Click the **⭐ Star icon** to set as cover
+3. Current cover shows a **"Cover"** badge
+4. Change anytime by selecting a different photo
+
+### Managing Photos
+
+- **Edit**: Click the pencil icon to update details
+- **Delete**: Click the trash icon to remove
+- Photos are stored in `/public/uploads/photos/`
+- Thumbnails generated automatically for performance
+
+---
+
+## 🧪 EC/pH Monitoring
+
+### Recording Measurements
+
+When logging care, add EC/pH values:
+- **Input EC/pH**: Your nutrient solution values
+- **Output EC/pH**: Runoff measurements
+
+### Understanding Alerts
+
+The system automatically detects issues:
+
+- **🔴 Critical EC Buildup**: Output EC > Input EC by 0.3+
+  - Action: Flush with pH-balanced water
+
+- **⚠️ pH Drift Warning**: pH changing > 0.2 per week
+  - Action: Check substrate age, consider CalMag buffer
+
+- **🔴 Critical pH**: < 5.0 or > 7.0
+  - Action: Immediate correction needed
+
+### Substrate Health Score
+
+Automatically calculated 0-100 based on:
+- EC variance between input/output
+- pH stability
+- Time since last repot
+- Recent measurements
+
+Score < 50 suggests repotting needed.
+
+---
+
+## 📦 Batch Operations
+
+### Batch Care
+
+Perfect for watering multiple plants:
+
+1. Click **"Batch Care"** button (blue droplet icon)
+2. Select plants by:
+   - Individual selection
+   - Location (all plants in a tent/shelf)
+   - Filter then select all
+3. Choose activity type
+4. Add details (applies to all selected)
+5. Click **"Submit"**
+
+### Rain Tracking
+
+When plants get rained on:
+1. Use Batch Care
+2. Select "Rain" as activity
+3. Enter rainfall amount (inches)
+4. Enter duration (hours)
+5. System logs natural watering for all selected plants
+
+---
+
+## 📊 Dashboard Features
+
+### Care Queue Widget
+
+Shows plants needing immediate attention in three categories:
+
+1. **💧 Water**: Plants due for watering (5+ days)
+2. **🌿 Feed**: Plants due for fertilizing (14+ days)
+3. **⚠️ Critical**: Plants with issues:
+   - Active pest/disease (untreated)
+   - High EC or abnormal pH
+   - No activity for 10+ days
+
+Click any plant to go directly to its page, or use bulk actions.
+
+### Collection Statistics
+
+- Total plants and value
+- Vendor distribution
+- Health status breakdown
+- Recent activity timeline
+- Financial analytics
+
+### EC/pH Dashboard
+
+Visual analytics showing:
+- Average EC/pH trends
+- Plants with concerning values
+- Substrate health scores
+- Recommendations for improvement
+
+---
+
+## ⌨️ Keyboard Shortcuts
+
+- **Cmd+K**: Open Quick Care modal
+- **/**: Focus search box (on plant list)
+- **Esc**: Close any modal
+- **Enter**: Submit forms
+
+---
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+**Plants not showing photos?**
+- Check if photos were uploaded
+- Refresh the page (Cmd+R)
+- Clear browser cache if needed
+
+**EC/pH values not saving?**
+- Enter numbers only (e.g., "1.2" not "1.2 EC")
+- Make sure to click Save/Submit
+
+**Dropdown menu appearing behind cards?**
+- Hard refresh the page (Cmd+Shift+R)
+- This is a known issue that's been fixed
+
+**Date showing wrong?**
+- System uses EST timezone
+- Dates are stored at noon to avoid timezone issues
+
+### Getting Help
+
+1. **Check the logs**:
+   ```bash
+   cd /Users/davidchinnici/cladari/plantDB
+   tail -50 .next-dev.log
+   ```
+
+2. **Restart the server**:
+   ```bash
+   ./scripts/stop
+   ./scripts/dev --bg
+   ```
+
+3. **Check database**:
+   ```bash
+   npx prisma studio
+   ```
+   Opens visual database browser at http://localhost:5555
+
+### Data Backup
+
+Your data is automatically backed up:
+- **Daily** to Synology NAS at 10 PM
+- **Hourly** via Time Machine
+- **Database snapshots** kept for 30 days
+
+Manual backup anytime:
 ```bash
-cd plantDB
-DATABASE_URL="file:./prisma/dev.db" node scripts/import-excel-data.js
+cd /Users/davidchinnici/cladari/plantDB
+./scripts/backup-to-nas.sh
 ```
 
-### Database Migrations
+---
+
+## 🎯 Pro Tips
+
+### Efficient Workflows
+
+1. **Weekly Care Routine**:
+   - Use Dashboard to see what needs attention
+   - Batch care plants in same location
+   - Record EC/pH for trend analysis
+
+2. **Photo Documentation**:
+   - Take photos in consistent lighting
+   - Use same angle for growth comparison
+   - Set best photo as cover for easy identification
+
+3. **EC/pH Best Practices**:
+   - Always measure runoff when possible
+   - Record baseline feed values (pH 5.9, EC 1.1)
+   - Watch for variance trends, not single readings
+
+4. **Organization**:
+   - Use location feature to group plants
+   - Keep notes concise but descriptive
+   - Tag plants for easy filtering
+
+### Data Entry Tips
+
+- **Dates**: Click calendar icon for date picker
+- **Numbers**: Tab through fields quickly
+- **Dropdowns**: Type first letter to jump to options
+- **Multi-select**: Hold Cmd to select multiple plants
+
+---
+
+## 📈 Understanding Your Data
+
+### Plant Health Indicators
+
+- **Healthy**: Normal growth, no issues
+- **Stressed**: Showing signs of problems
+- **Recovering**: Improving after treatment
+- **Diseased**: Active pest/disease issue
+
+### Care Frequency Guidelines
+
+- **Watering**: Every 5-7 days (climate dependent)
+- **Fertilizing**: Every 14 days during growth
+- **EC/pH Check**: With each watering
+- **Photos**: Monthly for growth tracking
+- **Measurements**: Quarterly for mature plants
+
+### Financial Tracking
+
+- **Acquisition Cost**: What you paid
+- **Market Value**: Current estimated worth
+- **Elite Genetics**: Premium breeding lines
+- **For Sale**: Plants available to sell
+
+---
+
+## 🚀 Advanced Features
+
+### ML-Powered Recommendations
+
+The Recommendations tab uses your care history to predict:
+- Next watering date
+- Optimal fertilizer schedule
+- EC/pH adjustments needed
+- Repotting timeline
+
+### Journal System
+
+Every action creates a journal entry:
+- Automatic entries from care logs
+- Manual notes and observations
+- Photo uploads tracked
+- Complete audit trail
+
+### Breeding Management
+
+Track your breeding program:
+- Parent plant relationships
+- F1/F2 generation tracking
+- Cross success rates
+- Trait inheritance patterns
+
+---
+
+## 📝 Quick Reference Card
+
+### Essential URLs
+- **Main App**: http://localhost:3000
+- **Database Viewer**: http://localhost:5555 (run `npx prisma studio`)
+
+### File Locations
+- **Database**: `/prisma/dev.db`
+- **Photos**: `/public/uploads/photos/`
+- **Backups**: `/backups/`
+- **Logs**: `/.next-dev.log`
+
+### Emergency Commands
 ```bash
-cd plantDB
-npx prisma migrate dev
-npx prisma generate
+# If app crashes
+./scripts/stop
+./scripts/dev --bg
+
+# If database locked
+pkill -f "prisma studio"
+
+# Force backup
+./scripts/backup-to-nas.sh
+
+# View recent activity
+tail -f .next-dev.log
 ```
 
-### Common Tasks
+---
 
-#### Adding New Plant Fields
-1. Update Prisma schema
-2. Run migration
-3. Update API routes
-4. Update UI components
+## 🎉 Enjoy Managing Your Collection!
 
-#### Modifying Trait Categories
-1. Update trait creation logic in `/api/plants/[id]/traits`
-2. Update display logic in plant detail page
-3. Ensure morphology form matches
+Remember: This system grows with your collection. Every plant tracked, every measurement recorded, and every photo uploaded makes the system smarter and more valuable for your breeding program.
+
+**Happy Growing! 🌿**
 
 ---
 
-## Troubleshooting
-
-### Server Won't Start
-- Check DATABASE_URL environment variable
-- Verify dev.db exists
-- Run `npx prisma generate`
-
-### Data Not Saving
-- Check browser console for API errors
-- Verify field names match database schema
-- Ensure async params are awaited
-
-### UI Not Updating
-- Check React Query cache
-- Verify API returns updated data
-- Force refresh with fetchPlant()
-
-### Import Errors
-- Verify Excel file path
-- Check column names match script expectations
-- Ensure database is initialized
-
----
-
-## Future Enhancements
-
-### Planned Features
-1. Photo upload functionality
-2. QR code generation and printing
-3. Advanced search and filtering
-4. Export capabilities
-5. Mobile app companion
-6. PostgreSQL migration with pgvector
-7. AI-powered trait analysis
-8. Market value predictions
-
-### Technical Improvements
-1. Add comprehensive testing
-2. Implement error boundaries
-3. Add loading states
-4. Optimize database queries
-5. Implement caching strategy
-6. Add user authentication
-7. Set up CI/CD pipeline
-
----
-
-## Important Notes
-
-### For Claude/AI Assistants
-- Always await params in Next.js 15 dynamic routes
-- Plant care requirements are stored as JSON in notes field
-- Traits use category/traitName/value structure, not flat fields
-- EC/pH data goes in details JSON field of care logs
-- Use currentLocation, not location in plant queries
-- Dates must append 'T12:00:00' to prevent timezone issues
-- Use preserveScrollPosition() wrapper for all data refreshes
-- Care log edits use logId field to distinguish create vs update modes
-
-### For Developers
-- Run dev server with DATABASE_URL set
-- Don't commit dev.db to version control
-- Test batch operations with small sets first
-- Keep JSON fields backward compatible
-- Document any schema changes
-
-### For Users
-- Regular backups recommended
-- Batch care saves time for group treatments
-- Use morphology tab for breeding decisions
-- Track EC/pH for optimal plant health
-- Document everything for breeding success
-
----
-
-## Contact & Support
-
-This system was developed through iterative collaboration between the user and Claude. For questions or issues:
-1. Check this manual first
-2. Review error messages carefully
-3. Verify database integrity
-4. Test with single operations before batch
-
-Remember: This is a living system designed to grow with your collection and breeding program. Regular updates and improvements are expected as requirements evolve.
-
----
-
-*Last Updated: October 20, 2025*
-*Version: 1.1.1*
-*Total Plants: 67+*
-*Collection Value: $11,469+*
-### PostgreSQL + pgvector Plan
-
-This project runs on SQLite for fast local dev. To migrate to Postgres with pgvector:
-
-1) Provision Postgres and enable pgvector
-- Create a Postgres instance (local Docker or managed)
-- Enable extension: `CREATE EXTENSION IF NOT EXISTS vector;`
-
-2) Use the Postgres Prisma schema
-- See `prisma/schema.postgres.prisma` (keeps JSON fields as `Json`, and includes a commented `Unsupported("vector(768)")` example for embeddings)
-- Set `DATABASE_URL` to your Postgres DSN in `.env`
-- Temporarily point Prisma CLI to the Postgres schema, e.g.:
-  - `npx prisma migrate dev --schema=prisma/schema.postgres.prisma`
-  - `npx prisma generate --schema=prisma/schema.postgres.prisma`
-
-3) Add vector columns via a migration
-- Example SQL migration:
-  - `ALTER TABLE "Genetics" ADD COLUMN traitEmbedding vector(768);`
-- Then wire your ML pipeline to write embeddings to this column
-
-4) Code adjustments
-- Replace stringified JSON reads/writes with real JSON (no `JSON.stringify`/`JSON.parse` for fields marked `Json`)
-- Keep the SQLite schema for local, Postgres schema for prod until comfortable, then unify
-
-5) Rollout
-- Back up SQLite data
-- Import into Postgres (export script or Prisma seed)
-- Point the app’s `DATABASE_URL` to Postgres in prod
+*End of Operator Manual v1.2.0*
