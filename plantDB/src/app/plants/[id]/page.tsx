@@ -2,14 +2,14 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Camera, Droplets, Heart, Activity, FileText, FlaskConical, Dna, Calendar, DollarSign, MapPin, Edit, Save, X, Plus, Trash2, Upload, Image as ImageIcon, TrendingUp } from 'lucide-react'
+import { ArrowLeft, Camera, Heart, Activity, FileText, FlaskConical, Dna, Calendar, DollarSign, MapPin, Edit, Save, X, Plus, Trash2, Upload, Image as ImageIcon, TrendingUp, Droplets, Star } from 'lucide-react'
+import JournalIcon from '@/components/journal/JournalIcon'
 import { useParams, useRouter } from 'next/navigation'
 import { useDropzone } from 'react-dropzone'
 import { Modal } from '@/components/modal'
 import { showToast } from '@/components/toast'
 import { getLastWateringEvent, getLastFertilizingEvent } from '@/lib/careLogUtils'
 import { UpcomingCare } from '@/components/care/UpcomingCare'
-import { ECPHDashboard } from '@/components/care/ECPHDashboard'
 
 export default function PlantDetailPage() {
   const params = useParams()
@@ -21,8 +21,8 @@ export default function PlantDetailPage() {
   const [editedPlant, setEditedPlant] = useState<any>({})
 
   // Modal states
-  const [measurementModalOpen, setMeasurementModalOpen] = useState(false)
   const [careLogModalOpen, setCareLogModalOpen] = useState(false)
+  const [measurementModalOpen, setMeasurementModalOpen] = useState(false)
   const [morphologyModalOpen, setMorphologyModalOpen] = useState(false)
   const [photoUploadModalOpen, setPhotoUploadModalOpen] = useState(false)
   const [overviewModalOpen, setOverviewModalOpen] = useState(false)
@@ -677,7 +677,6 @@ export default function PlantDetailPage() {
     { id: 'overview', name: 'Overview', icon: FileText },
     { id: 'recommendations', name: 'Care Schedule', icon: TrendingUp },
     { id: 'care', name: 'Care & Notes', icon: Heart },
-    { id: 'measurements', name: 'EC & pH', icon: Droplets },
     { id: 'morphology', name: 'Morphology', icon: Dna },
     { id: 'flowering', name: 'Flowering', icon: FlaskConical },
     { id: 'photos', name: 'Photos', icon: Camera },
@@ -729,6 +728,13 @@ export default function PlantDetailPage() {
               )}
             </div>
             <div className="flex items-center gap-3">
+              {/* Journal Icon */}
+              <JournalIcon
+                plantId={plant.id}
+                plantName={plant.hybridName || plant.species || plant.plantId}
+                context={activeTab}
+              />
+
               <button
                 onClick={() => {
                   setCareLogModalOpen(true)
@@ -1129,46 +1135,6 @@ export default function PlantDetailPage() {
             </div>
           )}
 
-          {activeTab === 'measurements' && (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold">EC & pH Measurements</h3>
-                <button
-                  onClick={() => setMeasurementModalOpen(true)}
-                  className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl hover:from-emerald-600 hover:to-green-700 flex items-center gap-2">
-                  <Plus className="w-4 h-4" />
-                  Add Measurement
-                </button>
-              </div>
-
-              {plant.measurements && plant.measurements.length > 0 ? (
-                <div className="space-y-3">
-                  {plant.measurements.map((measurement: any) => (
-                    <div key={measurement.id} className="bg-white/50 rounded-xl p-4">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="font-medium">
-                            {new Date(measurement.measurementDate).toLocaleDateString()}
-                          </p>
-                          <div className="flex gap-4 mt-2 text-sm">
-                            <span>EC: {measurement.ecValue || 'N/A'}</span>
-                            <span>pH: {measurement.phValue || 'N/A'}</span>
-                            <span>TDS: {measurement.tdsValue || 'N/A'} ppm</span>
-                          </div>
-                          {measurement.notes && (
-                            <p className="text-sm text-gray-600 mt-2">{measurement.notes}</p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-500 text-center py-8">No measurements recorded yet</p>
-              )}
-            </div>
-          )}
-
           {activeTab === 'morphology' && (
             <div className="space-y-6">
               <h3 className="text-xl font-bold mb-4">Morphological Traits</h3>
@@ -1351,13 +1317,44 @@ export default function PlantDetailPage() {
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {plant.photos.map((photo: any) => (
                     <div key={photo.id} className="group relative bg-white/50 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all">
-                      <div className="aspect-square relative">
+                      <div className="aspect-[3/2] relative bg-gray-100">
                         <img
                           src={photo.url}
                           alt={photo.notes || 'Plant photo'}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-contain"
                         />
+                        {/* Cover Photo Indicator */}
+                        {plant.coverPhotoId === photo.id && (
+                          <div className="absolute top-2 left-2 bg-yellow-500 text-white px-2 py-1 rounded-lg flex items-center gap-1">
+                            <Star className="w-4 h-4 fill-current" />
+                            <span className="text-xs font-medium">Cover</span>
+                          </div>
+                        )}
                         <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {/* Set as Cover Button */}
+                          {plant.coverPhotoId !== photo.id && (
+                            <button
+                              onClick={async () => {
+                                try {
+                                  const response = await fetch(`/api/plants/${params.id}`, {
+                                    method: 'PUT',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ coverPhotoId: photo.id })
+                                  })
+                                  if (response.ok) {
+                                    showToast('Cover photo updated', 'success')
+                                    fetchPlant()
+                                  }
+                                } catch (error) {
+                                  showToast('Failed to update cover photo', 'error')
+                                }
+                              }}
+                              className="p-2 bg-yellow-500/90 text-white rounded-lg hover:bg-yellow-600"
+                              title="Set as cover photo"
+                            >
+                              <Star className="w-4 h-4" />
+                            </button>
+                          )}
                           <button
                             onClick={() => {
                               setPhotoForm({
@@ -1682,10 +1679,10 @@ export default function PlantDetailPage() {
             >
               <option value="watering">Watering (with baseline feed)</option>
               <option value="rain">Rain</option>
-              <option value="fertilizing">🧪 Incremental Feed (deviation from baseline)</option>
+              <option value="fertilizing">Incremental Feed (deviation from baseline)</option>
               <option value="repotting">Repotting</option>
               <option value="pruning">Pruning</option>
-              <option value="pest_discovery">🔍 Pest/Disease Discovery</option>
+              <option value="pest_discovery">Pest/Disease Discovery</option>
               <option value="pest_treatment">Pest Treatment</option>
               <option value="fungicide">Fungicide Application</option>
               <option value="other">Other</option>
@@ -1848,16 +1845,16 @@ export default function PlantDetailPage() {
                 >
                   <option value="">Select type...</option>
                   <optgroup label="Common Pests">
-                    <option value="spider_mites">🕷️ Spider Mites</option>
-                    <option value="thrips">🦟 Thrips</option>
-                    <option value="aphids">🐛 Aphids</option>
+                    <option value="spider_mites">Spider Mites</option>
+                    <option value="thrips">Thrips</option>
+                    <option value="aphids">Aphids</option>
                     <option value="mealybugs">Mealybugs</option>
                     <option value="scale">Scale Insects</option>
                     <option value="fungus_gnats">Fungus Gnats</option>
                     <option value="whiteflies">Whiteflies</option>
                   </optgroup>
                   <optgroup label="Diseases">
-                    <option value="root_rot">🍄 Root Rot</option>
+                    <option value="root_rot">Root Rot</option>
                     <option value="powdery_mildew">Powdery Mildew</option>
                     <option value="bacterial_blight">Bacterial Blight</option>
                     <option value="anthracnose">Anthracnose</option>
@@ -1882,10 +1879,10 @@ export default function PlantDetailPage() {
                   className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500"
                 >
                   <option value="">Select severity...</option>
-                  <option value="mild">🟢 Mild - Early detection, isolated</option>
-                  <option value="moderate">🟡 Moderate - Spreading, visible damage</option>
-                  <option value="severe">🔴 Severe - Widespread, significant damage</option>
-                  <option value="critical">⚫ Critical - Plant health at risk</option>
+                  <option value="mild">Mild - Early detection, isolated</option>
+                  <option value="moderate">Moderate - Spreading, visible damage</option>
+                  <option value="severe">Severe - Widespread, significant damage</option>
+                  <option value="critical">Critical - Plant health at risk</option>
                 </select>
               </div>
 
@@ -1975,10 +1972,10 @@ export default function PlantDetailPage() {
                     step="0.5"
                     value={careLogForm.fromPotSize}
                     onChange={(e) => setCareLogForm({ ...careLogForm, fromPotSize: e.target.value })}
-                    className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                    className={`w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 ${careLogForm.fromPotSize ? 'bg-gray-50' : ''}`}
                     placeholder="e.g., 4"
-                    readOnly
-                    title="Auto-populated from current pot size"
+                    readOnly={!!careLogForm.fromPotSize}
+                    title={careLogForm.fromPotSize ? "Auto-populated from current pot size" : "Enter current pot size"}
                   />
                 </div>
                 <div>
@@ -1997,15 +1994,20 @@ export default function PlantDetailPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">From Pot Type</label>
-                  <input
-                    type="text"
+                  <select
                     value={careLogForm.fromPotType}
                     onChange={(e) => setCareLogForm({ ...careLogForm, fromPotType: e.target.value })}
-                    className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
-                    placeholder="e.g., plastic"
-                    readOnly
-                    title="Auto-populated from current pot type"
-                  />
+                    className={`w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 ${careLogForm.fromPotType && plant?.currentPotType ? 'bg-gray-50' : ''}`}
+                    disabled={!!careLogForm.fromPotType && !!plant?.currentPotType}
+                    title={careLogForm.fromPotType ? "Auto-populated from current pot type" : "Select current pot type"}
+                  >
+                    <option value="">Select pot type...</option>
+                    <option value="plastic">Plastic</option>
+                    <option value="terracotta">Terracotta</option>
+                    <option value="ceramic">Ceramic</option>
+                    <option value="net_pot">Net Pot</option>
+                    <option value="fabric">Fabric Pot</option>
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">To Pot Type</label>
@@ -2021,6 +2023,62 @@ export default function PlantDetailPage() {
                     <option value="net_pot">Net Pot</option>
                     <option value="fabric">Fabric Pot</option>
                   </select>
+                </div>
+              </div>
+
+              {/* Substrate Details - New fields for repotting */}
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <h4 className="text-sm font-semibold text-blue-900 mb-3">
+                  New Substrate Details
+                </h4>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Substrate Type</label>
+                    <select
+                      value={careLogForm.substrateType || ''}
+                      onChange={(e) => setCareLogForm({ ...careLogForm, substrateType: e.target.value })}
+                      className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select substrate...</option>
+                      <option value="pon">PON (Passive Hydro)</option>
+                      <option value="leca">LECA</option>
+                      <option value="perlite">Perlite</option>
+                      <option value="pumice">Pumice</option>
+                      <option value="soil_mix">Soil Mix</option>
+                      <option value="sphagnum">Sphagnum Moss</option>
+                      <option value="coco_coir">Coco Coir</option>
+                      <option value="bark_mix">Bark Mix</option>
+                      <option value="custom">Custom Mix</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Drainage Type</label>
+                    <select
+                      value={careLogForm.drainageType || ''}
+                      onChange={(e) => setCareLogForm({ ...careLogForm, drainageType: e.target.value })}
+                      className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select drainage...</option>
+                      <option value="swp">SWP (Self-Watering Pot)</option>
+                      <option value="standard">Standard Drainage</option>
+                      <option value="cache">Cache Pot (No Drainage)</option>
+                      <option value="net_pot">Net Pot (Full Drainage)</option>
+                      <option value="double_pot">Double Pot System</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="mt-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Substrate Mix Details</label>
+                  <input
+                    type="text"
+                    value={careLogForm.substrateMix || ''}
+                    onChange={(e) => setCareLogForm({ ...careLogForm, substrateMix: e.target.value })}
+                    className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., 4.0 size PON, 70% perlite 30% coco, etc."
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Specify particle size, ratios, or any special amendments</p>
                 </div>
               </div>
             </div>

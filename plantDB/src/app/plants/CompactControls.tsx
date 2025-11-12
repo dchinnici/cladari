@@ -44,7 +44,7 @@ export default function CompactControls({
   const currentSort = sortOptions.find(opt => opt.value === sortBy)
 
   return (
-    <div className="glass rounded-2xl p-3 mb-6">
+    <div className="glass rounded-2xl p-3 mb-6 relative z-50">
       {/* Mobile Layout */}
       <div className="flex md:hidden items-center gap-2">
         {/* Search - Expandable on mobile */}
@@ -91,7 +91,7 @@ export default function CompactControls({
         {!searchExpanded && (
           <>
             {/* Sort */}
-            <div className="relative">
+            <div className="relative isolate">
               <button
                 onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
                 className="p-2 hover:bg-gray-100 rounded-lg"
@@ -100,7 +100,7 @@ export default function CompactControls({
                 <SortAsc className="w-5 h-5" />
               </button>
               {sortDropdownOpen && (
-                <div className="absolute right-0 top-12 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10 min-w-[160px]">
+                <div className="absolute right-0 top-12 bg-white rounded-lg shadow-2xl border border-gray-200 py-1 min-w-[160px]" style={{ zIndex: 9999 }}>
                   {sortOptions.map(option => (
                     <button
                       key={option.value}
@@ -180,7 +180,7 @@ export default function CompactControls({
         </div>
 
         {/* Sort dropdown - compact */}
-        <div className="relative">
+        <div className="relative isolate">
           <button
             onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
             className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50"
@@ -190,7 +190,7 @@ export default function CompactControls({
             <ChevronDown className="w-4 h-4" />
           </button>
           {sortDropdownOpen && (
-            <div className="absolute right-0 top-11 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10 min-w-[180px]">
+            <div className="absolute right-0 top-11 bg-white rounded-lg shadow-2xl border border-gray-200 py-1 min-w-[180px]" style={{ zIndex: 9999 }}>
               {sortOptions.map(option => (
                 <button
                   key={option.value}

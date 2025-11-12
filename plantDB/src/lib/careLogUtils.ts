@@ -13,16 +13,16 @@ export type CareLogAction = 'watering' | 'water' | 'rain' | 'fertilizing' | 'fer
  * Includes: watering, fertilizing (liquid feed), and rain
  */
 export function isWateringEvent(action: string): boolean {
-  const wateringActions = ['watering', 'water', 'rain', 'fertilizing', 'fertilize']
-  return wateringActions.includes(action)
+  const wateringActions = ['watering', 'water', 'rain', 'fertilizing', 'fertilize', 'incremental_feed']
+  return wateringActions.includes(action.toLowerCase())
 }
 
 /**
  * Check if a care log action counts as a fertilizing event
  */
 export function isFertilizingEvent(action: string): boolean {
-  const fertilizingActions = ['fertilizing', 'fertilize']
-  return fertilizingActions.includes(action)
+  const fertilizingActions = ['fertilizing', 'fertilize', 'incremental_feed']
+  return fertilizingActions.includes(action.toLowerCase())
 }
 
 /**

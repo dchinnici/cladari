@@ -314,20 +314,20 @@ export default function PlantsPage() {
                   }}
                   className="bg-white/50 rounded-2xl overflow-hidden hover:bg-white/80 transition-all hover-lift cursor-pointer block"
                 >
-                  {/* Plant Photo Header */}
+                  {/* Plant Photo Header - 3:2 aspect ratio for full photo view */}
                   {plant.photos && plant.photos.length > 0 ? (
-                    <div className="relative h-40 w-full mb-3">
+                    <div className="relative aspect-[3/2] w-full mb-3 bg-gray-100">
                       <img
                         src={plant.photos[0].thumbnailUrl || plant.photos[0].url}
                         alt={plant.hybridName || plant.species || 'Plant'}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain"
                       />
                       <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm rounded-lg px-2 py-1">
                         <span className="text-xs font-medium text-gray-700">{plant.plantId}</span>
                       </div>
                     </div>
                   ) : (
-                    <div className="relative h-40 w-full mb-3 bg-gradient-to-br from-emerald-100 to-green-100 flex items-center justify-center">
+                    <div className="relative aspect-[3/2] w-full mb-3 bg-gradient-to-br from-emerald-100 to-green-100 flex items-center justify-center">
                       <Leaf className="w-16 h-16 text-emerald-300" />
                       <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm rounded-lg px-2 py-1">
                         <span className="text-xs font-medium text-gray-700">{plant.plantId}</span>

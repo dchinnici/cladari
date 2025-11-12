@@ -38,10 +38,12 @@ export function parseECPHData(details: string | null): ECPHData | null {
 
 /**
  * Calculate average EC/pH values from recent care logs
+ * Uses only the last 3 logs by default to show current conditions
+ * rather than historical averages that may include outliers
  */
 export function calculateAverageECPH(
   careLogs: CareLogWithDetails[],
-  limit: number = 10
+  limit: number = 3
 ): {
   avgInputEC: number | null
   avgInputPH: number | null
@@ -100,6 +102,8 @@ export function calculateECVariance(inputEC: number | null, outputEC: number | n
 
 /**
  * Calculate pH drift rate (change per week)
+ * Only counts problematic drift (away from optimal range)
+ * Improvements toward optimal range are not counted as drift
  */
 export function calculatePHDriftRate(careLogs: CareLogWithDetails[]): number | null {
   const logsWithPH = careLogs
@@ -108,11 +112,11 @@ export function calculatePHDriftRate(careLogs: CareLogWithDetails[]): number | n
       data: parseECPHData(log.details)
     }))
     .filter(item => item.data?.outputPH)
-    .slice(0, 10) // Last 10 readings
+    .slice(0, 5) // Last 5 readings for recent pH trend
 
   if (logsWithPH.length < 2) return null
 
-  // Calculate average drift between consecutive readings
+  const optimalPH = 5.8 // Target pH for anthuriums
   let totalDrift = 0
   let count = 0
 
@@ -121,13 +125,23 @@ export function calculatePHDriftRate(careLogs: CareLogWithDetails[]): number | n
     const previous = logsWithPH[i + 1]
 
     if (current.data?.outputPH && previous.data?.outputPH) {
-      const phDiff = current.data.outputPH - previous.data.outputPH
-      const daysDiff = (current.date.getTime() - previous.date.getTime()) / (1000 * 60 * 60 * 24)
-      const weeksDiff = daysDiff / 7
+      const currentPH = current.data.outputPH
+      const previousPH = previous.data.outputPH
 
-      if (weeksDiff > 0) {
-        totalDrift += Math.abs(phDiff) / weeksDiff
-        count++
+      // Check if pH is moving away from optimal (problematic drift)
+      const prevDistance = Math.abs(previousPH - optimalPH)
+      const currDistance = Math.abs(currentPH - optimalPH)
+
+      // Only count as drift if moving away from optimal or if pH is critically low/high
+      if (currDistance > prevDistance || currentPH < EC_PH_TARGETS.phCriticalLow || currentPH > EC_PH_TARGETS.phCriticalHigh) {
+        const phDiff = currentPH - previousPH
+        const daysDiff = (current.date.getTime() - previous.date.getTime()) / (1000 * 60 * 60 * 24)
+        const weeksDiff = daysDiff / 7
+
+        if (weeksDiff > 0) {
+          totalDrift += Math.abs(phDiff) / weeksDiff
+          count++
+        }
       }
     }
   }
@@ -220,14 +234,17 @@ export function generateECPHAlerts(
     })
   }
 
-  // pH drift warning
-  if (phDriftRate && phDriftRate > EC_PH_TARGETS.phDriftWarning) {
-    alerts.push({
-      level: 'warning' as AlertLevel,
-      type: 'ph_drift',
-      message: `pH drifting at ${phDriftRate.toFixed(2)} per week`,
-      actionRequired: 'pH buffer with CalMag, monitor substrate age'
-    })
+  // pH drift warning - only if drift is problematic
+  if (phDriftRate && phDriftRate > EC_PH_TARGETS.phDriftWarning && avgOutputPH) {
+    // Determine if drift is problematic based on current pH
+    if (avgOutputPH < 5.5 || avgOutputPH > 6.5) {
+      alerts.push({
+        level: 'warning' as AlertLevel,
+        type: 'ph_drift',
+        message: `pH drifting outside optimal range (current: ${avgOutputPH.toFixed(1)})`,
+        actionRequired: 'pH buffer with CalMag, monitor substrate age'
+      })
+    }
   }
 
   // Healthy status
@@ -279,12 +296,13 @@ export function calculateSubstrateHealth(
     }
   }
 
-  // pH drift penalty
+  // pH drift penalty - only if output pH is problematic
   if (avgInputPH && avgOutputPH) {
     const phDrift = Math.abs(avgOutputPH - avgInputPH)
-    if (phDrift > 0.8) {
+    // Only penalize if output pH is outside optimal range AND drifting
+    if (phDrift > 0.8 && (avgOutputPH < 5.5 || avgOutputPH > 6.5)) {
       score -= 15
-      issues.push(`Significant pH drift: ${phDrift.toFixed(1)}`)
+      issues.push(`pH drift outside optimal range: ${avgOutputPH.toFixed(1)}`)
       recommendations.push('Add pH buffer (CalMag)')
     }
   }
@@ -342,8 +360,9 @@ export function analyzeECPHContext(
   // Calculate variance and drift
   // IMPORTANT: EC variance should only be calculated from PAIRED readings (logs with both input and output)
   // This prevents false alerts when rain water flushes (input only) artificially lower the average
+  // Use only last 3 logs to focus on current conditions
   const pairedReadings = careLogs
-    .slice(0, 10)
+    .slice(0, 3)
     .map(log => parseECPHData(log.details))
     .filter(data => data && data.inputEC != null && data.outputEC != null) as ECPHData[]
 

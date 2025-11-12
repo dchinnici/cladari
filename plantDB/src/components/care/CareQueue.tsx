@@ -35,10 +35,15 @@ export default function CareQueue({ onQuickCare }: CareQueueProps) {
   // Calculate plants needing care
   const plantsNeedingWater = plants.filter(plant => {
     if (plant.isArchived) return false
+    // Include rain and fertilizing as watering events
     const lastWater = plant.careLogs?.find((log: any) =>
-      ['water', 'watering'].includes(log.action?.toLowerCase())
+      ['water', 'watering', 'rain', 'fertilizing', 'fertilize', 'incremental_feed'].includes(log.action?.toLowerCase())
     )
-    if (!lastWater) return true
+    if (!lastWater) {
+      // Only show as needing water if plant has been in collection for at least 5 days
+      const daysSinceAdded = Math.floor((Date.now() - new Date(plant.createdAt).getTime()) / (1000 * 60 * 60 * 24))
+      return daysSinceAdded >= 5
+    }
     const daysSince = Math.floor((Date.now() - new Date(lastWater.date).getTime()) / (1000 * 60 * 60 * 24))
     return daysSince >= 5
   }).slice(0, 5) // Top 5
@@ -48,7 +53,11 @@ export default function CareQueue({ onQuickCare }: CareQueueProps) {
     const lastFertilize = plant.careLogs?.find((log: any) =>
       ['fertilize', 'fertilizing', 'incremental_feed'].includes(log.action?.toLowerCase())
     )
-    if (!lastFertilize) return true
+    if (!lastFertilize) {
+      // Only show as needing fertilizer if plant has been in collection for at least 14 days
+      const daysSinceAdded = Math.floor((Date.now() - new Date(plant.createdAt).getTime()) / (1000 * 60 * 60 * 24))
+      return daysSinceAdded >= 14
+    }
     const daysSince = Math.floor((Date.now() - new Date(lastFertilize.date).getTime()) / (1000 * 60 * 60 * 24))
     return daysSince >= 14
   }).slice(0, 5)
@@ -62,27 +71,45 @@ export default function CareQueue({ onQuickCare }: CareQueueProps) {
       return details?.ecOut > 2.0 || details?.phIn < 5.5 || details?.phIn > 7.0
     })
 
-    // Check for pest/disease
-    const hasPest = plant.careLogs?.find((log: any) =>
-      log.action?.toLowerCase().includes('pest') || log.action?.toLowerCase().includes('disease')
+    // Check for ACTIVE pest/disease (discovered but not yet treated)
+    let hasActivePest = false
+    const pestDiscovery = plant.careLogs?.find((log: any) =>
+      log.action?.toLowerCase() === 'pest_discovery' || log.action?.toLowerCase() === 'disease_discovery'
     )
+    if (pestDiscovery) {
+      // Check if there's a treatment AFTER the discovery
+      const discoveryDate = new Date(pestDiscovery.date).getTime()
+      const hasTreatment = plant.careLogs?.some((log: any) => {
+        const logDate = new Date(log.date).getTime()
+        return (log.action?.toLowerCase() === 'pest_treatment' || log.action?.toLowerCase() === 'disease_treatment')
+          && logDate >= discoveryDate
+      })
+      hasActivePest = !hasTreatment
+    }
 
     // Check for stale (no activity in 10+ days)
     const lastActivity = plant.lastActivityDate || plant.updatedAt
     const daysSinceActivity = Math.floor((Date.now() - new Date(lastActivity).getTime()) / (1000 * 60 * 60 * 24))
 
-    return lastMeasurement || hasPest || daysSinceActivity >= 10
+    return lastMeasurement || hasActivePest || daysSinceActivity >= 10
   }).slice(0, 5)
 
   const getDaysSince = (plant: any, actionType: string) => {
     const lastLog = plant.careLogs?.find((log: any) => {
       if (actionType === 'water') {
-        return ['water', 'watering'].includes(log.action?.toLowerCase())
+        // Include rain and fertilizing as watering events
+        return ['water', 'watering', 'rain', 'fertilizing', 'fertilize', 'incremental_feed'].includes(log.action?.toLowerCase())
       }
       return log.action?.toLowerCase().includes(actionType)
     })
 
-    if (!lastLog) return null
+    if (!lastLog) {
+      // If no matching log but plant has other logs, return a different indicator
+      if (plant.careLogs?.length > 0) {
+        return -1 // Indicates plant has logs but not of this type
+      }
+      return null // No logs at all
+    }
     return Math.floor((Date.now() - new Date(lastLog.date).getTime()) / (1000 * 60 * 60 * 24))
   }
 
@@ -200,7 +227,9 @@ export default function CareQueue({ onQuickCare }: CareQueueProps) {
                       </Link>
                       <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
                         <Calendar className="w-3 h-3" />
-                        {daysSince !== null ? (
+                        {daysSince === -1 ? (
+                          <span className="text-gray-500">No {selectedTab} logs</span>
+                        ) : daysSince !== null ? (
                           <span>{daysSince} days ago</span>
                         ) : (
                           <span className="text-amber-600">Never logged</span>

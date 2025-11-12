@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import CareQueue from '@/components/care/CareQueue'
 import QuickCare from '@/components/QuickCare'
-import { DollarSign, Leaf, Users, TrendingUp, Activity, Package, Sparkles, Dna, FlaskConical, Award, Droplets } from 'lucide-react'
+import { DollarSign, Leaf, Users, TrendingUp, Activity, Package, Sparkles, Dna, FlaskConical, Award, Droplets, AlertTriangle } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Area, AreaChart } from 'recharts'
 import { showToast } from '@/components/toast'
 
@@ -182,6 +182,82 @@ export default function Dashboard() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* EC/pH Insights Card */}
+            {stats?.ecPhInsights && (stats.ecPhInsights.avgEC || stats.ecPhInsights.avgPH) && (
+              <Card className="overflow-hidden bg-gradient-to-r from-cyan-50 to-blue-50 border-cyan-200/50 shadow-xl">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Droplets className="w-4 h-4 text-cyan-600" />
+                    EC/pH Insights
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-2">
+                  <div className="space-y-3">
+                    {/* Average Values */}
+                    <div className="grid grid-cols-2 gap-2">
+                      {stats.ecPhInsights.avgEC && (
+                        <div className="bg-white/60 rounded-lg p-2">
+                          <div className="text-xs text-gray-500">Avg EC</div>
+                          <div className="text-lg font-bold text-cyan-700">
+                            {stats.ecPhInsights.avgEC}
+                          </div>
+                        </div>
+                      )}
+                      {stats.ecPhInsights.avgPH && (
+                        <div className="bg-white/60 rounded-lg p-2">
+                          <div className="text-xs text-gray-500">Avg pH</div>
+                          <div className="text-lg font-bold text-blue-700">
+                            {stats.ecPhInsights.avgPH}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Warnings */}
+                    {(stats.ecPhInsights.concerningEC?.length > 0 ||
+                      stats.ecPhInsights.concerningPH?.length > 0) && (
+                      <div className="space-y-2 pt-2 border-t border-cyan-200/50">
+                        {stats.ecPhInsights.concerningEC?.length > 0 && (
+                          <div className="flex items-start gap-2">
+                            <AlertTriangle className="w-3 h-3 text-amber-600 mt-0.5" />
+                            <div>
+                              <div className="text-xs font-medium text-amber-700">
+                                High EC ({stats.ecPhInsights.concerningEC.length})
+                              </div>
+                              <div className="text-xs text-gray-600">
+                                {stats.ecPhInsights.concerningEC[0]?.name}
+                                {stats.ecPhInsights.concerningEC.length > 1 &&
+                                  ` +${stats.ecPhInsights.concerningEC.length - 1} more`}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        {stats.ecPhInsights.concerningPH?.length > 0 && (
+                          <div className="flex items-start gap-2">
+                            <AlertTriangle className="w-3 h-3 text-orange-600 mt-0.5" />
+                            <div>
+                              <div className="text-xs font-medium text-orange-700">
+                                pH Issues ({stats.ecPhInsights.concerningPH.length})
+                              </div>
+                              <div className="text-xs text-gray-600">
+                                {stats.ecPhInsights.concerningPH[0]?.name}
+                                {stats.ecPhInsights.concerningPH.length > 1 &&
+                                  ` +${stats.ecPhInsights.concerningPH.length - 1} more`}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="text-xs text-gray-500 text-center pt-1">
+                      Based on {stats.ecPhInsights.totalReadings} recent readings
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
 

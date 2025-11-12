@@ -51,10 +51,12 @@ model Plant {
 
   // Records
   photos            Photo[]
+  coverPhotoId      String?  // Selected cover photo for plant cards
   careLogs          CareLog[]
   measurements      Measurement[]
   growthMetrics     GrowthMetric[]
   floweringCycles   FloweringCycle[]
+  journal           PlantJournal[]
 
   // Breeding
   femaleOffspring   Plant[]  @relation("FemaleOffspring")
@@ -440,4 +442,37 @@ model GrowthMetric {
 
   @@index([plantId])
   @@index([date])
+}
+
+model PlantJournal {
+  id          String   @id @default(cuid())
+  plant       Plant    @relation(fields: [plantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  plantId     String
+
+  // Entry metadata
+  timestamp   DateTime @default(now())
+  entryType   String   // manual, care, measurement, trait, photo, breeding, etc.
+  context     String?  // which tab/screen it was entered from
+
+  // The actual journal entry
+  entry       String   // Natural language text
+
+  // Optional structured data reference
+  referenceId String?  // ID of related record (CareLog, Measurement, etc.)
+  referenceType String? // Type of related record
+
+  // Metadata
+  author      String?  // Who made the entry (user, system, ML)
+  tags        String   @default("[]") // JSON array for categorization
+
+  // ML/Search optimization (future)
+  embedding   Bytes?   // Vector embedding for semantic search
+  summary     String?  // AI-generated summary for long entries
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([plantId, timestamp])
+  @@index([entryType])
+  @@index([context])
 }

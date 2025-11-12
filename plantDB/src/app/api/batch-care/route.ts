@@ -22,12 +22,16 @@ export async function POST(request: Request) {
     if (outputPH) detailsObj.outputPH = parseFloat(outputPH)
     if (rainAmount) detailsObj.rainAmount = rainAmount
     if (rainDuration) detailsObj.rainDuration = rainDuration
+    // Repotting substrate details
+    if (body.substrateType) detailsObj.substrateType = body.substrateType
+    if (body.drainageType) detailsObj.drainageType = body.drainageType
+    if (body.substrateMix) detailsObj.substrateMix = body.substrateMix
 
     // Create care logs for all selected plants
     const careLogs = await prisma.careLog.createMany({
       data: plantIds.map(plantId => ({
         plantId,
-        date: new Date(date || Date.now()),
+        date: date ? new Date(date + 'T12:00:00') : new Date(),
         action: activityType,
         details: Object.keys(detailsObj).length > 0 ? JSON.stringify(detailsObj) : null,
         dosage: dosage ? parseFloat(dosage.replace(/[^0-9.]/g, '')) : null,

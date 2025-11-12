@@ -77,6 +77,7 @@ export async function PATCH(
         isEliteGenetics: body.isEliteGenetics !== undefined ? body.isEliteGenetics : undefined,
         notes: body.notes !== undefined ? body.notes : undefined,
         tags: body.tags !== undefined ? JSON.stringify(body.tags) : undefined,
+        coverPhotoId: body.coverPhotoId !== undefined ? body.coverPhotoId : undefined,
       }
     })
 
@@ -88,6 +89,14 @@ export async function PATCH(
       { status: 500 }
     )
   }
+}
+
+// PUT: Update plant details (alias for PATCH for compatibility)
+export async function PUT(
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  return PATCH(request, context)
 }
 
 // DELETE: Archive plant (soft delete - preserves all data for ML training)

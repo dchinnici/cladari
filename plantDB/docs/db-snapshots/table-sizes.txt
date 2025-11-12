@@ -7,6 +7,7 @@ Location|1
 Measurement|1
 Photo|1
 Plant|1
+PlantJournal|1
 Purchase|1
 Species|1
 Trait|1

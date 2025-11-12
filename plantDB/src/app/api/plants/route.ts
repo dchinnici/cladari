@@ -27,13 +27,12 @@ export async function GET() {
           take: 1
         },
         photos: {
-          orderBy: { dateTaken: 'desc' },
-          take: 1  // Most recent photo for plant card display
+          orderBy: { dateTaken: 'desc' }
         }
       }
     })
 
-    // Add lastActivityDate to each plant
+    // Add lastActivityDate and select display photo for each plant
     const plantsWithActivity = plants.map(plant => {
       const dates = [
         plant.updatedAt,
@@ -47,8 +46,17 @@ export async function GET() {
         ? new Date(Math.max(...dates.map(d => d.getTime())))
         : plant.updatedAt
 
+      // Select the display photo: use cover photo if set, otherwise use first photo
+      let displayPhoto = null
+      if (plant.coverPhotoId && plant.photos.length > 0) {
+        displayPhoto = plant.photos.find(p => p.id === plant.coverPhotoId) || plant.photos[0]
+      } else if (plant.photos.length > 0) {
+        displayPhoto = plant.photos[0]
+      }
+
       return {
         ...plant,
+        photos: displayPhoto ? [displayPhoto] : [],  // Return as array for backward compatibility
         lastActivityDate
       }
     })

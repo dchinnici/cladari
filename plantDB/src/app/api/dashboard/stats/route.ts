@@ -297,6 +297,77 @@ export async function GET() {
     const motherPlantCount = await prisma.plant.count({ where: { isMother: true } })
     const forSaleCount = await prisma.plant.count({ where: { isForSale: true } })
 
+    // EC/pH Insights
+    const recentECPHLogs = await prisma.careLog.findMany({
+      where: {
+        details: { not: null },
+        OR: [
+          { details: { contains: 'inputEC' } },
+          { details: { contains: 'inputPH' } }
+        ]
+      },
+      orderBy: { date: 'desc' },
+      take: 50,
+      include: {
+        plant: {
+          select: { id: true, plantId: true, hybridName: true, species: true }
+        }
+      }
+    })
+
+    let ecValues: number[] = []
+    let phValues: number[] = []
+    let concerningEC: any[] = []
+    let concerningPH: any[] = []
+
+    recentECPHLogs.forEach(log => {
+      try {
+        const details = typeof log.details === 'string' ? JSON.parse(log.details) : log.details
+
+        if (details?.inputEC) {
+          const ec = parseFloat(details.inputEC)
+          ecValues.push(ec)
+          if (ec > 2.0) {
+            concerningEC.push({
+              plantId: log.plant.plantId,
+              name: log.plant.hybridName || log.plant.species,
+              value: ec,
+              type: 'input'
+            })
+          }
+        }
+
+        if (details?.outputEC) {
+          const ec = parseFloat(details.outputEC)
+          if (ec > 2.5) {
+            concerningEC.push({
+              plantId: log.plant.plantId,
+              name: log.plant.hybridName || log.plant.species,
+              value: ec,
+              type: 'output'
+            })
+          }
+        }
+
+        if (details?.inputPH) {
+          const ph = parseFloat(details.inputPH)
+          phValues.push(ph)
+          if (ph < 5.5 || ph > 7.0) {
+            concerningPH.push({
+              plantId: log.plant.plantId,
+              name: log.plant.hybridName || log.plant.species,
+              value: ph
+            })
+          }
+        }
+      } catch (e) {
+        // Skip invalid JSON
+      }
+    })
+
+    const avgEC = ecValues.length > 0 ? ecValues.reduce((a, b) => a + b, 0) / ecValues.length : null
+    const avgPH = phValues.length > 0 ? phValues.reduce((a, b) => a + b, 0) / phValues.length : null
+
     return NextResponse.json({
       // Basic stats
       totalPlants,
@@ -328,6 +399,15 @@ export async function GET() {
       elitePlantCount,
       motherPlantCount,
       forSaleCount,
+
+      // EC/pH Insights
+      ecPhInsights: {
+        avgEC: avgEC ? parseFloat(avgEC.toFixed(2)) : null,
+        avgPH: avgPH ? parseFloat(avgPH.toFixed(2)) : null,
+        concerningEC: concerningEC.slice(0, 5), // Top 5
+        concerningPH: concerningPH.slice(0, 5), // Top 5
+        totalReadings: recentECPHLogs.length
+      }
     })
   } catch (error) {
     console.error('Error fetching dashboard stats:', error)
