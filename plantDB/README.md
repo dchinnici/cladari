@@ -34,7 +34,9 @@ A production-grade web application for managing high-value Anthurium collections
 - **Rain tracking** with amount/duration
 - **Baseline feed automation**
 
-### 🤖 ML-Ready Infrastructure
+### 🤖 AI Integration & MCP Server
+- **MCP Server** for Sovria AI integration
+- **Natural language queries** via Sovria
 - **Journal system** for training data
 - **Vector embeddings** in schema
 - **Care prediction algorithms**
@@ -101,6 +103,8 @@ npx prisma db push
 
 - **[Operator Manual](OPERATOR_MANUAL.md)** - User guide for daily operations
 - **[Engineer Manual](docs/CLADARI_ENGINEER_MANUAL.md)** - Technical documentation
+- **[Integration Guide](INTEGRATION.md)** - Sovria AI integration via MCP
+- **[MCP Server](mcp-server/README.md)** - Natural language interface
 - **[Backup Setup](docs/BACKUP_SETUP.md)** - Automated backup configuration
 - **[Location Management](docs/LOCATION_MANAGEMENT.md)** - Environmental tracking
 - **[ML Integration Roadmap](docs/ML_INTEGRATION_ROADMAP.md)** - AI/ML plans
@@ -124,6 +128,10 @@ npx prisma db push
 
 ```
 plantDB/
+├── mcp-server/          # MCP server for Sovria integration
+│   ├── index.ts        # MCP server implementation
+│   ├── README.md       # MCP setup guide
+│   └── dist/          # Compiled JavaScript
 ├── prisma/
 │   ├── schema.prisma     # Database schema
 │   └── dev.db           # SQLite database
@@ -146,6 +154,42 @@ plantDB/
 ├── docs/              # Documentation
 └── backups/           # Backup directory
 ```
+
+---
+
+## 🤖 MCP Server Integration
+
+PlantDB includes a Model Context Protocol (MCP) server that enables natural language interaction through Sovria AI:
+
+### Available Tools
+- **search_plants** - Natural language plant search ("Find velvety plants with red veins")
+- **predict_care** - ML-powered care predictions ("Which plants need water today?")
+- **diagnose_symptoms** - Plant health analysis ("Diagnose yellowing leaves")
+- **get_plant_details** - Retrieve plant information and statistics
+
+### Quick Setup
+```bash
+# Build MCP server
+cd mcp-server && npm install && npm run build
+
+# Add to Sovria config (~/.config/claude/claude_desktop_config.json)
+{
+  "mcpServers": {
+    "plantdb": {
+      "command": "node",
+      "args": ["/path/to/plantDB/mcp-server/dist/index.js"]
+    }
+  }
+}
+```
+
+### Example Queries
+- "Which plants need water today?"
+- "Show me my most valuable Anthuriums"
+- "Diagnose the yellowing on my Crystallinum"
+- "Search for plants with velvety leaves"
+
+See [Integration Guide](INTEGRATION.md) for complete setup instructions.
 
 ---
 
@@ -270,12 +314,12 @@ tail -20 logs/backup.log
 - [ ] Care calendar view
 
 ### Phase 3 (Q2 2026)
+- [x] MCP server integration (✅ Completed Nov 2025)
 - [ ] Vector search capabilities
 - [ ] PostgreSQL migration (>1000 plants)
 - [ ] Photo AI analysis
 - [ ] Automated pest detection
 - [ ] Growth prediction models
-- [ ] MCP server integration
 
 ### Phase 4 (Q3 2026)
 - [ ] Custom ML models

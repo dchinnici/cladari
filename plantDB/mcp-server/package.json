@@ -1,0 +1,32 @@
+{
+  "name": "plantdb-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for PlantDB - enables Sovria AI integration for botanical intelligence",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx index.ts",
+    "test": "tsx test-server.ts"
+  },
+  "keywords": [
+    "mcp",
+    "plantdb",
+    "sovria",
+    "anthurium",
+    "botanical",
+    "ai"
+  ],
+  "author": "David Chinnici",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.22.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.12.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

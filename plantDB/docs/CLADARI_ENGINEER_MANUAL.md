@@ -49,6 +49,14 @@ The Cladari Plant Database is a comprehensive Anthurium breeding management syst
 
 ### Recent Improvements 🚀
 ```
+Nov 17: MCP SERVER INTEGRATION - Natural language AI interface
+        - Implemented Model Context Protocol (MCP) server
+        - 4 tools: search_plants, predict_care, diagnose_symptoms, get_plant_details
+        - Enables natural language queries through Sovria AI
+        - Full API integration with PlantDB backend
+        - TypeScript implementation with Zod validation
+        - Complete documentation and test suite
+
 Nov 12: COVER PHOTO SELECTION - Optional photo selection for plant cards
         - Added coverPhotoId field to Plant model
         - UI to set/change cover photo with star icon
@@ -347,6 +355,12 @@ docs/
 ├── TEMPORAL_MORPHOLOGY.md        # Trait changes over time
 ├── ML_INTEGRATION_ROADMAP.md     # AI/ML plans
 └── UNIFIED_JOURNAL_DESIGN.md     # Journal system architecture
+
+mcp-server/
+├── index.ts                      # MCP server implementation
+├── README.md                     # MCP setup guide
+├── package.json                  # Dependencies
+└── dist/                        # Compiled JavaScript
 ```
 
 ### Scripts
@@ -616,6 +630,103 @@ npx prisma migrate dev --name migrate_to_postgresql
 ```
 
 **Estimated Timeline:** Not needed until 500+ plants or DNA/vector features
+
+---
+
+## 🤖 MCP Server Architecture
+
+PlantDB includes a Model Context Protocol (MCP) server that enables natural language interaction through Sovria AI. This represents a new paradigm: **modular domain expert systems** that can be queried conversationally.
+
+### Architecture Overview
+
+```
+User → Sovria AI (Orchestrator)
+         ↓ MCP Protocol
+    PlantDB MCP Server
+         ↓ HTTP/REST
+    PlantDB Backend (Next.js)
+         ↓ Prisma ORM
+    SQLite Database
+```
+
+### Available MCP Tools
+
+**search_plants**
+- Natural language plant search
+- Example: "Find velvety plants with red veins under $200"
+- Uses semantic matching on traits, names, locations
+
+**predict_care**
+- ML-powered care schedule predictions
+- Example: "Which plants need water today?"
+- Analyzes historical patterns, environment, substrate health
+
+**diagnose_symptoms**
+- Plant health diagnosis
+- Example: "Diagnose yellowing leaves with brown tips"
+- Distinguishes similar issues (thrips vs nutrient lockout)
+
+**get_plant_details**
+- Retrieve plant information
+- Can return single plant or entire collection
+- Includes care logs, photos, statistics
+
+### MCP Server Implementation
+
+Location: `/mcp-server/`
+
+Key files:
+- `index.ts` - Server implementation with tool handlers
+- `package.json` - Dependencies (@modelcontextprotocol/sdk, zod)
+- `README.md` - Setup and configuration guide
+- `test-server.ts` - Test suite for validation
+
+### Configuration
+
+Add to Sovria's MCP config:
+```json
+{
+  "mcpServers": {
+    "plantdb": {
+      "command": "node",
+      "args": ["/path/to/plantDB/mcp-server/dist/index.js"],
+      "env": {
+        "PLANTDB_API_BASE": "http://localhost:3000/api"
+      }
+    }
+  }
+}
+```
+
+### Development Workflow
+
+```bash
+# Build MCP server
+cd mcp-server
+npm install
+npm run build
+
+# Test the server
+npm run test
+
+# Check integration with Sovria
+# Ask: "Show me all my plants"
+# Ask: "Which plants need water?"
+```
+
+### Modular Domain Expert Pattern
+
+PlantDB demonstrates the **modular domain expert** pattern:
+- Each domain (plants, health, finance) has its own system
+- Systems expose capabilities via MCP tools
+- Sovria AI orchestrates cross-domain queries
+- No data centralization required
+
+Benefits:
+- Domain expertise maintained separately
+- Systems can evolve independently
+- Clear responsibility boundaries
+- Scalable to many domains
 
 ---
 
