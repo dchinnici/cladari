@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Camera, Heart, Activity, FileText, FlaskConical, Dna, Calendar, DollarSign, MapPin, Edit, Save, X, Plus, Trash2, Upload, Image as ImageIcon, TrendingUp, Droplets, Star } from 'lucide-react'
+import { ArrowLeft, Camera, Heart, Activity, FileText, FlaskConical, Dna, Calendar, DollarSign, MapPin, Edit, Save, X, Plus, Trash2, Upload, Image as ImageIcon, TrendingUp, Droplets, Star, Bot } from 'lucide-react'
 import JournalIcon from '@/components/journal/JournalIcon'
 import { useParams, useRouter } from 'next/navigation'
 import { useDropzone } from 'react-dropzone'
@@ -10,6 +10,7 @@ import { Modal } from '@/components/modal'
 import { showToast } from '@/components/toast'
 import { getLastWateringEvent, getLastFertilizingEvent } from '@/lib/careLogUtils'
 import { UpcomingCare } from '@/components/care/UpcomingCare'
+import AIAssistant from '@/components/AIAssistant'
 
 export default function PlantDetailPage() {
   const params = useParams()
@@ -682,6 +683,7 @@ export default function PlantDetailPage() {
     { id: 'photos', name: 'Photos', icon: Camera },
     { id: 'breeding', name: 'Breeding', icon: Activity },
     { id: 'logs', name: 'Care Logs', icon: Calendar },
+    { id: 'ai', name: 'AI Assistant', icon: Bot },
   ]
 
   if (loading) {
@@ -1550,6 +1552,37 @@ export default function PlantDetailPage() {
               ) : (
                 <p className="text-gray-500 text-center py-8">No care logs recorded yet</p>
               )}
+            </div>
+          )}
+
+          {activeTab === 'ai' && (
+            <div className="space-y-6">
+              <div className="mb-4">
+                <h3 className="text-xl font-bold mb-2">AI Botanical Assistant</h3>
+                <p className="text-gray-600">
+                  Chat with your AI assistant about {plant.genus} {plant.species}.
+                  Get care tips, diagnose issues, or ask any botanical questions.
+                </p>
+              </div>
+
+              <AIAssistant
+                plantId={plant.id}
+                plantData={{
+                  id: plant.id,
+                  catalogId: plant.catalogId,
+                  genus: plant.genus,
+                  species: plant.species,
+                  location: plant.location?.name,
+                  careLogs: plant.careLogs,
+                  lastWatered: plant.careLogs ? getLastWateringEvent(plant.careLogs) : null,
+                  lastFertilized: plant.careLogs ? getLastFertilizingEvent(plant.careLogs) : null,
+                  notes: plant.notes,
+                  wateringFrequency: plant.wateringFrequency,
+                  lightRequirements: plant.lightRequirements,
+                  soilType: plant.soilType
+                }}
+                embedded={true}
+              />
             </div>
           )}
         </div>

@@ -9,6 +9,7 @@ import CompactControls from './CompactControls'
 import { useEffect, useState, useRef } from 'react'
 import { getDaysSinceLastWatering, getDaysSinceLastFertilizing, calculateWateringFrequency, calculateFertilizingFrequency } from '@/lib/careLogUtils'
 import { DEFAULT_INTERVALS } from '@/lib/care/types'
+import AIAssistant from '@/components/AIAssistant'
 
 export default function PlantsPage() {
   // Helper to check if plant hasn't had ANY activity in 7+ days
@@ -561,6 +562,9 @@ export default function PlantsPage() {
             showToast({ type: 'success', title: 'Care logs saved successfully' })
           }}
         />
+
+        {/* Floating AI Assistant */}
+        <AIAssistant />
       </div>
     </div>
   )
