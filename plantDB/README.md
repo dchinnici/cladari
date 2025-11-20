@@ -34,14 +34,20 @@ A production-grade web application for managing high-value Anthurium collections
 - **Rain tracking** with amount/duration
 - **Baseline feed automation**
 
-### 🤖 AI Integration & MCP Server
-- **MCP Server** for Sovria AI integration
-- **Natural language queries** via Sovria
-- **Journal system** for training data
-- **Vector embeddings** in schema
-- **Care prediction algorithms**
-- **Photo metadata extraction**
-- **Substrate health analysis**
+### 🤖 AI Assistant Integration
+- **Embedded AI chat** directly in PlantDB UI
+- **Plant-specific context** on detail pages
+- **F2 GPU-powered** Mistral-Nemo-12B (12B params)
+- **Smart query routing** (database vs. knowledge)
+- **Anti-hallucination** for collection queries
+- **Floating assistant** on plant list page
+- **Local fallback** for offline operation
+- **Clean responses** (no system prompts visible)
+
+Also includes:
+- **MCP Server** for external AI integration
+- **Vector embeddings** schema ready
+- **Care prediction** algorithms
 
 ### 📊 Analytics Dashboard
 - **Care queue** with priority sorting

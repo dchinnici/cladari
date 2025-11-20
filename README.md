@@ -17,9 +17,14 @@ This repo contains a ready‑to‑run Next.js app (in `plantDB/`) plus root‑le
 
 - `plantDB/` – the Next.js app root (UI + API + Prisma)
   - `src/app/` – pages, API routes, UI
+  - `src/components/AIAssistant.tsx` – AI chat component
   - `prisma/schema.prisma` – SQLite dev schema (active)
   - `prisma/schema.postgres.prisma` – Postgres + JSON (+ pgvector ready) schema
   - `OPERATOR_MANUAL.md` – app overview and technical manual
+- `ai/` – [submodule: cladari-ai] botanical AI service
+  - Flask API server + LLM routing
+  - Connects to F2 GPU for Mistral-Nemo/PLLaMa
+  - See: https://github.com/dchinnici/cladari-ai
 - `scripts/` – root helpers you run from the repo root
   - `dev`, `start`, `stop` – run/stop the server (dev/prod)
   - `db` – Prisma helper (generate/migrate/studio/import/use-pg)
@@ -28,21 +33,44 @@ This repo contains a ready‑to‑run Next.js app (in `plantDB/`) plus root‑le
 
 ## Quickstart
 
-1) Install dependencies
-- `cd plantDB && npm i && npx prisma generate && cd ..`
+1) Clone with submodules
+```bash
+git clone --recurse-submodules git@github.com:dchinnici/cladari.git
+cd cladari
+```
 
-2) Dev server (hot reload)
-- `./scripts/dev`
-- Visit `http://localhost:3000` (or `http://f1:3000` on your tailnet)
+2) Install dependencies
+```bash
+cd plantDB && npm i && npx prisma generate && cd ..
+```
 
-3) Prod server (optimized)
-- `./scripts/start`
-- Visit `http://localhost:3000`
+3) Start AI service (optional, for AI Assistant features)
+```bash
+cd ai && ./start.sh &  # Runs on port 8091
+cd ..
+```
 
-4) Background + Tailscale Serve
-- `./scripts/dev --bg` or `./scripts/start --bg`
-- Serve maps `https://<device>` to local `http://localhost:3000`
-- Stop: `./scripts/stop`
+4) Start PlantDB
+```bash
+./scripts/dev  # Dev server with hot reload
+# OR
+./scripts/start  # Production build
+```
+
+5) Access
+- PlantDB: `http://localhost:3000` (or `http://f1:3000` on tailnet)
+- AI Server: `http://localhost:8091`
+
+## AI Integration
+
+The AI Assistant is embedded in PlantDB:
+- **Plant Detail Pages**: "AI Assistant" tab for plant-specific queries
+- **Plant List**: Floating AI button (green circle) for collection queries
+- **Smart Routing**: Database queries use real data, botanical queries use LLM
+- **F2 GPU**: Connects to Mistral-Nemo-12B on F2 when available
+- **Local Fallback**: Works without F2 for basic queries
+
+See `ai/README.md` for full AI service documentation.
 
 ## Database
 
