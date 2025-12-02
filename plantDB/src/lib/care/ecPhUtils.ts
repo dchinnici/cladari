@@ -64,7 +64,18 @@ export function calculateAverageECPH(
     }
   }
 
-  const sum = recentLogs.reduce((acc, data) => ({
+  type AccumulatorType = {
+    inputEC: number
+    inputPH: number
+    outputEC: number
+    outputPH: number
+    countInputEC: number
+    countInputPH: number
+    countOutputEC: number
+    countOutputPH: number
+  }
+
+  const sum = recentLogs.reduce<AccumulatorType>((acc, data) => ({
     inputEC: acc.inputEC + (data.inputEC || 0),
     inputPH: acc.inputPH + (data.inputPH || 0),
     outputEC: acc.outputEC + (data.outputEC || 0),

@@ -1,15 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowLeft, Leaf, DollarSign, MapPin, Calendar, AlertTriangle } from 'lucide-react'
+import { Droplets, Search, SlidersHorizontal, Plus, AlertTriangle, Clock } from 'lucide-react'
 import { showToast } from '@/components/toast'
 import { Modal } from '@/components/modal'
 import QuickCare from '@/components/QuickCare'
-import CompactControls from './CompactControls'
 import { useEffect, useState, useRef } from 'react'
-import { getDaysSinceLastWatering, getDaysSinceLastFertilizing, calculateWateringFrequency, calculateFertilizingFrequency } from '@/lib/careLogUtils'
-import { DEFAULT_INTERVALS } from '@/lib/care/types'
-import AIAssistant from '@/components/AIAssistant'
 
 export default function PlantsPage() {
   // Helper to check if plant hasn't had ANY activity in 7+ days
@@ -17,6 +13,23 @@ export default function PlantsPage() {
     const lastActivity = plant.lastActivityDate || plant.updatedAt
     const daysSinceUpdate = Math.floor((Date.now() - new Date(lastActivity).getTime()) / (1000 * 60 * 60 * 24))
     return daysSinceUpdate >= 7
+  }
+
+  // Helper to get days since last care
+  const getDaysSinceLastCare = (plant: any) => {
+    if (!plant.careLogs || plant.careLogs.length === 0) return null
+    const lastCare = new Date(plant.careLogs[0].date)
+    return Math.floor((Date.now() - lastCare.getTime()) / (1000 * 60 * 60 * 24))
+  }
+
+  // Format last care for display
+  const formatLastCare = (plant: any) => {
+    if (!plant.careLogs || plant.careLogs.length === 0) return 'No care logged'
+    const days = getDaysSinceLastCare(plant)
+    const action = plant.careLogs[0].action || 'Care'
+    if (days === 0) return `${action} today`
+    if (days === 1) return `${action} yesterday`
+    return `${action} ${days}d ago`
   }
 
   // Helper to get the most recent activity date
@@ -242,196 +255,219 @@ export default function PlantsPage() {
 
   const activeFilterCount = Object.values(filters).filter(v => v !== '' && v !== false).length
   const stalePlantCount = plants.filter(isStale).length
+  const needsWaterCount = plants.filter(p => getDaysSinceLastCare(p) !== null && getDaysSinceLastCare(p)! >= 5).length
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <Link href="/" className="inline-flex items-center text-emerald-600 hover:text-emerald-700 mb-4">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Home
-          </Link>
-          <h1 className="text-4xl font-bold mb-4">
-            <span className="gradient-text">Plant Collection</span>
-          </h1>
-          <div className="flex items-center gap-3">
-            <p className="text-gray-600">Manage your {plants.length} anthurium specimens</p>
+    <div className="min-h-screen">
+      {/* Mobile: Care summary bar - immediately visible */}
+      <div className="sm:hidden bg-white border-b border-black/[0.08] px-4 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
             {stalePlantCount > 0 && (
               <button
                 onClick={() => setFilters({ ...filters, needsAttention: !filters.needsAttention })}
-                className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 transition-all ${
-                  filters.needsAttention
-                    ? 'bg-orange-500 text-white shadow-md'
-                    : 'bg-orange-100 text-orange-700 hover:bg-orange-200'
+                className={`flex items-center gap-1.5 text-sm ${
+                  filters.needsAttention ? 'text-[var(--alert-red)] font-medium' : 'text-[var(--bark)]'
                 }`}
-                title="Click to filter plants needing attention"
+              >
+                <AlertTriangle className="w-4 h-4" />
+                <span>{stalePlantCount} stale</span>
+              </button>
+            )}
+            <span className="text-sm text-[var(--clay)]">{plants.length} plants</span>
+          </div>
+          <button
+            onClick={() => setQuickCareOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--forest)] text-white text-sm rounded"
+          >
+            <Droplets className="w-4 h-4" />
+            Log Care
+          </button>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+        {/* Desktop header - minimal */}
+        <div className="hidden sm:flex sm:items-center sm:justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-semibold text-[var(--forest)]">Plants</h1>
+            <p className="text-sm text-[var(--clay)] mt-1">{plants.length} specimens</p>
+          </div>
+          <div className="flex items-center gap-3">
+            {stalePlantCount > 0 && (
+              <button
+                onClick={() => setFilters({ ...filters, needsAttention: !filters.needsAttention })}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded ${
+                  filters.needsAttention
+                    ? 'bg-[var(--alert-red)] text-white'
+                    : 'text-[var(--alert-red)] border border-[var(--alert-red)]/30'
+                }`}
               >
                 <AlertTriangle className="w-4 h-4" />
                 {stalePlantCount} need attention
               </button>
             )}
+            <button
+              onClick={() => setQuickCareOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--forest)] text-white text-sm rounded"
+            >
+              <Droplets className="w-4 h-4" />
+              Log Care
+            </button>
           </div>
         </div>
 
-        {/* Compact Controls */}
-        <CompactControls
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          sortBy={sortBy}
-          setSortBy={setSortBy}
-          onFilterClick={() => setFilterOpen(true)}
-          onQuickCareClick={() => setQuickCareOpen(true)}
-          onExportClick={handleExport}
-          onAddPlantClick={() => setCreateOpen(true)}
-          activeFilterCount={activeFilterCount}
-          searchInputRef={searchInputRef}
-        />
-
-        <div className="glass rounded-3xl p-6 mb-8">
-
-          {loading ? (
-            <div className="text-center py-12 text-gray-500">
-              <p className="text-xl mb-2">Loading plants...</p>
-            </div>
-          ) : filteredPlants.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              <p className="text-xl mb-2">No plants found</p>
-              <p className="text-sm">
-                {searchTerm ? 'Try a different search' : 'Add your first plant to get started'}
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredPlants.map((plant) => (
-                <Link
-                  href={`/plants/${plant.id}`}
-                  key={plant.id}
-                  onClick={() => {
-                    // Save scroll position, filters, sort, and search before navigating
-                    sessionStorage.setItem('plantsPageScroll', window.scrollY.toString())
-                    sessionStorage.setItem('plantsPageFilters', JSON.stringify(filters))
-                    sessionStorage.setItem('plantsPageSort', sortBy)
-                    sessionStorage.setItem('plantsPageSearch', searchTerm)
-                  }}
-                  className="bg-white/50 rounded-2xl overflow-hidden hover:bg-white/80 transition-all hover-lift cursor-pointer block"
-                >
-                  {/* Plant Photo Header - 3:2 aspect ratio for full photo view */}
-                  {plant.photos && plant.photos.length > 0 ? (
-                    <div className="relative aspect-[3/2] w-full mb-3 bg-gray-100">
-                      <img
-                        src={plant.photos[0].thumbnailUrl || plant.photos[0].url}
-                        alt={plant.hybridName || plant.species || 'Plant'}
-                        className="w-full h-full object-contain"
-                      />
-                      <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm rounded-lg px-2 py-1">
-                        <span className="text-xs font-medium text-gray-700">{plant.plantId}</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="relative aspect-[3/2] w-full mb-3 bg-gradient-to-br from-emerald-100 to-green-100 flex items-center justify-center">
-                      <Leaf className="w-16 h-16 text-emerald-300" />
-                      <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm rounded-lg px-2 py-1">
-                        <span className="text-xs font-medium text-gray-700">{plant.plantId}</span>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="px-5 pb-5">
-                    <div className="mb-3">
-                      <h3 className="font-bold text-lg text-gray-900 mb-2">
-                        {plant.hybridName || plant.species || 'Unknown Species'}
-                      </h3>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {plant.breederCode && (
-                          <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full">
-                            {plant.breederCode}
-                          </span>
-                        )}
-                        {isStale(plant) && (
-                          <span className="text-xs px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full flex items-center gap-1" title="No activity (care, measurements, etc.) in 7+ days">
-                            <AlertTriangle className="w-3 h-3" />
-                            Stale
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                  {plant.crossNotation && (
-                    <p className="text-xs text-gray-600 italic mb-1">{plant.crossNotation}</p>
-                  )}
-
-                  {plant.species && plant.species !== plant.hybridName && (
-                    <p className="text-xs text-gray-500">{plant.species}</p>
-                  )}
-
-                  <div className="space-y-1 text-sm text-gray-600">
-                    {plant.acquisitionCost && (
-                      <div className="flex items-center gap-1">
-                        <DollarSign className="w-3 h-3" />
-                        <span>${plant.acquisitionCost}</span>
-                      </div>
-                    )}
-                    {plant.currentLocation && (
-                      <div className="flex items-center gap-1">
-                        <MapPin className="w-3 h-3" />
-                        <span>{plant.currentLocation.name}</span>
-                      </div>
-                    )}
-                    {plant.accessionDate && (
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        <span>{new Date(plant.accessionDate).toLocaleDateString()}</span>
-                      </div>
-                    )}
-                  </div>
-
-                    <div className="mt-3 pt-3 border-t border-gray-200">
-                      <span className={`text-xs px-2 py-1 rounded-full ${
-                        plant.healthStatus === 'healthy'
-                          ? 'bg-green-100 text-green-700'
-                          : plant.healthStatus === 'struggling'
-                          ? 'bg-yellow-100 text-yellow-700'
-                          : 'bg-gray-100 text-gray-700'
-                      }`}>
-                        {plant.healthStatus || 'Unknown'}
-                      </span>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
+        {/* Search and filters - compact */}
+        <div className="flex items-center gap-2 mb-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--clay)]" />
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder="Search plants..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 bg-white border border-black/[0.08] rounded text-sm focus:outline-none focus:border-[var(--moss)]"
+            />
+          </div>
+          <button
+            onClick={() => setFilterOpen(true)}
+            className={`p-2 border rounded ${
+              activeFilterCount > 0 ? 'border-[var(--forest)] bg-[var(--forest)]/5' : 'border-black/[0.08]'
+            }`}
+          >
+            <SlidersHorizontal className="w-4 h-4 text-[var(--bark)]" />
+          </button>
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="p-2 border border-black/[0.08] rounded"
+          >
+            <Plus className="w-4 h-4 text-[var(--bark)]" />
+          </button>
         </div>
+
+        {/* Sort options - text links, not fancy dropdown */}
+        <div className="flex items-center gap-4 mb-4 text-sm">
+          <span className="text-[var(--clay)]">Sort:</span>
+          {[
+            { key: 'oldest', label: 'Needs attention' },
+            { key: 'newest', label: 'Recent activity' },
+            { key: 'alphabetical', label: 'A-Z' },
+          ].map((option) => (
+            <button
+              key={option.key}
+              onClick={() => setSortBy(option.key)}
+              className={sortBy === option.key ? 'text-[var(--forest)] font-medium' : 'text-[var(--bark)]'}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Plant grid */}
+        {loading ? (
+          <div className="text-center py-12 text-[var(--clay)]">
+            <p>Loading plants...</p>
+          </div>
+        ) : filteredPlants.length === 0 ? (
+          <div className="text-center py-12 text-[var(--clay)]">
+            <p>{searchTerm ? 'No plants match your search' : 'Add your first plant to get started'}</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+            {filteredPlants.map((plant) => (
+              <Link
+                href={`/plants/${plant.id}`}
+                key={plant.id}
+                onClick={() => {
+                  sessionStorage.setItem('plantsPageScroll', window.scrollY.toString())
+                  sessionStorage.setItem('plantsPageFilters', JSON.stringify(filters))
+                  sessionStorage.setItem('plantsPageSort', sortBy)
+                  sessionStorage.setItem('plantsPageSearch', searchTerm)
+                }}
+                className="card-interactive overflow-hidden block"
+              >
+                {/* Photo - 4:3 aspect ratio */}
+                {plant.photos && plant.photos.length > 0 ? (
+                  <div className="aspect-[4/3] bg-[var(--parchment)]">
+                    <img
+                      src={plant.photos[0].thumbnailUrl || plant.photos[0].url}
+                      alt={plant.hybridName || plant.species || 'Plant'}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="aspect-[4/3] bg-[var(--parchment)] flex items-center justify-center">
+                    <span className="text-3xl text-[var(--sage)]">🌿</span>
+                  </div>
+                )}
+
+                <div className="p-3">
+                  {/* Plant name */}
+                  <h3 className="font-medium text-sm text-[var(--forest)] leading-tight line-clamp-2">
+                    {plant.hybridName || plant.species || 'Unknown'}
+                  </h3>
+
+                  {/* Plant ID */}
+                  <p className="text-xs text-[var(--clay)] font-mono mt-0.5">{plant.plantId}</p>
+
+                  {/* Last care - key info */}
+                  <div className="flex items-center gap-1 mt-2 text-xs">
+                    <Clock className="w-3 h-3 text-[var(--clay)]" />
+                    <span className={`${
+                      getDaysSinceLastCare(plant) === null || getDaysSinceLastCare(plant)! >= 7
+                        ? 'text-[var(--alert-red)]'
+                        : getDaysSinceLastCare(plant)! >= 5
+                        ? 'text-[var(--spadix-yellow)]'
+                        : 'text-[var(--moss)]'
+                    }`}>
+                      {formatLastCare(plant)}
+                    </span>
+                  </div>
+
+                  {/* Location if available */}
+                  {plant.currentLocation && (
+                    <p className="text-xs text-[var(--clay)] mt-1 truncate">
+                      {plant.currentLocation.name}
+                    </p>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+
+        {/* Create Plant Modal */}
         <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)} title="Add New Plant">
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm text-gray-700 mb-1">Hybrid Name</label>
-                <input value={createForm.hybridName} onChange={e=>setCreateForm({...createForm, hybridName: e.target.value})} className="w-full p-2 rounded-lg border border-gray-200" placeholder="e.g., RA8 x RA5" />
+                <label className="block text-sm text-[var(--bark)] mb-1">Hybrid Name</label>
+                <input value={createForm.hybridName} onChange={e=>setCreateForm({...createForm, hybridName: e.target.value})} className="w-full p-2 rounded border border-black/[0.08] text-sm" placeholder="e.g., RA8 x RA5" />
               </div>
               <div>
-                <label className="block text-sm text-gray-700 mb-1">Species</label>
-                <input value={createForm.species} onChange={e=>setCreateForm({...createForm, species: e.target.value})} className="w-full p-2 rounded-lg border border-gray-200" placeholder="e.g., papillilaminum" />
+                <label className="block text-sm text-[var(--bark)] mb-1">Species</label>
+                <input value={createForm.species} onChange={e=>setCreateForm({...createForm, species: e.target.value})} className="w-full p-2 rounded border border-black/[0.08] text-sm" placeholder="e.g., papillilaminum" />
               </div>
               <div>
-                <label className="block text-sm text-gray-700 mb-1">Species Complex</label>
-                <input value={createForm.speciesComplex} onChange={e=>setCreateForm({...createForm, speciesComplex: e.target.value})} className="w-full p-2 rounded-lg border border-gray-200" placeholder="e.g., Cardiolonchium" />
+                <label className="block text-sm text-[var(--bark)] mb-1">Section</label>
+                <input value={createForm.speciesComplex} onChange={e=>setCreateForm({...createForm, speciesComplex: e.target.value})} className="w-full p-2 rounded border border-black/[0.08] text-sm" placeholder="e.g., Cardiolonchium" />
               </div>
               <div>
-                <label className="block text-sm text-gray-700 mb-1">Breeder Code</label>
-                <input value={createForm.breederCode} onChange={e=>setCreateForm({...createForm, breederCode: e.target.value})} className="w-full p-2 rounded-lg border border-gray-200" placeholder="e.g., RA8" />
+                <label className="block text-sm text-[var(--bark)] mb-1">Breeder Code</label>
+                <input value={createForm.breederCode} onChange={e=>setCreateForm({...createForm, breederCode: e.target.value})} className="w-full p-2 rounded border border-black/[0.08] text-sm" placeholder="e.g., RA8" />
               </div>
               <div>
-                <label className="block text-sm text-gray-700 mb-1">Acquisition Cost</label>
-                <input type="number" value={createForm.acquisitionCost} onChange={e=>setCreateForm({...createForm, acquisitionCost: e.target.value})} className="w-full p-2 rounded-lg border border-gray-200" placeholder="e.g., 250" />
+                <label className="block text-sm text-[var(--bark)] mb-1">Acquisition Cost</label>
+                <input type="number" value={createForm.acquisitionCost} onChange={e=>setCreateForm({...createForm, acquisitionCost: e.target.value})} className="w-full p-2 rounded border border-black/[0.08] text-sm" placeholder="e.g., 250" />
               </div>
               <div>
-                <label className="block text-sm text-gray-700 mb-1">Accession Date</label>
-                <input type="date" value={createForm.accessionDate} onChange={e=>setCreateForm({...createForm, accessionDate: e.target.value})} className="w-full p-2 rounded-lg border border-gray-200" />
+                <label className="block text-sm text-[var(--bark)] mb-1">Accession Date</label>
+                <input type="date" value={createForm.accessionDate} onChange={e=>setCreateForm({...createForm, accessionDate: e.target.value})} className="w-full p-2 rounded border border-black/[0.08] text-sm" />
               </div>
             </div>
             <div className="flex justify-end gap-2">
-              <button onClick={()=>setCreateOpen(false)} className="px-4 py-2 rounded-lg border border-gray-200">Cancel</button>
+              <button onClick={()=>setCreateOpen(false)} className="px-4 py-2 rounded border border-black/[0.08] text-sm text-[var(--bark)]">Cancel</button>
               <button disabled={creating} onClick={async ()=>{
                 setCreating(true)
                 try{
@@ -454,7 +490,7 @@ export default function PlantsPage() {
                 } finally {
                   setCreating(false)
                 }
-              }} className="px-4 py-2 rounded-lg bg-gradient-to-r from-emerald-500 to-green-600 text-white">{creating ? 'Saving...' : 'Save'}</button>
+              }} className="px-4 py-2 rounded bg-[var(--forest)] text-white text-sm">{creating ? 'Saving...' : 'Save'}</button>
             </div>
           </div>
         </Modal>
@@ -463,11 +499,11 @@ export default function PlantsPage() {
         <Modal isOpen={filterOpen} onClose={() => setFilterOpen(false)} title="Filter Plants">
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Health Status</label>
+              <label className="block text-sm text-[var(--bark)] mb-1">Health Status</label>
               <select
                 value={filters.healthStatus}
                 onChange={(e) => setFilters({ ...filters, healthStatus: e.target.value })}
-                className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full p-2 rounded border border-black/[0.08] text-sm focus:outline-none focus:border-[var(--moss)]"
               >
                 <option value="">All statuses</option>
                 <option value="healthy">Healthy</option>
@@ -478,11 +514,11 @@ export default function PlantsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Breeder Code</label>
+              <label className="block text-sm text-[var(--bark)] mb-1">Breeder Code</label>
               <select
                 value={filters.breederCode}
                 onChange={(e) => setFilters({ ...filters, breederCode: e.target.value })}
-                className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full p-2 rounded border border-black/[0.08] text-sm focus:outline-none focus:border-[var(--moss)]"
               >
                 <option value="">All breeder codes</option>
                 {Array.from(new Set(plants.map(p => p.breederCode).filter(Boolean)))
@@ -495,11 +531,11 @@ export default function PlantsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+              <label className="block text-sm text-[var(--bark)] mb-1">Location</label>
               <select
                 value={filters.locationId}
                 onChange={(e) => setFilters({ ...filters, locationId: e.target.value })}
-                className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full p-2 rounded border border-black/[0.08] text-sm focus:outline-none focus:border-[var(--moss)]"
               >
                 <option value="">All locations</option>
                 {locations.map((location) => (
@@ -511,11 +547,11 @@ export default function PlantsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Section</label>
+              <label className="block text-sm text-[var(--bark)] mb-1">Section</label>
               <select
                 value={filters.section}
                 onChange={(e) => setFilters({ ...filters, section: e.target.value })}
-                className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full p-2 rounded border border-black/[0.08] text-sm focus:outline-none focus:border-[var(--moss)]"
               >
                 <option value="">All sections</option>
                 <option value="Cardiolonchium">Cardiolonchium</option>
@@ -538,13 +574,13 @@ export default function PlantsPage() {
             <div className="flex gap-2 pt-2">
               <button
                 onClick={clearFilters}
-                className="flex-1 px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50"
+                className="flex-1 px-4 py-2 rounded border border-black/[0.08] text-sm text-[var(--bark)]"
               >
                 Clear All
               </button>
               <button
                 onClick={() => setFilterOpen(false)}
-                className="flex-1 px-4 py-2 rounded-lg bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:from-emerald-600 hover:to-green-700"
+                className="flex-1 px-4 py-2 rounded bg-[var(--forest)] text-white text-sm"
               >
                 Apply Filters
               </button>
@@ -559,12 +595,9 @@ export default function PlantsPage() {
           plants={filteredPlants}
           onSuccess={() => {
             fetchPlants()
-            showToast({ type: 'success', title: 'Care logs saved successfully' })
+            showToast({ type: 'success', title: 'Care logs saved' })
           }}
         />
-
-        {/* Floating AI Assistant */}
-        <AIAssistant />
       </div>
     </div>
   )

@@ -6,18 +6,26 @@ Transform PlantDB from a data tracker into an AI-powered breeding intelligence s
 
 ---
 
-## Current State (November 2025)
+## Current State (December 2025)
 
 ### PlantDB Assets
-- **71 plants** with comprehensive tracking
-- **315 care logs** across the collection
-- **63 photos** with EXIF metadata
-- **28 trait observations**
-- **8 flowering cycles** documented
+- **71+ plants** with comprehensive tracking
+- **315+ care logs** across the collection
+- **100+ photos** with EXIF metadata
+- **28+ trait observations**
+- **8+ flowering cycles** documented
 - **5 environmental locations** with DLI, VPD, CO₂ metrics
 - **SQLite database** with Next.js API
 
-### F1sovria AI Infrastructure (Ready to Deploy)
+### ML System Implemented (v1.3.0)
+- **Statistical ML Foundation**: EWMA, linear regression, anomaly detection
+- **Watering Prediction**: Per-plant predictions with environmental adjustments
+- **Health Trajectory**: EC/pH trend analysis, substrate health scoring
+- **Flowering Prediction**: Cycle timing, phase durations, pollination windows
+- **Enhanced Recommendations API**: Unified ML predictions endpoint
+- **UI Integration**: Tabbed care schedule with ML predictions
+
+### F1sovria AI Infrastructure (Ready for Phase 3+)
 - **PostgreSQL 15 + pgvector**: 32,777 embeddings, 2ms queries
 - **Semantic search**: 85-90% accuracy, production-tested
 - **Llama 3.3 70B**: Fine-tuned with LoRA adapters
@@ -27,92 +35,58 @@ Transform PlantDB from a data tracker into an AI-powered breeding intelligence s
 
 ---
 
-## Phase 1: Foundation (Weeks 1-2)
+## Phase 1: Foundation ✅ COMPLETED
 
-### Goal: Semantic Search & Basic ML
+### Goal: Statistical ML + Basic Predictions
 
-#### What You'll Be Able to Do:
+#### Implemented Files:
 ```
-Query: "Show me velvety dark plants that are struggling"
-Result: ANT-2025-0042 (85% match) - velvety, dark form, health: stressed
-        ANT-2025-0019 (72% match) - velvety texture, declining vigor
-```
-
-#### Implementation Steps:
-
-1. **PostgreSQL + pgvector Setup**
-```bash
-# Install PostgreSQL 15 with pgvector
-brew install postgresql@15
-brew services start postgresql@15
-psql -U postgres -c "CREATE EXTENSION IF NOT EXISTS vector;"
+src/lib/ml/
+├── index.ts                 # Module exports
+├── statisticalAnalyzer.ts   # Core ML utilities (EWMA, regression, anomaly detection)
+├── wateringPredictor.ts     # Per-plant watering predictions
+├── healthTrajectory.ts      # EC/pH trends, substrate health scoring
+├── floweringPredictor.ts    # Flowering cycle predictions
+├── carePredictor.ts         # Legacy care predictor (integrated)
+├── embeddings.ts            # Embedding service (optional @xenova/transformers)
+└── diagnosis.ts             # Symptom diagnosis engine
 ```
 
-2. **Prisma Schema Extension**
-```prisma
-model PlantVector {
-  id              String   @id @default(cuid())
-  plantId         String   @unique
-  plant           Plant    @relation(fields: [plantId], references: [id])
+#### Key Algorithms Implemented:
+- **EWMA (Exponential Weighted Moving Average)**: Time-weighted predictions
+- **Linear Regression**: Trend detection with R² calculation
+- **Z-Score Anomaly Detection**: Identify outlier readings
+- **Seasonality Detection**: Flowering pattern analysis
+- **Confidence Scoring**: Model confidence based on data quality
 
-  // Embeddings
-  traitEmbedding  Unsupported("vector(384)")?  // Text traits
-  photoEmbedding  Unsupported("vector(768)")?  // Visual features
-  careEmbedding   Unsupported("vector(384)")?  // Care patterns
-
-  // Metadata
-  lastUpdated     DateTime @default(now())
-
-  @@index([traitEmbedding], type: Hnsw)
-}
-```
-
-3. **Port Embedding Generation from F1sovria**
+#### API Endpoint:
 ```typescript
-// src/lib/ml/embeddings.ts
-import { pipeline } from '@xenova/transformers';
-
-export class EmbeddingService {
-  private encoder;
-
-  async initialize() {
-    this.encoder = await pipeline('feature-extraction',
-      'Xenova/all-MiniLM-L6-v2');
-  }
-
-  async generateTraitEmbedding(traits: string[]): Promise<number[]> {
-    const text = traits.join(' ');
-    const output = await this.encoder(text);
-    return Array.from(output.data);
-  }
+// GET /api/plants/[id]/recommendations
+// Returns comprehensive ML predictions:
+{
+  recommendations: [...],
+  predictions: {
+    watering: { nextDate, daysUntil, confidence, factors },
+    health: { trajectory, currentScore, predicted, riskFactors },
+    flowering: { likelyNextCycle, predictedPhases, pollinationWindow }
+  },
+  mlMetadata: { dataPoints, modelConfidence }
 }
 ```
 
-4. **Semantic Search Endpoint**
-```typescript
-// src/app/api/search/semantic/route.ts
-export async function POST(request: Request) {
-  const { query } = await request.json();
-
-  // Generate query embedding
-  const queryEmbedding = await embedder.encode(query);
-
-  // Vector similarity search
-  const results = await prisma.$queryRaw`
-    SELECT plantId,
-           1 - (traitEmbedding <=> ${queryEmbedding}::vector) as similarity
-    FROM PlantVector
-    ORDER BY similarity DESC
-    LIMIT 10
-  `;
-
-  return NextResponse.json(results);
-}
+#### UI Component:
+```
+src/components/care/UpcomingCare.tsx
+- Tabbed interface: Watering | Health | Flowering
+- Confidence badges (high/medium/low)
+- Interval visualizations
+- Factor breakdowns
+- Health trajectory display
 ```
 
 ---
 
-## Phase 2: Multi-Factor Care Prediction (Weeks 3-4)
+## Phase 2: Semantic Search & LLM Integration (In Progress)
 
 ### Goal: Distinguish Complex Diagnoses
 
@@ -469,6 +443,6 @@ The foundation is ready. Your F1sovria infrastructure + PlantDB data model = Bre
 
 ---
 
-*Last Updated: November 10, 2025*
-*Version: 1.0.0*
-*Status: Roadmap - Ready for Implementation*
+*Last Updated: December 2, 2025*
+*Version: 1.3.0*
+*Status: Phase 1 Complete - Statistical ML Implemented*

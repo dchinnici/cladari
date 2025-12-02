@@ -5,8 +5,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { embedder } from '@/lib/ml/embeddings';
+import prisma from '@/lib/prisma';
+import { EmbeddingService } from '@/lib/ml/embeddings';
+
+const embedder = new EmbeddingService();
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,15 +29,15 @@ export async function POST(request: NextRequest) {
     const plants = await prisma.plant.findMany({
       where: {
         OR: [
-          { accessionNumber: { contains: query } },
+          { plantId: { contains: query } },
           { healthStatus: { contains: query } },
           { notes: { contains: query } }
         ]
       },
       include: {
-        location: true,
+        currentLocation: true,
         traits: {
-          orderBy: { observedAt: 'desc' },
+          orderBy: { observationDate: 'desc' },
           take: 5
         }
       },
@@ -47,7 +49,7 @@ export async function POST(request: NextRequest) {
       let similarity = 0.5; // Base score
 
       // Boost score for exact matches
-      if (plant.accessionNumber?.toLowerCase().includes(query.toLowerCase())) {
+      if (plant.plantId?.toLowerCase().includes(query.toLowerCase())) {
         similarity += 0.2;
       }
       if (plant.healthStatus?.toLowerCase().includes(query.toLowerCase())) {

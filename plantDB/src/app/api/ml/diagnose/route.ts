@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 import { diagnosisEngine } from '@/lib/ml/diagnosis';
 
 export async function POST(request: NextRequest) {
@@ -26,21 +26,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Fetch plant and recent measurements
+    // Fetch plant and recent data
     const plant = await prisma.plant.findUnique({
       where: { id: plantId },
-      include: {
-        location: true,
-        measurements: {
-          orderBy: { date: 'desc' },
-          take: 5
+      select: {
+        id: true,
+        plantId: true,
+        healthStatus: true,
+        genetics: true,
+        currentLocation: {
+          select: {
+            name: true,
+            temperature: true,
+            humidity: true,
+            vpd: true,
+            dli: true
+          }
         },
         careLogs: {
           where: {
-            action: { in: ['Fertilizing', 'Watering'] }
+            action: { in: ['Fertilizing', 'Watering', 'watering', 'fertilizing'] }
           },
           orderBy: { date: 'desc' },
-          take: 5
+          take: 5,
+          select: {
+            id: true,
+            date: true,
+            action: true,
+            details: true
+          }
         }
       }
     });
@@ -52,9 +66,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get latest measurement values
-    const latestMeasurement = plant.measurements[0];
+    // Get latest care log with EC/pH data
     const latestCare = plant.careLogs[0];
+
+    // Get EC/pH from care log details
+    const careDetails = latestCare?.details as { ecIn?: number; ecOut?: number; phIn?: number; phOut?: number } | null;
 
     // Prepare symptoms for diagnosis
     const symptoms = {
@@ -63,17 +79,17 @@ export async function POST(request: NextRequest) {
       affectedArea: affectedArea as any,
       pestEvidence,
       environment: {
-        ec: latestMeasurement?.ecOutput || latestMeasurement?.ecInput || undefined,
-        ph: latestMeasurement?.phOutput || latestMeasurement?.phInput || undefined,
-        vpd: plant.location?.vpd || undefined,
-        dli: plant.location?.dli || undefined,
-        temperature: plant.location?.temperature || undefined,
-        humidity: plant.location?.humidity || undefined
+        ec: careDetails?.ecOut || careDetails?.ecIn || undefined,
+        ph: careDetails?.phOut || careDetails?.phIn || undefined,
+        vpd: plant.currentLocation?.vpd || undefined,
+        dli: plant.currentLocation?.dli || undefined,
+        temperature: plant.currentLocation?.temperature || undefined,
+        humidity: plant.currentLocation?.humidity || undefined
       },
       recentCare: latestCare ? {
         lastFertilized: latestCare.date,
         lastWatered: latestCare.date,
-        fertilizerType: latestCare.details?.fertilizer || 'Baseline feed'
+        fertilizerType: (careDetails as any)?.fertilizer || 'Baseline feed'
       } : undefined
     };
 
@@ -84,10 +100,10 @@ export async function POST(request: NextRequest) {
     const enhancedDiagnosis = {
       ...diagnosis,
       plantContext: {
-        accessionNumber: plant.accessionNumber,
+        plantId: plant.plantId,
         healthStatus: plant.healthStatus,
         genetics: plant.genetics,
-        location: plant.location?.name,
+        location: plant.currentLocation?.name,
         daysSinceLastCare: latestCare
           ? Math.floor((Date.now() - new Date(latestCare.date).getTime()) / (1000 * 60 * 60 * 24))
           : null

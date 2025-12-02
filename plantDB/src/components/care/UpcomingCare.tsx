@@ -1,18 +1,139 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Droplet, Leaf, AlertTriangle, CheckCircle, Calendar, TrendingUp } from 'lucide-react'
-import { CareRecommendation } from '@/lib/care/types'
+import {
+  Droplet,
+  Leaf,
+  AlertTriangle,
+  CheckCircle,
+  Calendar,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  Activity,
+  Flower2,
+  BarChart3,
+  Clock
+} from 'lucide-react'
 
 interface UpcomingCareProps {
   plantId: string
   onActionComplete?: () => void
 }
 
+interface MLPredictions {
+  watering: {
+    nextDate: string | null
+    daysUntil: number | null
+    confidence: 'high' | 'medium' | 'low'
+    interval: {
+      optimal: number
+      min: number
+      max: number
+    }
+    factors: Array<{
+      name: string
+      impact: 'increase' | 'decrease' | 'neutral'
+      adjustment: number
+      description: string
+    }>
+    trend: {
+      direction: 'increasing' | 'decreasing' | 'stable'
+      significance: 'high' | 'medium' | 'low'
+    } | null
+    history: {
+      totalEvents: number
+      avgInterval: number
+      recentInterval: number
+      trend: 'shortening' | 'lengthening' | 'stable'
+      consistency: 'high' | 'medium' | 'low'
+    }
+  }
+  health: {
+    trajectory: 'improving' | 'stable' | 'declining' | 'critical'
+    currentScore: number
+    substrateHealthScore: number
+    predicted: {
+      '7d': number
+      '14d': number
+      '30d': number
+    }
+    confidence: 'high' | 'medium' | 'low'
+    riskFactors: Array<{
+      type: string
+      severity: 'low' | 'medium' | 'high' | 'critical'
+      description: string
+    }>
+    interventions: string[]
+    alerts: Array<{
+      level: 'info' | 'warning' | 'critical'
+      type: string
+      message: string
+      actionRequired?: string
+    }>
+    summary: string
+  }
+  flowering: {
+    likelyNextCycle: string | null
+    daysUntilNextCycle: number | null
+    confidence: 'high' | 'medium' | 'low'
+    predictedPhases: {
+      spatheEmergence: { start: string; duration: number } | null
+      femalePhase: { start: string; end: string; duration: number } | null
+      malePhase: { start: string; end: string; duration: number } | null
+      totalDuration: number | null
+    }
+    pollinationWindow: {
+      optimal: string | null
+      rangeStart: string | null
+      rangeEnd: string | null
+      daysFromNow: number | null
+    }
+    seasonality: {
+      hasSeason: boolean
+      peakMonth: number | null
+      troughMonth: number | null
+      amplitude: number
+    }
+    statistics: {
+      totalCycles: number
+      completedCycles: number
+      avgCycleInterval: number | null
+      avgCycleDuration: number | null
+      avgFemalePhase: number | null
+      avgMalePhase: number | null
+      cycleConsistency: 'high' | 'medium' | 'low'
+      cyclesPerYear: number | null
+    }
+    insights: string[]
+    summary: string
+  }
+}
+
+interface RecommendationsResponse {
+  recommendations: any[]
+  predictions: MLPredictions
+  mlMetadata: {
+    dataPoints: {
+      careLogs: number
+      ecPhReadings: number
+      floweringCycles: number
+    }
+    modelConfidence: 'high' | 'medium' | 'low'
+    generatedAt: string
+  }
+  plantContext: {
+    plantId: string
+    healthStatus: string
+    location: string | null
+  }
+}
+
 export function UpcomingCare({ plantId, onActionComplete }: UpcomingCareProps) {
-  const [recommendations, setRecommendations] = useState<CareRecommendation[]>([])
+  const [data, setData] = useState<RecommendationsResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<'watering' | 'health' | 'flowering'>('watering')
 
   useEffect(() => {
     fetchRecommendations()
@@ -27,8 +148,8 @@ export function UpcomingCare({ plantId, onActionComplete }: UpcomingCareProps) {
         throw new Error('Failed to fetch recommendations')
       }
 
-      const data = await response.json()
-      setRecommendations(data.recommendations)
+      const responseData = await response.json()
+      setData(responseData)
       setError(null)
     } catch (err) {
       console.error('Error fetching recommendations:', err)
@@ -38,240 +159,491 @@ export function UpcomingCare({ plantId, onActionComplete }: UpcomingCareProps) {
     }
   }
 
-  const getActionIcon = (action: string) => {
-    switch (action) {
-      case 'water':
-        return <Droplet className="w-5 h-5" />
-      case 'fertilize':
-        return <Leaf className="w-5 h-5" />
-      case 'repot':
-        return <TrendingUp className="w-5 h-5" />
-      default:
-        return <Calendar className="w-5 h-5" />
+  const getConfidenceBadge = (confidence: 'high' | 'medium' | 'low') => {
+    const styles = {
+      high: 'bg-[var(--moss)]/20 text-[var(--moss)]',
+      medium: 'bg-[var(--spadix-yellow)]/20 text-[var(--spadix-yellow)]',
+      low: 'bg-[var(--clay)]/20 text-[var(--clay)]'
     }
+    return (
+      <span className={`px-2 py-0.5 text-xs rounded ${styles[confidence]}`}>
+        {confidence} confidence
+      </span>
+    )
   }
 
-  const getActionColor = (action: string) => {
-    switch (action) {
-      case 'water':
-        return 'from-blue-500 to-cyan-600'
-      case 'fertilize':
-        return 'from-green-500 to-emerald-600'
-      case 'repot':
-        return 'from-orange-500 to-red-600'
-      default:
-        return 'from-gray-500 to-gray-600'
-    }
-  }
-
-  const getAlertColor = (level: string) => {
-    switch (level) {
+  const getTrajectoryIcon = (trajectory: string) => {
+    switch (trajectory) {
+      case 'improving':
+        return <TrendingUp className="w-4 h-4 text-[var(--moss)]" />
+      case 'declining':
       case 'critical':
-        return 'bg-red-50 border-red-200 text-red-800'
-      case 'warning':
-        return 'bg-yellow-50 border-yellow-200 text-yellow-800'
-      case 'healthy':
-        return 'bg-green-50 border-green-200 text-green-800'
+        return <TrendingDown className="w-4 h-4 text-[var(--alert-red)]" />
       default:
-        return 'bg-gray-50 border-gray-200 text-gray-800'
+        return <Minus className="w-4 h-4 text-[var(--clay)]" />
     }
   }
 
-  const getConfidenceBadge = (confidence: string) => {
-    switch (confidence) {
-      case 'high':
-        return <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">High Confidence</span>
-      case 'medium':
-        return <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full">Medium Confidence</span>
-      case 'low':
-        return <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">Low Confidence</span>
-      default:
-        return null
-    }
-  }
-
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'Unknown'
     const date = new Date(dateString)
-    const today = new Date()
-    const tomorrow = new Date(today)
-    tomorrow.setDate(tomorrow.getDate() + 1)
-
-    const diffTime = date.getTime() - today.getTime()
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-
-    if (diffDays < 0) {
-      return `Overdue by ${Math.abs(diffDays)} days`
-    } else if (diffDays === 0) {
-      return 'Due today'
-    } else if (diffDays === 1) {
-      return 'Due tomorrow'
-    } else if (diffDays <= 7) {
-      return `Due in ${diffDays} days`
-    } else {
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-    }
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--moss)]"></div>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-        <p className="text-red-800">Error loading recommendations: {error}</p>
+      <div className="bg-[var(--alert-red)]/10 border border-[var(--alert-red)]/20 rounded-lg p-4">
+        <p className="text-[var(--alert-red)]">Error: {error}</p>
       </div>
     )
   }
 
-  if (recommendations.length === 0) {
-    return (
-      <div className="bg-gray-50 rounded-xl p-8 text-center">
-        <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-        <p className="text-gray-600">No care recommendations available yet.</p>
-        <p className="text-sm text-gray-500 mt-2">Add more care log entries to get personalized recommendations.</p>
-      </div>
-    )
-  }
+  if (!data) return null
+
+  const { predictions, mlMetadata } = data
 
   return (
     <div className="space-y-4">
-      {recommendations.map((rec, index) => (
-        <div
-          key={index}
-          className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
-        >
-          {/* Header */}
-          <div className={`bg-gradient-to-r ${getActionColor(rec.action)} p-4 text-white`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {getActionIcon(rec.action)}
-                <div>
-                  <h3 className="text-lg font-semibold capitalize">{rec.action}</h3>
-                  <p className="text-sm opacity-90">{formatDate(rec.scheduledDate.toString())}</p>
+      {/* Tab Navigation */}
+      <div className="flex gap-1 p-1 bg-[var(--parchment)] rounded-lg">
+        {[
+          { key: 'watering', label: 'Watering', icon: Droplet },
+          { key: 'health', label: 'Health', icon: Activity },
+          { key: 'flowering', label: 'Flowering', icon: Flower2 }
+        ].map(({ key, label, icon: Icon }) => (
+          <button
+            key={key}
+            onClick={() => setActiveTab(key as any)}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded text-sm font-medium transition-colors ${
+              activeTab === key
+                ? 'bg-white text-[var(--forest)] shadow-sm'
+                : 'text-[var(--clay)] hover:text-[var(--bark)]'
+            }`}
+          >
+            <Icon className="w-4 h-4" />
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Watering Tab */}
+      {activeTab === 'watering' && (
+        <div className="space-y-4">
+          {/* Main Prediction Card */}
+          <div className="bg-white border border-black/[0.08] rounded-lg overflow-hidden">
+            <div className="bg-[var(--water-blue)]/10 px-4 py-3 border-b border-black/[0.04]">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Droplet className="w-5 h-5 text-[var(--water-blue)]" />
+                  <span className="font-medium text-[var(--bark)]">Next Watering</span>
+                </div>
+                {getConfidenceBadge(predictions.watering.confidence)}
+              </div>
+            </div>
+            <div className="p-4">
+              <div className="flex items-baseline gap-2 mb-4">
+                <span className="text-4xl font-bold text-[var(--forest)]">
+                  {predictions.watering.daysUntil !== null
+                    ? predictions.watering.daysUntil <= 0
+                      ? 'Now'
+                      : predictions.watering.daysUntil
+                    : '?'}
+                </span>
+                {predictions.watering.daysUntil !== null && predictions.watering.daysUntil > 0 && (
+                  <span className="text-[var(--clay)]">days</span>
+                )}
+                <span className="text-sm text-[var(--clay)] ml-2">
+                  ({formatDate(predictions.watering.nextDate)})
+                </span>
+              </div>
+
+              {/* Interval Range */}
+              <div className="mb-4">
+                <div className="flex justify-between text-xs text-[var(--clay)] mb-1">
+                  <span>Interval Range</span>
+                  <span>{predictions.watering.interval.min}-{predictions.watering.interval.max} days</span>
+                </div>
+                <div className="relative h-2 bg-[var(--parchment)] rounded-full overflow-hidden">
+                  <div
+                    className="absolute h-full bg-[var(--water-blue)]/30"
+                    style={{
+                      left: `${(predictions.watering.interval.min / 21) * 100}%`,
+                      width: `${((predictions.watering.interval.max - predictions.watering.interval.min) / 21) * 100}%`
+                    }}
+                  />
+                  <div
+                    className="absolute w-3 h-3 bg-[var(--water-blue)] rounded-full -top-0.5 transform -translate-x-1/2"
+                    style={{ left: `${(predictions.watering.interval.optimal / 21) * 100}%` }}
+                  />
+                </div>
+                <div className="flex justify-between text-xs text-[var(--clay)] mt-1">
+                  <span>2d</span>
+                  <span className="text-[var(--water-blue)] font-medium">
+                    Optimal: {predictions.watering.interval.optimal}d
+                  </span>
+                  <span>21d</span>
                 </div>
               </div>
-              {getConfidenceBadge(rec.confidence)}
+
+              {/* Factors */}
+              {predictions.watering.factors.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-xs font-medium text-[var(--bark)]">Adjustment Factors</h4>
+                  {predictions.watering.factors.map((factor, i) => (
+                    <div key={i} className="flex items-center justify-between text-sm">
+                      <span className="text-[var(--clay)]">{factor.name}</span>
+                      <span className={`font-mono ${
+                        factor.impact === 'decrease' ? 'text-[var(--water-blue)]' :
+                        factor.impact === 'increase' ? 'text-[var(--spadix-yellow)]' :
+                        'text-[var(--clay)]'
+                      }`}>
+                        {factor.impact === 'decrease' ? '-' : factor.impact === 'increase' ? '+' : ''}
+                        {Math.abs(factor.adjustment).toFixed(1)}d
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Content */}
-          <div className="p-4 space-y-4">
-            {/* Reasoning */}
-            <div>
-              <h4 className="text-sm font-semibold text-gray-700 mb-2">Analysis</h4>
-              <ul className="space-y-1">
-                {rec.reasoning.map((reason, idx) => (
-                  <li key={idx} className="text-sm text-gray-600 flex items-start gap-2">
-                    <span className="text-emerald-500 mt-1">•</span>
-                    <span>{reason}</span>
+          {/* History Stats */}
+          <div className="bg-white border border-black/[0.08] rounded-lg p-4">
+            <h4 className="text-sm font-medium text-[var(--bark)] mb-3 flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              Watering History
+            </h4>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <p className="text-xs text-[var(--clay)]">Events</p>
+                <p className="text-lg font-semibold text-[var(--forest)]">
+                  {predictions.watering.history.totalEvents}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-[var(--clay)]">Avg Interval</p>
+                <p className="text-lg font-semibold text-[var(--forest)]">
+                  {predictions.watering.history.avgInterval}d
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-[var(--clay)]">Trend</p>
+                <p className="text-sm font-medium flex items-center gap-1">
+                  {predictions.watering.history.trend === 'shortening' ? (
+                    <TrendingDown className="w-4 h-4 text-[var(--water-blue)]" />
+                  ) : predictions.watering.history.trend === 'lengthening' ? (
+                    <TrendingUp className="w-4 h-4 text-[var(--spadix-yellow)]" />
+                  ) : (
+                    <Minus className="w-4 h-4 text-[var(--clay)]" />
+                  )}
+                  <span className="capitalize text-[var(--bark)]">
+                    {predictions.watering.history.trend}
+                  </span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Health Tab */}
+      {activeTab === 'health' && (
+        <div className="space-y-4">
+          {/* Trajectory Card */}
+          <div className="bg-white border border-black/[0.08] rounded-lg overflow-hidden">
+            <div className={`px-4 py-3 border-b border-black/[0.04] ${
+              predictions.health.trajectory === 'critical' ? 'bg-[var(--alert-red)]/10' :
+              predictions.health.trajectory === 'declining' ? 'bg-[var(--spadix-yellow)]/10' :
+              predictions.health.trajectory === 'improving' ? 'bg-[var(--moss)]/10' :
+              'bg-[var(--parchment)]'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {getTrajectoryIcon(predictions.health.trajectory)}
+                  <span className="font-medium text-[var(--bark)] capitalize">
+                    {predictions.health.trajectory} Health
+                  </span>
+                </div>
+                {getConfidenceBadge(predictions.health.confidence)}
+              </div>
+            </div>
+            <div className="p-4">
+              {/* Current Score */}
+              <div className="mb-4">
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-[var(--clay)]">Substrate Health</span>
+                  <span className="font-semibold text-[var(--bark)]">
+                    {predictions.health.currentScore}/100
+                  </span>
+                </div>
+                <div className="h-3 bg-[var(--parchment)] rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      predictions.health.currentScore >= 70 ? 'bg-[var(--moss)]' :
+                      predictions.health.currentScore >= 40 ? 'bg-[var(--spadix-yellow)]' :
+                      'bg-[var(--alert-red)]'
+                    }`}
+                    style={{ width: `${predictions.health.currentScore}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Predictions */}
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                {[
+                  { label: '7 days', value: predictions.health.predicted['7d'] },
+                  { label: '14 days', value: predictions.health.predicted['14d'] },
+                  { label: '30 days', value: predictions.health.predicted['30d'] }
+                ].map(({ label, value }) => (
+                  <div key={label} className="text-center">
+                    <p className="text-xs text-[var(--clay)]">{label}</p>
+                    <p className={`text-lg font-semibold ${
+                      value >= 70 ? 'text-[var(--moss)]' :
+                      value >= 40 ? 'text-[var(--spadix-yellow)]' :
+                      'text-[var(--alert-red)]'
+                    }`}>
+                      {value}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Summary */}
+              <p className="text-sm text-[var(--bark)] border-t border-black/[0.04] pt-3">
+                {predictions.health.summary}
+              </p>
+            </div>
+          </div>
+
+          {/* Risk Factors */}
+          {predictions.health.riskFactors.length > 0 && (
+            <div className="bg-white border border-black/[0.08] rounded-lg p-4">
+              <h4 className="text-sm font-medium text-[var(--bark)] mb-3 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-[var(--spadix-yellow)]" />
+                Risk Factors
+              </h4>
+              <div className="space-y-2">
+                {predictions.health.riskFactors.map((risk, i) => (
+                  <div
+                    key={i}
+                    className={`p-2 rounded text-sm ${
+                      risk.severity === 'critical' ? 'bg-[var(--alert-red)]/10 text-[var(--alert-red)]' :
+                      risk.severity === 'high' ? 'bg-[var(--spadix-yellow)]/10 text-[var(--bark)]' :
+                      'bg-[var(--parchment)] text-[var(--clay)]'
+                    }`}
+                  >
+                    {risk.description}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Interventions */}
+          {predictions.health.interventions.length > 0 && (
+            <div className="bg-white border border-black/[0.08] rounded-lg p-4">
+              <h4 className="text-sm font-medium text-[var(--bark)] mb-3 flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-[var(--moss)]" />
+                Recommended Actions
+              </h4>
+              <ul className="space-y-2">
+                {predictions.health.interventions.map((intervention, i) => (
+                  <li key={i} className="text-sm text-[var(--clay)] flex items-start gap-2">
+                    <span className="text-[var(--moss)] mt-0.5">•</span>
+                    {intervention}
                   </li>
                 ))}
               </ul>
             </div>
+          )}
 
-            {/* Environmental Factors */}
-            {rec.environmentalFactors && rec.environmentalFactors.reasons.length > 0 && (
-              <div className="bg-blue-50 rounded-lg p-3">
-                <h4 className="text-sm font-semibold text-blue-900 mb-1 flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4" />
-                  Environmental Adjustments
-                </h4>
-                <div className="text-sm text-blue-800 space-y-1">
-                  {rec.environmentalFactors.temperature && (
-                    <p>Temp: {rec.environmentalFactors.temperature}°C</p>
-                  )}
-                  {rec.environmentalFactors.humidity && (
-                    <p>Humidity: {rec.environmentalFactors.humidity}%</p>
-                  )}
-                  <p className="text-xs text-blue-700 mt-2">
-                    Interval adjusted by {((rec.environmentalFactors.adjustment - 1) * 100).toFixed(0)}%
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Alerts */}
-            {rec.alerts && rec.alerts.length > 0 && (
-              <div className="space-y-2">
-                {rec.alerts.map((alert, idx) => (
-                  <div
-                    key={idx}
-                    className={`rounded-lg p-3 border ${getAlertColor(alert.level)}`}
-                  >
-                    <div className="flex items-start gap-2">
-                      {alert.level === 'critical' ? (
-                        <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                      ) : alert.level === 'healthy' ? (
-                        <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                      ) : (
-                        <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+          {/* Alerts */}
+          {predictions.health.alerts.length > 0 && (
+            <div className="space-y-2">
+              {predictions.health.alerts.map((alert, i) => (
+                <div
+                  key={i}
+                  className={`p-3 rounded-lg border ${
+                    alert.level === 'critical'
+                      ? 'bg-[var(--alert-red)]/10 border-[var(--alert-red)]/20'
+                      : alert.level === 'warning'
+                      ? 'bg-[var(--spadix-yellow)]/10 border-[var(--spadix-yellow)]/20'
+                      : 'bg-[var(--parchment)] border-black/[0.08]'
+                  }`}
+                >
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className={`w-4 h-4 flex-shrink-0 mt-0.5 ${
+                      alert.level === 'critical' ? 'text-[var(--alert-red)]' :
+                      'text-[var(--spadix-yellow)]'
+                    }`} />
+                    <div>
+                      <p className="text-sm font-medium text-[var(--bark)]">{alert.message}</p>
+                      {alert.actionRequired && (
+                        <p className="text-xs text-[var(--clay)] mt-1">{alert.actionRequired}</p>
                       )}
-                      <div className="flex-1">
-                        <p className="font-semibold text-sm">{alert.message}</p>
-                        {alert.actionRequired && (
-                          <p className="text-sm mt-1 opacity-90">
-                            <strong>Action:</strong> {alert.actionRequired}
-                          </p>
-                        )}
-                      </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-
-            {/* EC/pH Context */}
-            {rec.ecPhContext && (
-              <div className="bg-gray-50 rounded-lg p-3">
-                <h4 className="text-sm font-semibold text-gray-700 mb-2">Substrate Health</h4>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  {rec.ecPhContext.avgInputEC && rec.ecPhContext.avgOutputEC && (
-                    <div>
-                      <p className="text-gray-600">EC (In/Out)</p>
-                      <p className="font-medium">
-                        {rec.ecPhContext.avgInputEC.toFixed(2)} / {rec.ecPhContext.avgOutputEC.toFixed(2)}
-                      </p>
-                    </div>
-                  )}
-                  {rec.ecPhContext.avgInputPH && rec.ecPhContext.avgOutputPH && (
-                    <div>
-                      <p className="text-gray-600">pH (In/Out)</p>
-                      <p className="font-medium">
-                        {rec.ecPhContext.avgInputPH.toFixed(2)} / {rec.ecPhContext.avgOutputPH.toFixed(2)}
-                      </p>
-                    </div>
-                  )}
-                  {rec.ecPhContext.substrateHealthScore !== null && (
-                    <div className="col-span-2">
-                      <p className="text-gray-600">Health Score</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <div className="flex-1 bg-gray-200 rounded-full h-2">
-                          <div
-                            className={`h-2 rounded-full ${
-                              rec.ecPhContext.substrateHealthScore >= 70
-                                ? 'bg-green-500'
-                                : rec.ecPhContext.substrateHealthScore >= 40
-                                ? 'bg-yellow-500'
-                                : 'bg-red-500'
-                            }`}
-                            style={{ width: `${rec.ecPhContext.substrateHealthScore}%` }}
-                          />
-                        </div>
-                        <span className="font-medium">{rec.ecPhContext.substrateHealthScore}/100</span>
-                      </div>
-                    </div>
-                  )}
                 </div>
-              </div>
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
-      ))}
+      )}
+
+      {/* Flowering Tab */}
+      {activeTab === 'flowering' && (
+        <div className="space-y-4">
+          {/* Next Cycle Prediction */}
+          <div className="bg-white border border-black/[0.08] rounded-lg overflow-hidden">
+            <div className="bg-[var(--moss)]/10 px-4 py-3 border-b border-black/[0.04]">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Flower2 className="w-5 h-5 text-[var(--moss)]" />
+                  <span className="font-medium text-[var(--bark)]">Next Flowering Cycle</span>
+                </div>
+                {getConfidenceBadge(predictions.flowering.confidence)}
+              </div>
+            </div>
+            <div className="p-4">
+              {predictions.flowering.daysUntilNextCycle !== null ? (
+                <>
+                  <div className="flex items-baseline gap-2 mb-4">
+                    <span className="text-4xl font-bold text-[var(--forest)]">
+                      {predictions.flowering.daysUntilNextCycle <= 0
+                        ? 'Soon'
+                        : predictions.flowering.daysUntilNextCycle}
+                    </span>
+                    {predictions.flowering.daysUntilNextCycle > 0 && (
+                      <span className="text-[var(--clay)]">days</span>
+                    )}
+                    <span className="text-sm text-[var(--clay)] ml-2">
+                      ({formatDate(predictions.flowering.likelyNextCycle)})
+                    </span>
+                  </div>
+
+                  {/* Pollination Window */}
+                  {predictions.flowering.pollinationWindow.optimal && (
+                    <div className="bg-[var(--parchment)] rounded-lg p-3 mb-4">
+                      <p className="text-xs text-[var(--clay)] mb-1">Optimal Pollination Window</p>
+                      <p className="text-sm font-medium text-[var(--forest)]">
+                        {formatDate(predictions.flowering.pollinationWindow.rangeStart)} - {formatDate(predictions.flowering.pollinationWindow.rangeEnd)}
+                      </p>
+                      {predictions.flowering.pollinationWindow.daysFromNow !== null && (
+                        <p className="text-xs text-[var(--clay)] mt-1">
+                          {predictions.flowering.pollinationWindow.daysFromNow > 0
+                            ? `${predictions.flowering.pollinationWindow.daysFromNow} days from now`
+                            : 'Window active now'}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-[var(--clay)] text-sm">
+                  Not enough flowering data for prediction
+                </p>
+              )}
+
+              {/* Summary */}
+              <p className="text-sm text-[var(--bark)]">
+                {predictions.flowering.summary}
+              </p>
+            </div>
+          </div>
+
+          {/* Statistics */}
+          {predictions.flowering.statistics.completedCycles > 0 && (
+            <div className="bg-white border border-black/[0.08] rounded-lg p-4">
+              <h4 className="text-sm font-medium text-[var(--bark)] mb-3 flex items-center gap-2">
+                <BarChart3 className="w-4 h-4" />
+                Flowering Statistics
+              </h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-[var(--clay)]">Total Cycles</p>
+                  <p className="text-lg font-semibold text-[var(--forest)]">
+                    {predictions.flowering.statistics.totalCycles}
+                  </p>
+                </div>
+                {predictions.flowering.statistics.cyclesPerYear && (
+                  <div>
+                    <p className="text-xs text-[var(--clay)]">Cycles/Year</p>
+                    <p className="text-lg font-semibold text-[var(--forest)]">
+                      {predictions.flowering.statistics.cyclesPerYear}
+                    </p>
+                  </div>
+                )}
+                {predictions.flowering.statistics.avgCycleInterval && (
+                  <div>
+                    <p className="text-xs text-[var(--clay)]">Avg Interval</p>
+                    <p className="text-lg font-semibold text-[var(--forest)]">
+                      {predictions.flowering.statistics.avgCycleInterval}d
+                    </p>
+                  </div>
+                )}
+                {predictions.flowering.statistics.avgFemalePhase && (
+                  <div>
+                    <p className="text-xs text-[var(--clay)]">Female Phase</p>
+                    <p className="text-lg font-semibold text-[var(--forest)]">
+                      {predictions.flowering.statistics.avgFemalePhase}d
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Insights */}
+          {predictions.flowering.insights.length > 0 && (
+            <div className="bg-white border border-black/[0.08] rounded-lg p-4">
+              <h4 className="text-sm font-medium text-[var(--bark)] mb-3 flex items-center gap-2">
+                <Leaf className="w-4 h-4 text-[var(--moss)]" />
+                Insights
+              </h4>
+              <ul className="space-y-2">
+                {predictions.flowering.insights.map((insight, i) => (
+                  <li key={i} className="text-sm text-[var(--clay)] flex items-start gap-2">
+                    <span className="text-[var(--moss)] mt-0.5">•</span>
+                    {insight}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Seasonality */}
+          {predictions.flowering.seasonality.hasSeason && (
+            <div className="bg-[var(--parchment)] rounded-lg p-3">
+              <p className="text-xs text-[var(--clay)] mb-1">Seasonal Pattern Detected</p>
+              <p className="text-sm text-[var(--bark)]">
+                Peak flowering: Month {predictions.flowering.seasonality.peakMonth}
+                {predictions.flowering.seasonality.troughMonth && (
+                  <> • Lowest: Month {predictions.flowering.seasonality.troughMonth}</>
+                )}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Model Metadata Footer */}
+      <div className="flex items-center justify-between text-xs text-[var(--clay)] pt-2 border-t border-black/[0.04]">
+        <span>
+          Data: {mlMetadata.dataPoints.careLogs} care logs, {mlMetadata.dataPoints.ecPhReadings} EC/pH readings
+        </span>
+        <span className="flex items-center gap-1">
+          <Clock className="w-3 h-3" />
+          {new Date(mlMetadata.generatedAt).toLocaleTimeString()}
+        </span>
+      </div>
     </div>
   )
 }

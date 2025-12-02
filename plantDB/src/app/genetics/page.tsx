@@ -1,73 +1,231 @@
 'use client'
 
-import Link from 'next/link'
-import { ArrowLeft, Dna, Activity, TrendingUp, BarChart3 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Dna, TrendingUp, BarChart3, Search } from 'lucide-react'
 
 export default function GeneticsPage() {
+  const [plants, setPlants] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+
+  useEffect(() => {
+    fetchPlants()
+  }, [])
+
+  const fetchPlants = async () => {
+    try {
+      const response = await fetch('/api/plants')
+      if (response.ok) {
+        const data = await response.json()
+        setPlants(Array.isArray(data) ? data : [])
+      }
+    } catch (error) {
+      console.error('Error fetching plants:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Extract genetic lineages (RA codes) from plant names
+  const getGeneticCode = (plant: any) => {
+    const name = plant.name || ''
+    const match = name.match(/RA-?\d+/i)
+    return match ? match[0].toUpperCase() : null
+  }
+
+  // Group plants by genetic lineage
+  const lineageGroups = plants.reduce((acc: any, plant) => {
+    const code = getGeneticCode(plant)
+    if (code) {
+      if (!acc[code]) {
+        acc[code] = []
+      }
+      acc[code].push(plant)
+    }
+    return acc
+  }, {})
+
+  const lineages = Object.entries(lineageGroups)
+    .map(([code, plants]: [string, any]) => ({
+      code,
+      count: plants.length,
+      plants
+    }))
+    .sort((a, b) => b.count - a.count)
+
+  // Filter lineages by search
+  const filteredLineages = searchTerm
+    ? lineages.filter(l =>
+        l.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        l.plants.some((p: any) =>
+          (p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (p.species || '').toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      )
+    : lineages
+
+  // Calculate stats
+  const totalWithLineage = Object.values(lineageGroups).flat().length
+  const uniqueLineages = lineages.length
+  const topLineage = lineages[0]
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-[var(--clay)]">Loading genetics data...</p>
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <Link href="/" className="inline-flex items-center text-indigo-600 hover:text-indigo-700 mb-4">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Home
-          </Link>
-          <h1 className="text-4xl font-bold mb-4">
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">
-              Genetics Analysis
-            </span>
-          </h1>
-          <p className="text-gray-600">Analyze genetic traits and lineages</p>
+    <div className="min-h-screen">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold text-[var(--forest)]">Genetics</h1>
+          <p className="text-sm text-[var(--clay)]">Analyze lineages and genetic traits</p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <div className="glass rounded-2xl p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center">
-                <Dna className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Genetic Lines</p>
-                <p className="text-2xl font-bold">12</p>
-              </div>
+        {/* Stats */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white border border-black/[0.08] rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Dna className="w-4 h-4 text-[var(--moss)]" />
+              <span className="text-xs text-[var(--clay)]">Unique Lineages</span>
             </div>
+            <p className="text-3xl font-semibold text-[var(--forest)]">{uniqueLineages}</p>
           </div>
-
-          <div className="glass rounded-2xl p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
-                <Activity className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Elite Genetics</p>
-                <p className="text-2xl font-bold">4</p>
-              </div>
+          <div className="bg-white border border-black/[0.08] rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <BarChart3 className="w-4 h-4 text-[var(--water-blue)]" />
+              <span className="text-xs text-[var(--clay)]">Tagged Plants</span>
             </div>
+            <p className="text-3xl font-semibold text-[var(--forest)]">{totalWithLineage}</p>
           </div>
-
-          <div className="glass rounded-2xl p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-rose-500 rounded-xl flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-white" />
+          <div className="bg-white border border-black/[0.08] rounded-lg p-4">
+            <p className="text-xs text-[var(--clay)] mb-2">Total Plants</p>
+            <p className="text-3xl font-semibold text-[var(--bark)]">{plants.length}</p>
+          </div>
+          {topLineage && (
+            <div className="bg-white border border-black/[0.08] rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp className="w-4 h-4 text-[var(--spadix-yellow)]" />
+                <span className="text-xs text-[var(--clay)]">Top Lineage</span>
               </div>
-              <div>
-                <p className="text-sm text-gray-600">Trait Success</p>
-                <p className="text-2xl font-bold">87%</p>
-              </div>
+              <p className="text-2xl font-bold text-[var(--forest)]">{topLineage.code}</p>
+              <p className="text-xs text-[var(--clay)]">{topLineage.count} plants</p>
             </div>
+          )}
+        </div>
+
+        {/* Search */}
+        <div className="mb-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--clay)]" />
+            <input
+              type="text"
+              placeholder="Search lineages or plants..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-black/[0.08] rounded text-sm focus:outline-none focus:border-[var(--moss)]"
+            />
           </div>
         </div>
 
-        <div className="glass rounded-3xl p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <BarChart3 className="w-6 h-6 text-indigo-600" />
-            <h2 className="text-xl font-bold">Lineage Distribution</h2>
+        {/* Lineage Distribution */}
+        {filteredLineages.length > 0 ? (
+          <div className="space-y-4">
+            <h2 className="text-sm font-medium text-[var(--bark)]">Lineage Distribution</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredLineages.map((lineage) => (
+                <div key={lineage.code} className="bg-white border border-black/[0.08] rounded-lg p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <h3 className="text-lg font-bold text-[var(--forest)]">{lineage.code}</h3>
+                      <p className="text-xs text-[var(--clay)]">{lineage.count} plant{lineage.count !== 1 ? 's' : ''}</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-lg bg-[var(--parchment)] flex items-center justify-center">
+                      <Dna className="w-6 h-6 text-[var(--moss)]" />
+                    </div>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div className="mb-3">
+                    <div className="w-full h-2 bg-[var(--parchment)] rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-[var(--moss)]"
+                        style={{ width: `${(lineage.count / (topLineage?.count || 1)) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Plant list preview */}
+                  <div className="space-y-1">
+                    {lineage.plants.slice(0, 3).map((plant: any) => (
+                      <div key={plant.id} className="flex justify-between text-xs">
+                        <span className="text-[var(--bark)] truncate">{plant.name || plant.plantId}</span>
+                        <span className="text-[var(--clay)] font-mono">{plant.plantId}</span>
+                      </div>
+                    ))}
+                    {lineage.count > 3 && (
+                      <p className="text-xs text-[var(--clay)] pt-1">
+                        +{lineage.count - 3} more
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="text-center py-12 text-gray-500">
-            <p className="text-xl mb-2">Genetics analysis coming soon</p>
-            <p className="text-sm">Track trait inheritance and predict outcomes</p>
+        ) : (
+          <div className="text-center py-12">
+            <Dna className="w-12 h-12 text-[var(--clay)] mx-auto mb-3" />
+            {searchTerm ? (
+              <>
+                <p className="text-[var(--bark)] mb-1">No matching lineages</p>
+                <p className="text-sm text-[var(--clay)]">Try a different search term</p>
+              </>
+            ) : (
+              <>
+                <p className="text-[var(--bark)] mb-1">No genetic lineages detected</p>
+                <p className="text-sm text-[var(--clay)]">
+                  Add RA codes to plant names to track lineages
+                </p>
+                <p className="text-xs text-[var(--clay)] mt-2">
+                  Example: "Anthurium RA-42 Clone"
+                </p>
+              </>
+            )}
           </div>
-        </div>
+        )}
+
+        {/* Plants without lineage */}
+        {plants.length > 0 && totalWithLineage < plants.length && (
+          <div className="mt-6 bg-white border border-black/[0.08] rounded-lg p-4">
+            <h2 className="text-sm font-medium text-[var(--bark)] mb-2">Untagged Plants</h2>
+            <p className="text-xs text-[var(--clay)] mb-3">
+              {plants.length - totalWithLineage} plant{plants.length - totalWithLineage !== 1 ? 's' : ''} without RA lineage codes
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {plants
+                .filter(p => !getGeneticCode(p))
+                .slice(0, 10)
+                .map((plant) => (
+                  <span
+                    key={plant.id}
+                    className="text-xs px-2 py-1 bg-[var(--parchment)] text-[var(--bark)] rounded"
+                  >
+                    {plant.plantId}
+                  </span>
+                ))}
+              {plants.filter(p => !getGeneticCode(p)).length > 10 && (
+                <span className="text-xs px-2 py-1 text-[var(--clay)]">
+                  +{plants.filter(p => !getGeneticCode(p)).length - 10} more
+                </span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

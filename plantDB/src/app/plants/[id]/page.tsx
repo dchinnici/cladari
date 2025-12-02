@@ -70,7 +70,10 @@ export default function PlantDetailPage() {
     fromPotSize: '',
     toPotSize: '',
     fromPotType: '',
-    toPotType: ''
+    toPotType: '',
+    substrateType: '',
+    drainageType: '',
+    substrateMix: ''
   })
 
   const [useBaselineFeed, setUseBaselineFeed] = useState(false)
@@ -321,7 +324,10 @@ export default function PlantDetailPage() {
           fromPotSize: '',
           toPotSize: '',
           fromPotType: '',
-          toPotType: ''
+          toPotType: '',
+          substrateType: '',
+          drainageType: '',
+          substrateMix: ''
         })
       } else {
         showToast({ type: 'error', title: isEditing ? 'Failed to update care log' : 'Failed to add care log' })
@@ -378,7 +384,10 @@ export default function PlantDetailPage() {
       fromPotSize: '',
       toPotSize: '',
       fromPotType: '',
-      toPotType: ''
+      toPotType: '',
+      substrateType: '',
+      drainageType: '',
+      substrateMix: ''
     })
   }
 
@@ -688,43 +697,43 @@ export default function PlantDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 flex items-center justify-center">
-        <p className="text-xl text-gray-600">Loading plant details...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-[var(--clay)]">Loading plant details...</p>
       </div>
     )
   }
 
   if (!plant) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 flex items-center justify-center">
-        <p className="text-xl text-gray-600">Plant not found</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-[var(--clay)]">Plant not found</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 py-8">
+    <div className="min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <Link href="/plants" className="inline-flex items-center text-emerald-600 hover:text-emerald-700 mb-4">
+          <Link href="/plants" className="inline-flex items-center text-[var(--moss)] hover:text-[var(--forest)] mb-4">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Plants
           </Link>
 
           <div className="flex items-start justify-between">
             <div>
-              <h1 className="text-4xl font-bold mb-2">
-                <span className="gradient-text">{plant.plantId}</span>
+              <h1 className="text-2xl font-semibold text-[var(--forest)] mb-1">
+                <span className="font-mono">{plant.plantId}</span>
               </h1>
-              <h2 className="text-2xl text-gray-700 mb-2">
+              <h2 className="text-2xl text-[var(--bark)] mb-2">
                 {plant.hybridName || plant.species || 'Unknown Species'}
               </h2>
               {plant.crossNotation && (
-                <p className="text-lg text-gray-600 mb-1">{plant.crossNotation}</p>
+                <p className="text-lg text-[var(--clay)] mb-1">{plant.crossNotation}</p>
               )}
               {plant.breederCode && (
-                <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
+                <span className="px-3 py-1 bg-[var(--spadix-yellow)]/20 text-[var(--spadix-yellow)] rounded-full text-sm font-medium">
                   {plant.breederCode}
                 </span>
               )}
@@ -761,17 +770,20 @@ export default function PlantDetailPage() {
                     fromPotSize: '',
                     toPotSize: '',
                     fromPotType: '',
-                    toPotType: ''
+                    toPotType: '',
+                    substrateType: '',
+                    drainageType: '',
+                    substrateMix: ''
                   })
                 }}
-                className="p-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 flex items-center justify-center transition-colors shadow-sm"
+                className="p-3 bg-[var(--water-blue)] text-white rounded hover:bg-[var(--water-blue)]/80 flex items-center justify-center transition-colors shadow-sm"
                 title="Add Care Log"
               >
                 <Droplets className="w-5 h-5" />
               </button>
               <button
                 onClick={() => setDeleteConfirmOpen(true)}
-                className="p-3 bg-red-500 text-white rounded-xl hover:bg-red-600 flex items-center justify-center transition-colors shadow-sm"
+                className="p-3 bg-[var(--alert-red)] text-white rounded hover:bg-[var(--alert-red)]/80 flex items-center justify-center transition-colors shadow-sm"
                 title="Delete Plant"
               >
                 <Trash2 className="w-5 h-5" />
@@ -781,18 +793,18 @@ export default function PlantDetailPage() {
         </div>
 
         {/* Tabs */}
-        <div className="glass rounded-3xl mb-6 p-2">
-          <div className="flex flex-wrap gap-2">
+        <div className="bg-white border border-black/[0.08] rounded-lg mb-6 p-2">
+          <div className="flex flex-wrap gap-1">
             {tabs.map(tab => {
               const Icon = tab.icon
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all ${
+                  className={`px-3 py-2 rounded text-sm flex items-center gap-2 transition-colors ${
                     activeTab === tab.id
-                      ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white'
-                      : 'hover:bg-white/50'
+                      ? 'bg-[var(--forest)] text-white'
+                      : 'text-[var(--bark)] hover:bg-[var(--parchment)]'
                   }`}
                 >
                   <Icon className="w-4 h-4" />
@@ -804,7 +816,7 @@ export default function PlantDetailPage() {
         </div>
 
         {/* Tab Content */}
-        <div className="glass rounded-3xl p-6">
+        <div className="bg-white border border-black/[0.08] rounded-lg p-6">
           {activeTab === 'overview' && (
             <div className="space-y-6">
               {/* Last Water/Feed Banner */}
@@ -821,34 +833,34 @@ export default function PlantDetailPage() {
                 }
 
                 return (lastWater || lastFeed) && (
-                  <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-2xl p-4 border border-blue-200">
+                  <div className="bg-[var(--water-blue)]/10 rounded-lg border border-[var(--water-blue)]/20 p-4 border border-blue-200">
                     <div className="flex items-center gap-4">
                       <Droplets className="w-8 h-8 text-blue-500" />
                       <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
                         {lastWater && (
                           <div>
-                            <p className="text-sm font-medium text-gray-700">Last Watered</p>
-                            <p className="text-xs text-gray-500 italic mb-1">
+                            <p className="text-sm font-medium text-[var(--bark)]">Last Watered</p>
+                            <p className="text-xs text-[var(--clay)] italic mb-1">
                               (includes baseline feed)
                             </p>
-                            <p className="text-lg font-bold text-blue-700">
+                            <p className="text-lg font-bold text-[var(--water-blue)]">
                               {formatDaysAgo(lastWater.date)}
                             </p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-[var(--clay)]">
                               {new Date(lastWater.date).toLocaleDateString()}
                             </p>
                           </div>
                         )}
                         {lastFeed && (
                           <div>
-                            <p className="text-sm font-medium text-gray-700">Last Incremental Feed</p>
-                            <p className="text-lg font-bold text-green-700">
+                            <p className="text-sm font-medium text-[var(--bark)]">Last Incremental Feed</p>
+                            <p className="text-lg font-bold text-[var(--moss)]">
                               {formatDaysAgo(lastFeed.date)}
                             </p>
-                            <p className="text-xs text-gray-500 italic">
+                            <p className="text-xs text-[var(--clay)] italic">
                               Special/deviation feeds only
                             </p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-[var(--clay)]">
                               {new Date(lastFeed.date).toLocaleDateString()}
                             </p>
                           </div>
@@ -878,7 +890,7 @@ export default function PlantDetailPage() {
                     })
                     setOverviewModalOpen(true)
                   }}
-                  className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl hover:from-emerald-600 hover:to-green-700 flex items-center gap-2">
+                  className="px-4 py-2 bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)] flex items-center gap-2">
                   <Edit className="w-4 h-4" />
                   Edit Overview
                 </button>
@@ -887,24 +899,24 @@ export default function PlantDetailPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <DollarSign className="w-5 h-5 text-gray-500" />
+                    <DollarSign className="w-5 h-5 text-[var(--clay)]" />
                     <span className="font-medium">Cost:</span>
                     <span>${plant.acquisitionCost || 'N/A'}</span>
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-gray-500" />
+                    <Calendar className="w-5 h-5 text-[var(--clay)]" />
                     <span className="font-medium">Acquired:</span>
                     <span>{plant.accessionDate ? new Date(plant.accessionDate).toLocaleDateString() : 'N/A'}</span>
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <MapPin className="w-5 h-5 text-gray-500" />
+                    <MapPin className="w-5 h-5 text-[var(--clay)]" />
                     <span className="font-medium">Location:</span>
                     <select
                       value={plant.locationId || ''}
                       onChange={(e) => handleLocationChange(e.target.value)}
-                      className="px-3 py-1 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                      className="px-3 py-1 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)] bg-white"
                     >
                       <option value="">No location</option>
                       {locations.map((location: any) => (
@@ -931,10 +943,10 @@ export default function PlantDetailPage() {
                     <span className="font-medium">Health Status:</span>
                     <span className={`px-2 py-1 rounded-full text-sm ${
                       plant.healthStatus === 'healthy'
-                        ? 'bg-green-100 text-green-700'
+                        ? 'bg-green-100 text-[var(--moss)]'
                         : plant.healthStatus === 'struggling'
-                        ? 'bg-yellow-100 text-yellow-700'
-                        : 'bg-gray-100 text-gray-700'
+                        ? 'bg-[var(--spadix-yellow)]/20 text-[var(--spadix-yellow)]'
+                        : 'bg-gray-100 text-[var(--bark)]'
                     }`}>
                       {plant.healthStatus || 'Unknown'}
                     </span>
@@ -955,7 +967,7 @@ export default function PlantDetailPage() {
                     <span>{plant.breeder || 'N/A'}</span>
                   </div>
 
-                  <div className="flex items-center gap-2 pt-2 border-t border-gray-200 mt-2">
+                  <div className="flex items-center gap-2 pt-2 border-t border-black/[0.04] mt-2">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
@@ -980,7 +992,7 @@ export default function PlantDetailPage() {
                         }}
                         className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                       />
-                      <span className="font-medium text-purple-700">Elite Genetics</span>
+                      <span className="font-medium text-[var(--forest)]">Elite Genetics</span>
                     </label>
                   </div>
                 </div>
@@ -989,7 +1001,7 @@ export default function PlantDetailPage() {
               {plant.genetics && (
                 <div className="mt-6">
                   <h4 className="font-bold mb-2">Genetic Information</h4>
-                  <div className="bg-purple-50 rounded-xl p-4">
+                  <div className="bg-[var(--parchment)] rounded-lg p-4">
                     <p>Ploidy: {plant.genetics.ploidy || 'Unknown'}</p>
                     <p>RA Number: {plant.genetics.raNumber || 'N/A'}</p>
                     <p>OG Number: {plant.genetics.ogNumber || 'N/A'}</p>
@@ -1003,7 +1015,7 @@ export default function PlantDetailPage() {
             <div className="space-y-6">
               <div className="mb-6">
                 <h3 className="text-2xl font-bold mb-2">Care Schedule & Recommendations</h3>
-                <p className="text-gray-600">AI-powered care recommendations based on your historical data, environmental factors, and EC/pH analysis.</p>
+                <p className="text-[var(--clay)]">AI-powered care recommendations based on your historical data, environmental factors, and EC/pH analysis.</p>
               </div>
 
               <UpcomingCare
@@ -1020,7 +1032,7 @@ export default function PlantDetailPage() {
                 {!editMode ? (
                   <button
                     onClick={() => setEditMode(true)}
-                    className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl hover:from-emerald-600 hover:to-green-700 flex items-center gap-2"
+                    className="px-4 py-2 bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)] flex items-center gap-2"
                   >
                     <Edit className="w-4 h-4" />
                     Edit
@@ -1029,7 +1041,7 @@ export default function PlantDetailPage() {
                   <div className="flex gap-2">
                     <button
                       onClick={handleSave}
-                      className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl hover:from-emerald-600 hover:to-green-700 flex items-center gap-2"
+                      className="px-4 py-2 bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)] flex items-center gap-2"
                     >
                       <Save className="w-4 h-4" />
                       Save
@@ -1039,7 +1051,7 @@ export default function PlantDetailPage() {
                         setEditMode(false)
                         setEditedPlant(plant)
                       }}
-                      className="px-4 py-2 border border-gray-200 rounded-xl hover:bg-gray-50 flex items-center gap-2"
+                      className="px-4 py-2 border border-black/[0.08] rounded text-[var(--bark)] hover:bg-[var(--parchment)] flex items-center gap-2"
                     >
                       <X className="w-4 h-4" />
                       Cancel
@@ -1050,85 +1062,85 @@ export default function PlantDetailPage() {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">General Notes</label>
+                  <label className="block text-sm font-medium text-[var(--bark)] mb-2">General Notes</label>
                   <textarea
                     value={editedPlant.notes || ''}
                     onChange={e => setEditedPlant({ ...editedPlant, notes: e.target.value })}
                     disabled={!editMode}
-                    className="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 min-h-32 disabled:bg-gray-50"
+                    className="w-full p-3 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)] min-h-32 disabled:bg-[var(--parchment)]"
                     placeholder="Add notes about this plant..."
                   />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Soil Mix</label>
+                    <label className="block text-sm font-medium text-[var(--bark)] mb-2">Soil Mix</label>
                     <input
                       type="text"
                       value={editedPlant.soilMix || ''}
                       onChange={e => setEditedPlant({ ...editedPlant, soilMix: e.target.value })}
                       disabled={!editMode}
-                      className="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:bg-gray-50"
+                      className="w-full p-3 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)] disabled:bg-[var(--parchment)]"
                       placeholder="e.g., 40% bark, 30% perlite..."
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Light Requirements</label>
+                    <label className="block text-sm font-medium text-[var(--bark)] mb-2">Light Requirements</label>
                     <input
                       type="text"
                       value={editedPlant.lightRequirements || ''}
                       onChange={e => setEditedPlant({ ...editedPlant, lightRequirements: e.target.value })}
                       disabled={!editMode}
-                      className="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:bg-gray-50"
+                      className="w-full p-3 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)] disabled:bg-[var(--parchment)]"
                       placeholder="e.g., Bright indirect light"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Watering Frequency</label>
+                    <label className="block text-sm font-medium text-[var(--bark)] mb-2">Watering Frequency</label>
                     <input
                       type="text"
                       value={editedPlant.wateringFrequency || ''}
                       onChange={e => setEditedPlant({ ...editedPlant, wateringFrequency: e.target.value })}
                       disabled={!editMode}
-                      className="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:bg-gray-50"
+                      className="w-full p-3 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)] disabled:bg-[var(--parchment)]"
                       placeholder="e.g., Every 5-7 days"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Fertilization Schedule</label>
+                    <label className="block text-sm font-medium text-[var(--bark)] mb-2">Fertilization Schedule</label>
                     <input
                       type="text"
                       value={editedPlant.fertilizationSchedule || ''}
                       onChange={e => setEditedPlant({ ...editedPlant, fertilizationSchedule: e.target.value })}
                       disabled={!editMode}
-                      className="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:bg-gray-50"
+                      className="w-full p-3 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)] disabled:bg-[var(--parchment)]"
                       placeholder="e.g., Monthly with 20-20-20"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Temperature Range</label>
+                    <label className="block text-sm font-medium text-[var(--bark)] mb-2">Temperature Range</label>
                     <input
                       type="text"
                       value={editedPlant.temperatureRange || ''}
                       onChange={e => setEditedPlant({ ...editedPlant, temperatureRange: e.target.value })}
                       disabled={!editMode}
-                      className="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:bg-gray-50"
+                      className="w-full p-3 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)] disabled:bg-[var(--parchment)]"
                       placeholder="e.g., 65-80°F"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Humidity Preference</label>
+                    <label className="block text-sm font-medium text-[var(--bark)] mb-2">Humidity Preference</label>
                     <input
                       type="text"
                       value={editedPlant.humidityPreference || ''}
                       onChange={e => setEditedPlant({ ...editedPlant, humidityPreference: e.target.value })}
                       disabled={!editMode}
-                      className="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:bg-gray-50"
+                      className="w-full p-3 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)] disabled:bg-[var(--parchment)]"
                       placeholder="e.g., 60-80%"
                     />
                   </div>
@@ -1173,7 +1185,7 @@ export default function PlantDetailPage() {
               <div className="mt-6">
                 <button
                   onClick={() => setMorphologyModalOpen(true)}
-                  className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl hover:from-emerald-600 hover:to-green-700 flex items-center gap-2">
+                  className="px-4 py-2 bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)] flex items-center gap-2">
                   <Edit className="w-4 h-4" />
                   Edit Morphology
                 </button>
@@ -1203,7 +1215,7 @@ export default function PlantDetailPage() {
                     })
                     setFloweringModalOpen(true)
                   }}
-                  className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl hover:from-emerald-600 hover:to-green-700 flex items-center gap-2">
+                  className="px-4 py-2 bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)] flex items-center gap-2">
                   <Plus className="w-4 h-4" />
                   Log Flowering Event
                 </button>
@@ -1212,13 +1224,13 @@ export default function PlantDetailPage() {
               {floweringCycles && floweringCycles.length > 0 ? (
                 <div className="space-y-4">
                   {floweringCycles.map((cycle: any) => (
-                    <div key={cycle.id} className="bg-white/50 rounded-xl p-4">
+                    <div key={cycle.id} className="bg-[var(--parchment)] rounded-lg p-4">
                       <div className="flex justify-between items-start mb-3">
                         <div>
                           <p className="font-medium text-lg">
                             {cycle.spatheEmergence ? new Date(cycle.spatheEmergence).toLocaleDateString() : 'Unknown Date'}
                           </p>
-                          <p className="text-sm text-gray-600">Cycle ID: {cycle.id.slice(0, 8)}</p>
+                          <p className="text-sm text-[var(--clay)]">Cycle ID: {cycle.id.slice(0, 8)}</p>
                         </div>
                         <button
                           onClick={() => {
@@ -1238,7 +1250,7 @@ export default function PlantDetailPage() {
                             })
                             setFloweringModalOpen(true)
                           }}
-                          className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg"
+                          className="px-3 py-1 text-sm bg-[var(--parchment)] hover:bg-[var(--sage)]/30 rounded"
                         >
                           Edit
                         </button>
@@ -1246,30 +1258,30 @@ export default function PlantDetailPage() {
 
                       <div className="grid grid-cols-2 gap-3 text-sm">
                         <div>
-                          <p className="font-medium text-gray-700">Female Phase:</p>
+                          <p className="font-medium text-[var(--bark)]">Female Phase:</p>
                           {cycle.femaleStart && (
                             <p className="text-green-600">
                               Start: {new Date(cycle.femaleStart).toLocaleDateString()}
                               {cycle.femaleEnd && ` - End: ${new Date(cycle.femaleEnd).toLocaleDateString()}`}
                             </p>
                           )}
-                          {!cycle.femaleStart && <p className="text-gray-500">Not recorded</p>}
+                          {!cycle.femaleStart && <p className="text-[var(--clay)]">Not recorded</p>}
                         </div>
 
                         <div>
-                          <p className="font-medium text-gray-700">Male Phase:</p>
+                          <p className="font-medium text-[var(--bark)]">Male Phase:</p>
                           {cycle.maleStart && (
                             <p className="text-blue-600">
                               Start: {new Date(cycle.maleStart).toLocaleDateString()}
                               {cycle.maleEnd && ` - End: ${new Date(cycle.maleEnd).toLocaleDateString()}`}
                             </p>
                           )}
-                          {!cycle.maleStart && <p className="text-gray-500">Not recorded</p>}
+                          {!cycle.maleStart && <p className="text-[var(--clay)]">Not recorded</p>}
                         </div>
 
                         {cycle.pollenCollected && (
                           <div>
-                            <p className="font-medium text-gray-700">Pollen:</p>
+                            <p className="font-medium text-[var(--bark)]">Pollen:</p>
                             <p className="text-purple-600">
                               Collected - Quality: {cycle.pollenQuality || 'N/A'}
                               {cycle.pollenStored && ' (Stored)'}
@@ -1279,15 +1291,15 @@ export default function PlantDetailPage() {
 
                         {cycle.spatheClose && (
                           <div>
-                            <p className="font-medium text-gray-700">Cycle Closed:</p>
+                            <p className="font-medium text-[var(--bark)]">Cycle Closed:</p>
                             <p>{new Date(cycle.spatheClose).toLocaleDateString()}</p>
                           </div>
                         )}
                       </div>
 
                       {cycle.notes && (
-                        <div className="mt-3 pt-3 border-t border-gray-200">
-                          <p className="text-sm text-gray-600">{cycle.notes}</p>
+                        <div className="mt-3 pt-3 border-t border-black/[0.04]">
+                          <p className="text-sm text-[var(--clay)]">{cycle.notes}</p>
                         </div>
                       )}
                     </div>
@@ -1295,9 +1307,9 @@ export default function PlantDetailPage() {
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <FlaskConical className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                  <p className="text-gray-500">No flowering cycles recorded yet</p>
-                  <p className="text-sm text-gray-400 mt-2">Start tracking fertility windows to optimize breeding</p>
+                  <FlaskConical className="w-12 h-12 text-[var(--clay)] mx-auto mb-3" />
+                  <p className="text-[var(--clay)]">No flowering cycles recorded yet</p>
+                  <p className="text-sm text-[var(--clay)] mt-2">Start tracking fertility windows to optimize breeding</p>
                 </div>
               )}
             </div>
@@ -1309,7 +1321,7 @@ export default function PlantDetailPage() {
                 <h3 className="text-xl font-bold">Photos</h3>
                 <button
                   onClick={() => setPhotoUploadModalOpen(true)}
-                  className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl hover:from-emerald-600 hover:to-green-700 flex items-center gap-2">
+                  className="px-4 py-2 bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)] flex items-center gap-2">
                   <Camera className="w-4 h-4" />
                   Upload Photos
                 </button>
@@ -1318,7 +1330,7 @@ export default function PlantDetailPage() {
               {plant.photos && plant.photos.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {plant.photos.map((photo: any) => (
-                    <div key={photo.id} className="group relative bg-white/50 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all">
+                    <div key={photo.id} className="group relative bg-[var(--parchment)] rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-all">
                       <div className="aspect-[3/2] relative bg-gray-100">
                         <img
                           src={photo.url}
@@ -1344,11 +1356,11 @@ export default function PlantDetailPage() {
                                     body: JSON.stringify({ coverPhotoId: photo.id })
                                   })
                                   if (response.ok) {
-                                    showToast('Cover photo updated', 'success')
+                                    showToast({ type: 'success', title: 'Cover photo updated' })
                                     fetchPlant()
                                   }
                                 } catch (error) {
-                                  showToast('Failed to update cover photo', 'error')
+                                  showToast({ type: 'error', title: 'Failed to update cover photo' })
                                 }
                               }}
                               className="p-2 bg-yellow-500/90 text-white rounded-lg hover:bg-yellow-600"
@@ -1384,19 +1396,19 @@ export default function PlantDetailPage() {
                       </div>
                       <div className="p-3">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full font-medium">
+                          <span className="text-xs px-2 py-1 bg-[var(--moss)]/20 text-[var(--moss)] rounded-full font-medium">
                             {photo.photoType?.replace('_', ' ')}
                           </span>
                           {photo.growthStage && (
-                            <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full font-medium">
+                            <span className="text-xs px-2 py-1 bg-blue-100 text-[var(--water-blue)] rounded-full font-medium">
                               {photo.growthStage}
                             </span>
                           )}
                         </div>
                         {photo.notes && (
-                          <p className="text-xs text-gray-600 truncate mb-1">{photo.notes}</p>
+                          <p className="text-xs text-[var(--clay)] truncate mb-1">{photo.notes}</p>
                         )}
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-[var(--clay)]">
                           {photo.dateTaken ? new Date(photo.dateTaken).toLocaleDateString() : ''}
                         </p>
                       </div>
@@ -1405,11 +1417,11 @@ export default function PlantDetailPage() {
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <Camera className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                  <p className="text-gray-500">No photos uploaded yet</p>
+                  <Camera className="w-12 h-12 text-[var(--clay)] mx-auto mb-3" />
+                  <p className="text-[var(--clay)]">No photos uploaded yet</p>
                   <button
                     onClick={() => setPhotoUploadModalOpen(true)}
-                    className="mt-4 px-6 py-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl hover:from-emerald-600 hover:to-green-700 flex items-center gap-2 mx-auto"
+                    className="mt-4 px-6 py-2 bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)] flex items-center gap-2 mx-auto"
                   >
                     <Upload className="w-4 h-4" />
                     Upload Your First Photo
@@ -1430,7 +1442,7 @@ export default function PlantDetailPage() {
                       <h4 className="font-medium mb-2">As Female Parent</h4>
                       <div className="space-y-2">
                         {plant.femaleBreedings.map((breeding: any) => (
-                          <div key={breeding.id} className="bg-pink-50 rounded-xl p-3">
+                          <div key={breeding.id} className="bg-[var(--alert-red)]/10 rounded-lg p-3">
                             <p className="font-medium">Cross #{breeding.crossId}</p>
                             <p className="text-sm">Male: {breeding.malePlant?.plantId}</p>
                             <p className="text-sm">Date: {new Date(breeding.crossDate).toLocaleDateString()}</p>
@@ -1448,7 +1460,7 @@ export default function PlantDetailPage() {
                       <h4 className="font-medium mb-2">As Male Parent</h4>
                       <div className="space-y-2">
                         {plant.maleBreedings.map((breeding: any) => (
-                          <div key={breeding.id} className="bg-blue-50 rounded-xl p-3">
+                          <div key={breeding.id} className="bg-[var(--water-blue)]/10 rounded-lg p-3">
                             <p className="font-medium">Cross #{breeding.crossId}</p>
                             <p className="text-sm">Female: {breeding.femalePlant?.plantId}</p>
                             <p className="text-sm">Date: {new Date(breeding.crossDate).toLocaleDateString()}</p>
@@ -1462,7 +1474,7 @@ export default function PlantDetailPage() {
                   )}
                 </div>
               ) : (
-                <p className="text-gray-500 text-center py-8">No breeding records yet</p>
+                <p className="text-[var(--clay)] text-center py-8">No breeding records yet</p>
               )}
             </div>
           )}
@@ -1473,7 +1485,7 @@ export default function PlantDetailPage() {
                 <h3 className="text-xl font-bold">Care Logs</h3>
                 <button
                   onClick={() => setCareLogModalOpen(true)}
-                  className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl hover:from-emerald-600 hover:to-green-700 flex items-center gap-2">
+                  className="px-4 py-2 bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)] flex items-center gap-2">
                   <Plus className="w-4 h-4" />
                   Add Log Entry
                 </button>
@@ -1482,7 +1494,7 @@ export default function PlantDetailPage() {
               {plant.careLogs && plant.careLogs.length > 0 ? (
                 <div className="space-y-3">
                   {plant.careLogs.map((log: any) => (
-                    <div key={log.id} className="bg-white/50 rounded-xl p-4">
+                    <div key={log.id} className="bg-[var(--parchment)] rounded-lg p-4">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <p className="font-medium">
@@ -1495,7 +1507,7 @@ export default function PlantDetailPage() {
                             try {
                               const details = typeof log.details === 'string' ? JSON.parse(log.details) : log.details
                               return (
-                                <div className="text-sm text-gray-600 mt-2 space-y-1">
+                                <div className="text-sm text-[var(--clay)] mt-2 space-y-1">
                                   {details.notes && <p>{details.notes}</p>}
                                   {(details.inputEC || details.inputPH) && (
                                     <p>Input: EC {details.inputEC || '-'} / pH {details.inputPH || '-'}</p>
@@ -1506,7 +1518,7 @@ export default function PlantDetailPage() {
                                 </div>
                               )
                             } catch {
-                              return <p className="text-sm text-gray-600 mt-2">{log.details}</p>
+                              return <p className="text-sm text-[var(--clay)] mt-2">{log.details}</p>
                             }
                           })()}
                         </div>
@@ -1518,21 +1530,33 @@ export default function PlantDetailPage() {
                                 logId: log.id,
                                 activityType: log.action || log.activityType || 'watering',
                                 notes: details.notes || '',
-                                fertilizer: '',
-                                pesticide: '',
-                                fungicide: '',
-                                dosage: '',
-                                inputEC: details.inputEC?.toString() || '',
-                                inputPH: details.inputPH?.toString() || '',
-                                outputEC: details.outputEC?.toString() || '',
-                                outputPH: details.outputPH?.toString() || '',
+                                fertilizer: details.fertilizer || '',
+                                pesticide: details.pesticide || '',
+                                fungicide: details.fungicide || '',
+                                dosage: details.dosage || '',
+                                inputEC: details.inputEC?.toString() || details.ecIn?.toString() || '',
+                                inputPH: details.inputPH?.toString() || details.phIn?.toString() || '',
+                                outputEC: details.outputEC?.toString() || details.ecOut?.toString() || '',
+                                outputPH: details.outputPH?.toString() || details.phOut?.toString() || '',
                                 rainAmount: details.rainAmount || '',
                                 rainDuration: details.rainDuration || '',
-                                date: new Date(log.date).toISOString().split('T')[0]
+                                date: new Date(log.date).toISOString().split('T')[0],
+                                // Pest/disease discovery fields
+                                pestType: details.pestType || '',
+                                severity: details.severity || '',
+                                affectedArea: details.affectedArea || '',
+                                // Repotting fields
+                                fromPotSize: details.fromPotSize || '',
+                                toPotSize: details.toPotSize || '',
+                                fromPotType: details.fromPotType || '',
+                                toPotType: details.toPotType || '',
+                                substrateType: details.substrateType || '',
+                                drainageType: details.drainageType || '',
+                                substrateMix: details.substrateMix || ''
                               })
                               setCareLogModalOpen(true)
                             }}
-                            className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center gap-1"
+                            className="px-3 py-1 text-sm bg-[var(--parchment)] hover:bg-[var(--sage)]/30 rounded flex items-center gap-1"
                           >
                             <Edit className="w-3 h-3" />
                             Edit
@@ -1550,7 +1574,7 @@ export default function PlantDetailPage() {
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-500 text-center py-8">No care logs recorded yet</p>
+                <p className="text-[var(--clay)] text-center py-8">No care logs recorded yet</p>
               )}
             </div>
           )}
@@ -1559,7 +1583,7 @@ export default function PlantDetailPage() {
             <div className="space-y-6">
               <div className="mb-4">
                 <h3 className="text-xl font-bold mb-2">AI Botanical Assistant</h3>
-                <p className="text-gray-600">
+                <p className="text-[var(--clay)]">
                   Chat with your AI assistant about {plant.genus} {plant.species}.
                   Get care tips, diagnose issues, or ask any botanical questions.
                 </p>
@@ -1596,58 +1620,58 @@ export default function PlantDetailPage() {
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Date</label>
             <input
               type="date"
               value={measurementForm.measurementDate}
               onChange={(e) => setMeasurementForm({ ...measurementForm, measurementDate: e.target.value })}
-              className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
             />
           </div>
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">EC Value</label>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">EC Value</label>
               <input
                 type="number"
                 step="0.1"
                 value={measurementForm.ecValue}
                 onChange={(e) => setMeasurementForm({ ...measurementForm, ecValue: e.target.value })}
-                className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
                 placeholder="1.2"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">pH Value</label>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">pH Value</label>
               <input
                 type="number"
                 step="0.1"
                 value={measurementForm.phValue}
                 onChange={(e) => setMeasurementForm({ ...measurementForm, phValue: e.target.value })}
-                className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
                 placeholder="6.5"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">TDS (ppm)</label>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">TDS (ppm)</label>
               <input
                 type="number"
                 value={measurementForm.tdsValue}
                 onChange={(e) => setMeasurementForm({ ...measurementForm, tdsValue: e.target.value })}
-                className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
                 placeholder="500"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Notes</label>
             <textarea
               value={measurementForm.notes}
               onChange={(e) => setMeasurementForm({ ...measurementForm, notes: e.target.value })}
-              className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
               rows={3}
               placeholder="Additional notes..."
             />
@@ -1656,13 +1680,13 @@ export default function PlantDetailPage() {
           <div className="flex gap-3 pt-2">
             <button
               onClick={handleAddMeasurement}
-              className="flex-1 px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl hover:from-emerald-600 hover:to-green-700"
+              className="flex-1 px-4 py-2 bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)]"
             >
               Save Measurement
             </button>
             <button
               onClick={() => setMeasurementModalOpen(false)}
-              className="flex-1 px-4 py-2 border border-gray-200 rounded-xl hover:bg-gray-50"
+              className="flex-1 px-4 py-2 border border-black/[0.08] rounded text-[var(--bark)] hover:bg-[var(--parchment)]"
             >
               Cancel
             </button>
@@ -1678,17 +1702,17 @@ export default function PlantDetailPage() {
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Date</label>
             <input
               type="date"
               value={careLogForm.date}
               onChange={(e) => setCareLogForm({ ...careLogForm, date: e.target.value })}
-              className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Activity Type</label>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Activity Type</label>
             <select
               value={careLogForm.activityType}
               onChange={(e) => {
@@ -1708,7 +1732,7 @@ export default function PlantDetailPage() {
 
                 setCareLogForm({ ...careLogForm, ...updates })
               }}
-              className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
             >
               <option value="watering">Watering (with baseline feed)</option>
               <option value="rain">Rain</option>
@@ -1724,7 +1748,7 @@ export default function PlantDetailPage() {
 
           {/* Baseline Feed Checkbox - Only show for watering */}
           {careLogForm.activityType === 'watering' && (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+            <div className="bg-[var(--moss)]/10 border border-[var(--moss)]/20 rounded-lg p-3">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -1736,18 +1760,18 @@ export default function PlantDetailPage() {
                       // Auto-populate baseline feed values
                       setCareLogForm({
                         ...careLogForm,
-                        inputPH: '5.9',
-                        inputEC: '1.1',
+                        inputPH: '5.7',
+                        inputEC: '1.15',
                         notes: careLogForm.notes + (careLogForm.notes ? '\n\n' : '') + 'Baseline feed: CalMag 1ml/L, TPS One 1.5-2ml/L, K-Carb (pH Up) 0.4-0.6ml/L'
                       })
                     }
                   }}
-                  className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
+                  className="w-4 h-4 text-[var(--moss)] rounded focus:ring-[var(--moss)]"
                 />
                 <div className="flex-1">
-                  <span className="font-medium text-emerald-900">Include baseline feed</span>
-                  <p className="text-xs text-emerald-700 mt-0.5">
-                    Auto-fills: pH 5.9, EC 1.1 (CalMag + TPS One + reduced K-Carb)
+                  <span className="font-medium text-[var(--bark)]">Include baseline feed</span>
+                  <p className="text-xs text-[var(--clay)] mt-0.5">
+                    Auto-fills: pH 5.7, EC 1.15 (CalMag + TPS One + reduced K-Carb)
                   </p>
                 </div>
               </label>
@@ -1755,11 +1779,11 @@ export default function PlantDetailPage() {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Notes</label>
             <textarea
               value={careLogForm.notes}
               onChange={(e) => setCareLogForm({ ...careLogForm, notes: e.target.value })}
-              className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
               rows={3}
               placeholder="Describe the activity..."
             />
@@ -1768,13 +1792,13 @@ export default function PlantDetailPage() {
           {careLogForm.activityType === 'rain' && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-[var(--bark)] mb-1">
                   Rainfall Amount
                 </label>
                 <select
                   value={careLogForm.rainAmount}
                   onChange={(e) => setCareLogForm({ ...careLogForm, rainAmount: e.target.value })}
-                  className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
                 >
                   <option value="">-- Select amount --</option>
                   <option value="light">Light (drizzle)</option>
@@ -1784,13 +1808,13 @@ export default function PlantDetailPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-[var(--bark)] mb-1">
                   Duration
                 </label>
                 <select
                   value={careLogForm.rainDuration}
                   onChange={(e) => setCareLogForm({ ...careLogForm, rainDuration: e.target.value })}
-                  className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
                 >
                   <option value="">-- Select duration --</option>
                   <option value="brief">Brief (&lt;15 min)</option>
@@ -1807,24 +1831,24 @@ export default function PlantDetailPage() {
             <>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Input pH</label>
+                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">Input pH</label>
                   <input
                     type="number"
                     step="0.1"
                     value={careLogForm.inputPH}
                     onChange={(e) => setCareLogForm({ ...careLogForm, inputPH: e.target.value })}
-                    className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
                     placeholder="e.g., 6.1"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Input EC</label>
+                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">Input EC</label>
                   <input
                     type="number"
                     step="0.1"
                     value={careLogForm.inputEC}
                     onChange={(e) => setCareLogForm({ ...careLogForm, inputEC: e.target.value })}
-                    className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
                     placeholder="e.g., 1.0"
                   />
                 </div>
@@ -1832,24 +1856,24 @@ export default function PlantDetailPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Output/Leachate pH (Optional)</label>
+                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">Output/Leachate pH (Optional)</label>
                   <input
                     type="number"
                     step="0.1"
                     value={careLogForm.outputPH}
                     onChange={(e) => setCareLogForm({ ...careLogForm, outputPH: e.target.value })}
-                    className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
                     placeholder="e.g., 5.8"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Output/Leachate EC (Optional)</label>
+                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">Output/Leachate EC (Optional)</label>
                   <input
                     type="number"
                     step="0.1"
                     value={careLogForm.outputEC}
                     onChange={(e) => setCareLogForm({ ...careLogForm, outputEC: e.target.value })}
-                    className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
                     placeholder="e.g., 1.5"
                   />
                 </div>
@@ -1869,11 +1893,11 @@ export default function PlantDetailPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Pest/Disease Type *</label>
+                <label className="block text-sm font-medium text-[var(--bark)] mb-1">Pest/Disease Type *</label>
                 <select
                   value={careLogForm.pestType}
                   onChange={(e) => setCareLogForm({ ...careLogForm, pestType: e.target.value })}
-                  className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:ring-2 focus:ring-red-500"
                   required
                 >
                   <option value="">Select type...</option>
@@ -1905,11 +1929,11 @@ export default function PlantDetailPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Severity</label>
+                <label className="block text-sm font-medium text-[var(--bark)] mb-1">Severity</label>
                 <select
                   value={careLogForm.severity}
                   onChange={(e) => setCareLogForm({ ...careLogForm, severity: e.target.value })}
-                  className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:ring-2 focus:ring-red-500"
                 >
                   <option value="">Select severity...</option>
                   <option value="mild">Mild - Early detection, isolated</option>
@@ -1920,12 +1944,12 @@ export default function PlantDetailPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Affected Area</label>
+                <label className="block text-sm font-medium text-[var(--bark)] mb-1">Affected Area</label>
                 <input
                   type="text"
                   value={careLogForm.affectedArea}
                   onChange={(e) => setCareLogForm({ ...careLogForm, affectedArea: e.target.value })}
-                  className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:ring-2 focus:ring-red-500"
                   placeholder="e.g., Lower leaves, new growth, roots"
                 />
               </div>
@@ -1936,12 +1960,12 @@ export default function PlantDetailPage() {
             <>
               {careLogForm.activityType === 'fertilizing' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Fertilizer Used</label>
+                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">Fertilizer Used</label>
                   <input
                     type="text"
                     value={careLogForm.fertilizer}
                     onChange={(e) => setCareLogForm({ ...careLogForm, fertilizer: e.target.value })}
-                    className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
                     placeholder="e.g., 20-20-20 NPK"
                   />
                 </div>
@@ -1949,12 +1973,12 @@ export default function PlantDetailPage() {
 
               {careLogForm.activityType === 'pest_treatment' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Pesticide Used</label>
+                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">Pesticide Used</label>
                   <input
                     type="text"
                     value={careLogForm.pesticide}
                     onChange={(e) => setCareLogForm({ ...careLogForm, pesticide: e.target.value })}
-                    className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
                     placeholder="e.g., Neem oil"
                   />
                 </div>
@@ -1962,24 +1986,24 @@ export default function PlantDetailPage() {
 
               {careLogForm.activityType === 'fungicide' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Fungicide Used</label>
+                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">Fungicide Used</label>
                   <input
                     type="text"
                     value={careLogForm.fungicide}
                     onChange={(e) => setCareLogForm({ ...careLogForm, fungicide: e.target.value })}
-                    className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
                     placeholder="e.g., Copper fungicide"
                   />
                 </div>
               )}
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Dosage</label>
+                <label className="block text-sm font-medium text-[var(--bark)] mb-1">Dosage</label>
                 <input
                   type="text"
                   value={careLogForm.dosage}
                   onChange={(e) => setCareLogForm({ ...careLogForm, dosage: e.target.value })}
-                  className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
                   placeholder="e.g., 1 tbsp per gallon"
                 />
               </div>
@@ -1993,32 +2017,32 @@ export default function PlantDetailPage() {
                 <span className="text-2xl">🪴</span>
                 <div>
                   <h4 className="font-semibold text-blue-900">Repotting Details</h4>
-                  <p className="text-xs text-blue-700">Track pot size and type changes</p>
+                  <p className="text-xs text-[var(--water-blue)]">Track pot size and type changes</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">From Pot Size (inches)</label>
+                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">From Pot Size (inches)</label>
                   <input
                     type="number"
                     step="0.5"
                     value={careLogForm.fromPotSize}
                     onChange={(e) => setCareLogForm({ ...careLogForm, fromPotSize: e.target.value })}
-                    className={`w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 ${careLogForm.fromPotSize ? 'bg-gray-50' : ''}`}
+                    className={`w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:ring-2 focus:ring-blue-500 ${careLogForm.fromPotSize ? 'bg-[var(--parchment)]' : ''}`}
                     placeholder="e.g., 4"
                     readOnly={!!careLogForm.fromPotSize}
                     title={careLogForm.fromPotSize ? "Auto-populated from current pot size" : "Enter current pot size"}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">To Pot Size (inches) *</label>
+                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">To Pot Size (inches) *</label>
                   <input
                     type="number"
                     step="0.5"
                     value={careLogForm.toPotSize}
                     onChange={(e) => setCareLogForm({ ...careLogForm, toPotSize: e.target.value })}
-                    className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="e.g., 6"
                   />
                 </div>
@@ -2026,11 +2050,11 @@ export default function PlantDetailPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">From Pot Type</label>
+                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">From Pot Type</label>
                   <select
                     value={careLogForm.fromPotType}
                     onChange={(e) => setCareLogForm({ ...careLogForm, fromPotType: e.target.value })}
-                    className={`w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 ${careLogForm.fromPotType && plant?.currentPotType ? 'bg-gray-50' : ''}`}
+                    className={`w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:ring-2 focus:ring-blue-500 ${careLogForm.fromPotType && plant?.currentPotType ? 'bg-[var(--parchment)]' : ''}`}
                     disabled={!!careLogForm.fromPotType && !!plant?.currentPotType}
                     title={careLogForm.fromPotType ? "Auto-populated from current pot type" : "Select current pot type"}
                   >
@@ -2043,11 +2067,11 @@ export default function PlantDetailPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">To Pot Type</label>
+                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">To Pot Type</label>
                   <select
                     value={careLogForm.toPotType}
                     onChange={(e) => setCareLogForm({ ...careLogForm, toPotType: e.target.value })}
-                    className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select pot type...</option>
                     <option value="plastic">Plastic</option>
@@ -2067,11 +2091,11 @@ export default function PlantDetailPage() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Substrate Type</label>
+                    <label className="block text-sm font-medium text-[var(--bark)] mb-1">Substrate Type</label>
                     <select
                       value={careLogForm.substrateType || ''}
                       onChange={(e) => setCareLogForm({ ...careLogForm, substrateType: e.target.value })}
-                      className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">Select substrate...</option>
                       <option value="pon">PON (Passive Hydro)</option>
@@ -2086,11 +2110,11 @@ export default function PlantDetailPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Drainage Type</label>
+                    <label className="block text-sm font-medium text-[var(--bark)] mb-1">Drainage Type</label>
                     <select
                       value={careLogForm.drainageType || ''}
                       onChange={(e) => setCareLogForm({ ...careLogForm, drainageType: e.target.value })}
-                      className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">Select drainage...</option>
                       <option value="swp">SWP (Self-Watering Pot)</option>
@@ -2103,15 +2127,15 @@ export default function PlantDetailPage() {
                 </div>
 
                 <div className="mt-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Substrate Mix Details</label>
+                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">Substrate Mix Details</label>
                   <input
                     type="text"
                     value={careLogForm.substrateMix || ''}
                     onChange={(e) => setCareLogForm({ ...careLogForm, substrateMix: e.target.value })}
-                    className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="e.g., 4.0 size PON, 70% perlite 30% coco, etc."
                   />
-                  <p className="text-xs text-gray-500 mt-1">Specify particle size, ratios, or any special amendments</p>
+                  <p className="text-xs text-[var(--clay)] mt-1">Specify particle size, ratios, or any special amendments</p>
                 </div>
               </div>
             </div>
@@ -2120,13 +2144,13 @@ export default function PlantDetailPage() {
           <div className="flex gap-3 pt-2">
             <button
               onClick={handleAddCareLog}
-              className="flex-1 px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl hover:from-emerald-600 hover:to-green-700"
+              className="flex-1 px-4 py-2 bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)]"
             >
               Save Log Entry
             </button>
             <button
               onClick={handleCloseCareLogModal}
-              className="flex-1 px-4 py-2 border border-gray-200 rounded-xl hover:bg-gray-50"
+              className="flex-1 px-4 py-2 border border-black/[0.08] rounded text-[var(--bark)] hover:bg-[var(--parchment)]"
             >
               Cancel
             </button>
@@ -2143,11 +2167,11 @@ export default function PlantDetailPage() {
         <div className="space-y-4 max-h-[60vh] overflow-y-auto">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Leaf Shape</label>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Leaf Shape</label>
               <select
                 value={morphologyForm.leafShape}
                 onChange={(e) => setMorphologyForm({ ...morphologyForm, leafShape: e.target.value })}
-                className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
               >
                 <option value="">Select shape...</option>
                 <option value="Cordate">Cordate (heart-shaped)</option>
@@ -2166,11 +2190,11 @@ export default function PlantDetailPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Leaf Texture</label>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Leaf Texture</label>
               <select
                 value={morphologyForm.leafTexture}
                 onChange={(e) => setMorphologyForm({ ...morphologyForm, leafTexture: e.target.value })}
-                className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
               >
                 <option value="">Select texture...</option>
                 <option value="Velvety">Velvety</option>
@@ -2188,22 +2212,22 @@ export default function PlantDetailPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Leaf Color</label>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Leaf Color</label>
               <input
                 type="text"
                 value={morphologyForm.leafColor}
                 onChange={(e) => setMorphologyForm({ ...morphologyForm, leafColor: e.target.value })}
-                className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
                 placeholder="e.g., Dark green"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Leaf Size</label>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Leaf Size</label>
               <select
                 value={morphologyForm.leafSize}
                 onChange={(e) => setMorphologyForm({ ...morphologyForm, leafSize: e.target.value })}
-                className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
               >
                 <option value="">Select size...</option>
                 <option value="Very Small">Very Small (&lt;10cm / &lt;4in)</option>
@@ -2216,33 +2240,33 @@ export default function PlantDetailPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Spadix Color</label>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Spadix Color</label>
               <input
                 type="text"
                 value={morphologyForm.spadixColor}
                 onChange={(e) => setMorphologyForm({ ...morphologyForm, spadixColor: e.target.value })}
-                className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
                 placeholder="e.g., Yellow"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Spathe Color</label>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Spathe Color</label>
               <input
                 type="text"
                 value={morphologyForm.spatheColor}
                 onChange={(e) => setMorphologyForm({ ...morphologyForm, spatheColor: e.target.value })}
-                className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
                 placeholder="e.g., Pink"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Spathe Shape</label>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Spathe Shape</label>
               <select
                 value={morphologyForm.spatheShape}
                 onChange={(e) => setMorphologyForm({ ...morphologyForm, spatheShape: e.target.value })}
-                className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
               >
                 <option value="">Select shape...</option>
                 <option value="Reflexed">Reflexed (bent backward)</option>
@@ -2255,11 +2279,11 @@ export default function PlantDetailPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Growth Rate</label>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Growth Rate</label>
               <select
                 value={morphologyForm.growthRate}
                 onChange={(e) => setMorphologyForm({ ...morphologyForm, growthRate: e.target.value })}
-                className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
               >
                 <option value="">Select rate...</option>
                 <option value="Very Slow">Very Slow (1-2 leaves/year)</option>
@@ -2271,11 +2295,11 @@ export default function PlantDetailPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Mature Size</label>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Mature Size</label>
               <select
                 value={morphologyForm.matureSize}
                 onChange={(e) => setMorphologyForm({ ...morphologyForm, matureSize: e.target.value })}
-                className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
               >
                 <option value="">Select size...</option>
                 <option value="Miniature">Miniature (&lt;30cm / &lt;1ft)</option>
@@ -2288,34 +2312,34 @@ export default function PlantDetailPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Petiole Color</label>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Petiole Color</label>
               <input
                 type="text"
                 value={morphologyForm.petioleColor}
                 onChange={(e) => setMorphologyForm({ ...morphologyForm, petioleColor: e.target.value })}
-                className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
                 placeholder="e.g., Green"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Cataphyll Color</label>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Cataphyll Color</label>
               <input
                 type="text"
                 value={morphologyForm.cataphyllColor}
                 onChange={(e) => setMorphologyForm({ ...morphologyForm, cataphyllColor: e.target.value })}
-                className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
                 placeholder="e.g., Red"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">New Leaf Color</label>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">New Leaf Color</label>
               <input
                 type="text"
                 value={morphologyForm.newLeafColor}
                 onChange={(e) => setMorphologyForm({ ...morphologyForm, newLeafColor: e.target.value })}
-                className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
                 placeholder="e.g., Bronze"
               />
             </div>
@@ -2324,13 +2348,13 @@ export default function PlantDetailPage() {
           <div className="flex gap-3 pt-2">
             <button
               onClick={handleUpdateMorphology}
-              className="flex-1 px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl hover:from-emerald-600 hover:to-green-700"
+              className="flex-1 px-4 py-2 bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)]"
             >
               Save Morphology
             </button>
             <button
               onClick={() => setMorphologyModalOpen(false)}
-              className="flex-1 px-4 py-2 border border-gray-200 rounded-xl hover:bg-gray-50"
+              className="flex-1 px-4 py-2 border border-black/[0.08] rounded text-[var(--bark)] hover:bg-[var(--parchment)]"
             >
               Cancel
             </button>
@@ -2346,9 +2370,9 @@ export default function PlantDetailPage() {
       >
         <div className="space-y-4">
           <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center">
-            <Camera className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-            <p className="text-gray-600 mb-2">Click to select photo or drag and drop</p>
-            <p className="text-sm text-gray-500">PNG, JPG, HEIC up to 10MB</p>
+            <Camera className="w-12 h-12 text-[var(--clay)] mx-auto mb-3" />
+            <p className="text-[var(--clay)] mb-2">Click to select photo or drag and drop</p>
+            <p className="text-sm text-[var(--clay)]">PNG, JPG, HEIC up to 10MB</p>
             <input
               type="file"
               accept="image/*"
@@ -2362,17 +2386,17 @@ export default function PlantDetailPage() {
             />
             <label
               htmlFor="photo-upload"
-              className="mt-4 inline-block px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl hover:from-emerald-600 hover:to-green-700 cursor-pointer"
+              className="mt-4 inline-block px-4 py-2 bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)] cursor-pointer"
             >
               Select Photo
             </label>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Caption (optional)</label>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Caption (optional)</label>
             <input
               type="text"
-              className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
               placeholder="Add a caption for this photo..."
             />
           </div>
@@ -2380,7 +2404,7 @@ export default function PlantDetailPage() {
           <div className="flex gap-3">
             <button
               onClick={() => setPhotoUploadModalOpen(false)}
-              className="flex-1 px-4 py-2 border border-gray-200 rounded-xl hover:bg-gray-50"
+              className="flex-1 px-4 py-2 border border-black/[0.08] rounded text-[var(--bark)] hover:bg-[var(--parchment)]"
             >
               Cancel
             </button>
@@ -2396,44 +2420,44 @@ export default function PlantDetailPage() {
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Plant Name</label>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Plant Name</label>
             <input
               type="text"
               value={overviewForm.name}
               onChange={(e) => setOverviewForm({ ...overviewForm, name: e.target.value })}
-              className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
               placeholder="e.g., Hybrid #1 (Crystallinum x Magnificum)"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Species</label>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Species</label>
             <input
               type="text"
               value={overviewForm.species}
               onChange={(e) => setOverviewForm({ ...overviewForm, species: e.target.value })}
-              className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
               placeholder="e.g., A. crystallinum x A. magnificum"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Cross Notation</label>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Cross Notation</label>
             <input
               type="text"
               value={overviewForm.crossNotation}
               onChange={(e) => setOverviewForm({ ...overviewForm, crossNotation: e.target.value })}
-              className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
               placeholder="e.g., (RA8×RA5)², F1, Silver Veins"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Section</label>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Section</label>
             <select
               value={overviewForm.section}
               onChange={(e) => setOverviewForm({ ...overviewForm, section: e.target.value })}
-              className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
             >
               <option value="">Select section...</option>
               <option value="Cardiolonchium">Cardiolonchium</option>
@@ -2455,34 +2479,34 @@ export default function PlantDetailPage() {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Acquisition Cost</label>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Acquisition Cost</label>
               <input
                 type="number"
                 value={overviewForm.acquisitionCost}
                 onChange={(e) => setOverviewForm({ ...overviewForm, acquisitionCost: e.target.value })}
-                className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
                 placeholder="0.00"
                 step="0.01"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Acquisition Date</label>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Acquisition Date</label>
               <input
                 type="date"
                 value={overviewForm.acquisitionDate}
                 onChange={(e) => setOverviewForm({ ...overviewForm, acquisitionDate: e.target.value })}
-                className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Health Status</label>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Health Status</label>
             <select
               value={overviewForm.healthStatus}
               onChange={(e) => setOverviewForm({ ...overviewForm, healthStatus: e.target.value })}
-              className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
             >
               <option value="">Select status</option>
               <option value="healthy">Healthy</option>
@@ -2493,11 +2517,11 @@ export default function PlantDetailPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Propagation Type</label>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Propagation Type</label>
             <select
               value={overviewForm.propagationType}
               onChange={(e) => setOverviewForm({ ...overviewForm, propagationType: e.target.value })}
-              className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
             >
               <option value="">Select type...</option>
               <option value="seed">Seed - Grown from seed</option>
@@ -2506,18 +2530,18 @@ export default function PlantDetailPage() {
               <option value="division">Division - Offset/clone from mother plant</option>
               <option value="purchase">Purchase - Acquired as established plant</option>
             </select>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-[var(--clay)] mt-1">
               💡 Division = genetically identical clone of parent plant
             </p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Generation</label>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Generation</label>
               <select
                 value={overviewForm.generation}
                 onChange={(e) => setOverviewForm({ ...overviewForm, generation: e.target.value })}
-                className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
               >
                 <option value="">Select generation...</option>
                 <optgroup label="Cross-Pollinated (F-series)">
@@ -2541,17 +2565,17 @@ export default function PlantDetailPage() {
                   <option value="Clone">Clone/Division (same as parent)</option>
                 </optgroup>
               </select>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-[var(--clay)] mt-1">
                 💡 For divisions/clones: Use "Clone" or same generation as mother plant
               </p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Breeder Code</label>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Breeder Code</label>
               <select
                 value={overviewForm.breederCode}
                 onChange={(e) => setOverviewForm({ ...overviewForm, breederCode: e.target.value })}
-                className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
               >
                 <option value="">Select code...</option>
                 <option value="RA">RA</option>
@@ -2570,12 +2594,12 @@ export default function PlantDetailPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Breeder</label>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Breeder</label>
             <input
               type="text"
               value={overviewForm.breeder}
               onChange={(e) => setOverviewForm({ ...overviewForm, breeder: e.target.value })}
-              className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
               placeholder="e.g., NSE Tropicals"
             />
           </div>
@@ -2583,13 +2607,13 @@ export default function PlantDetailPage() {
           <div className="flex gap-3 pt-2">
             <button
               onClick={handleUpdateOverview}
-              className="flex-1 px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl hover:from-emerald-600 hover:to-green-700"
+              className="flex-1 px-4 py-2 bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)]"
             >
               Save Changes
             </button>
             <button
               onClick={() => setOverviewModalOpen(false)}
-              className="flex-1 px-4 py-2 border border-gray-200 rounded-xl hover:bg-gray-50"
+              className="flex-1 px-4 py-2 border border-black/[0.08] rounded text-[var(--bark)] hover:bg-[var(--parchment)]"
             >
               Cancel
             </button>
@@ -2605,74 +2629,74 @@ export default function PlantDetailPage() {
       >
         <div className="space-y-4 max-h-[70vh] overflow-y-auto">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Spathe Emergence Date</label>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Spathe Emergence Date</label>
             <input
               type="date"
               value={floweringForm.spatheEmergence}
               onChange={(e) => setFloweringForm({ ...floweringForm, spatheEmergence: e.target.value })}
-              className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
             />
-            <p className="text-xs text-gray-500 mt-1">When the spathe first emerged</p>
+            <p className="text-xs text-[var(--clay)] mt-1">When the spathe first emerged</p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Female Phase Start</label>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Female Phase Start</label>
               <input
                 type="date"
                 value={floweringForm.femaleStart}
                 onChange={(e) => setFloweringForm({ ...floweringForm, femaleStart: e.target.value })}
-                className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
               />
-              <p className="text-xs text-gray-500 mt-1">Stigmas receptive</p>
+              <p className="text-xs text-[var(--clay)] mt-1">Stigmas receptive</p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Female Phase End</label>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Female Phase End</label>
               <input
                 type="date"
                 value={floweringForm.femaleEnd}
                 onChange={(e) => setFloweringForm({ ...floweringForm, femaleEnd: e.target.value })}
-                className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Male Phase Start</label>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Male Phase Start</label>
               <input
                 type="date"
                 value={floweringForm.maleStart}
                 onChange={(e) => setFloweringForm({ ...floweringForm, maleStart: e.target.value })}
-                className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
               />
-              <p className="text-xs text-gray-500 mt-1">Pollen production begins</p>
+              <p className="text-xs text-[var(--clay)] mt-1">Pollen production begins</p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Male Phase End</label>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Male Phase End</label>
               <input
                 type="date"
                 value={floweringForm.maleEnd}
                 onChange={(e) => setFloweringForm({ ...floweringForm, maleEnd: e.target.value })}
-                className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Spathe Closed</label>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Spathe Closed</label>
             <input
               type="date"
               value={floweringForm.spatheClose}
               onChange={(e) => setFloweringForm({ ...floweringForm, spatheClose: e.target.value })}
-              className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
             />
-            <p className="text-xs text-gray-500 mt-1">When the flowering cycle completed</p>
+            <p className="text-xs text-[var(--clay)] mt-1">When the flowering cycle completed</p>
           </div>
 
-          <div className="border-t border-gray-200 pt-4">
+          <div className="border-t border-black/[0.04] pt-4">
             <h4 className="font-medium text-gray-900 mb-3">Pollen Management</h4>
 
             <div className="flex items-center gap-2 mb-3">
@@ -2683,17 +2707,17 @@ export default function PlantDetailPage() {
                 onChange={(e) => setFloweringForm({ ...floweringForm, pollenCollected: e.target.checked })}
                 className="rounded border-gray-300"
               />
-              <label htmlFor="pollenCollected" className="text-sm text-gray-700">Pollen Collected</label>
+              <label htmlFor="pollenCollected" className="text-sm text-[var(--bark)]">Pollen Collected</label>
             </div>
 
             {floweringForm.pollenCollected && (
               <>
                 <div className="mb-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Pollen Quality</label>
+                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">Pollen Quality</label>
                   <select
                     value={floweringForm.pollenQuality}
                     onChange={(e) => setFloweringForm({ ...floweringForm, pollenQuality: e.target.value })}
-                    className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
                   >
                     <option value="">Select quality...</option>
                     <option value="abundant">Abundant</option>
@@ -2711,17 +2735,17 @@ export default function PlantDetailPage() {
                     onChange={(e) => setFloweringForm({ ...floweringForm, pollenStored: e.target.checked })}
                     className="rounded border-gray-300"
                   />
-                  <label htmlFor="pollenStored" className="text-sm text-gray-700">Pollen Stored (refrigerated)</label>
+                  <label htmlFor="pollenStored" className="text-sm text-[var(--bark)]">Pollen Stored (refrigerated)</label>
                 </div>
 
                 {floweringForm.pollenStored && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Storage Date</label>
+                    <label className="block text-sm font-medium text-[var(--bark)] mb-1">Storage Date</label>
                     <input
                       type="date"
                       value={floweringForm.pollenStorageDate}
                       onChange={(e) => setFloweringForm({ ...floweringForm, pollenStorageDate: e.target.value })}
-                      className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
                     />
                   </div>
                 )}
@@ -2730,11 +2754,11 @@ export default function PlantDetailPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Notes</label>
             <textarea
               value={floweringForm.notes}
               onChange={(e) => setFloweringForm({ ...floweringForm, notes: e.target.value })}
-              className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
               rows={3}
               placeholder="Notes about this flowering cycle..."
             />
@@ -2743,13 +2767,13 @@ export default function PlantDetailPage() {
           <div className="flex gap-3 pt-2">
             <button
               onClick={handleSaveFloweringCycle}
-              className="flex-1 px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl hover:from-emerald-600 hover:to-green-700"
+              className="flex-1 px-4 py-2 bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)]"
             >
               {floweringForm.cycleId ? 'Update Cycle' : 'Save Cycle'}
             </button>
             <button
               onClick={() => setFloweringModalOpen(false)}
-              className="flex-1 px-4 py-2 border border-gray-200 rounded-xl hover:bg-gray-50"
+              className="flex-1 px-4 py-2 border border-black/[0.08] rounded text-[var(--bark)] hover:bg-[var(--parchment)]"
             >
               Cancel
             </button>
@@ -2774,7 +2798,7 @@ export default function PlantDetailPage() {
             </ul>
           </div>
 
-          <p className="text-gray-700">
+          <p className="text-[var(--bark)]">
             Are you sure you want to permanently delete <span className="font-bold">{plant?.plantId}</span>
             {plant?.hybridName && <span> ({plant.hybridName})</span>}?
           </p>
@@ -2782,7 +2806,7 @@ export default function PlantDetailPage() {
           <div className="flex gap-3 pt-2">
             <button
               onClick={() => setDeleteConfirmOpen(false)}
-              className="flex-1 px-4 py-2 border border-gray-200 rounded-xl hover:bg-gray-50"
+              className="flex-1 px-4 py-2 border border-black/[0.08] rounded text-[var(--bark)] hover:bg-[var(--parchment)]"
             >
               Cancel
             </button>
@@ -2810,14 +2834,14 @@ export default function PlantDetailPage() {
             </p>
           </div>
 
-          <p className="text-gray-700">
+          <p className="text-[var(--bark)]">
             Are you sure you want to delete this care log entry?
           </p>
 
           <div className="flex gap-3 pt-2">
             <button
               onClick={() => setCareLogToDelete(null)}
-              className="flex-1 px-4 py-2 border border-gray-200 rounded-xl hover:bg-gray-50"
+              className="flex-1 px-4 py-2 border border-black/[0.08] rounded text-[var(--bark)] hover:bg-[var(--parchment)]"
             >
               Cancel
             </button>
@@ -2852,25 +2876,25 @@ export default function PlantDetailPage() {
           {!photoForm.photoId && (
             <div
               {...getRootProps()}
-              className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
+              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
                 isDragActive
-                  ? 'border-emerald-500 bg-emerald-50'
-                  : 'border-gray-300 hover:border-emerald-400 hover:bg-gray-50'
+                  ? 'border-[var(--moss)] bg-[var(--moss)]/10'
+                  : 'border-black/[0.15] hover:border-[var(--moss)] hover:bg-[var(--parchment)]'
               }`}
             >
               <input {...getInputProps()} />
-              <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+              <Upload className="w-12 h-12 text-[var(--clay)] mx-auto mb-3" />
               {isDragActive ? (
-                <p className="text-emerald-600 font-medium">Drop photos here...</p>
+                <p className="text-[var(--moss)] font-medium">Drop photos here...</p>
               ) : (
                 <>
-                  <p className="text-gray-700 font-medium mb-1">
+                  <p className="text-[var(--bark)] font-medium mb-1">
                     Drag & drop photos here, or click to select
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-[var(--clay)]">
                     Supports: JPG, PNG, WEBP, HEIC (iOS photos)
                   </p>
-                  <p className="text-xs text-gray-400 mt-2">
+                  <p className="text-xs text-[var(--clay)] mt-2">
                     Multiple files supported for batch upload
                   </p>
                 </>
@@ -2881,21 +2905,21 @@ export default function PlantDetailPage() {
           {/* Selected Files Preview */}
           {selectedFiles.length > 0 && (
             <div className="space-y-2">
-              <p className="text-sm font-medium text-gray-700">
+              <p className="text-sm font-medium text-[var(--bark)]">
                 Selected: {selectedFiles.length} {selectedFiles.length === 1 ? 'photo' : 'photos'}
               </p>
               <div className="max-h-40 overflow-y-auto space-y-1">
                 {selectedFiles.map((file, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
+                    className="flex items-center justify-between p-2 bg-[var(--parchment)] rounded-lg"
                   >
                     <div className="flex items-center gap-2">
-                      <ImageIcon className="w-4 h-4 text-emerald-600" />
-                      <span className="text-sm text-gray-700 truncate max-w-xs">
+                      <ImageIcon className="w-4 h-4 text-[var(--moss)]" />
+                      <span className="text-sm text-[var(--bark)] truncate max-w-xs">
                         {file.name}
                       </span>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-[var(--clay)]">
                         ({(file.size / 1024 / 1024).toFixed(2)} MB)
                       </span>
                     </div>
@@ -2905,7 +2929,7 @@ export default function PlantDetailPage() {
                       }
                       className="p-1 hover:bg-gray-200 rounded"
                     >
-                      <X className="w-4 h-4 text-gray-500" />
+                      <X className="w-4 h-4 text-[var(--clay)]" />
                     </button>
                   </div>
                 ))}
@@ -2916,13 +2940,13 @@ export default function PlantDetailPage() {
           {/* Photo Metadata */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">
                 Photo Type
               </label>
               <select
                 value={photoForm.photoType}
                 onChange={(e) => setPhotoForm({ ...photoForm, photoType: e.target.value })}
-                className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
               >
                 <option value="whole_plant">Whole Plant</option>
                 <option value="leaf">Leaf Detail</option>
@@ -2936,13 +2960,13 @@ export default function PlantDetailPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">
                 Growth Stage
               </label>
               <select
                 value={photoForm.growthStage}
                 onChange={(e) => setPhotoForm({ ...photoForm, growthStage: e.target.value })}
-                className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
               >
                 <option value="">Not specified</option>
                 <option value="seedling">Seedling</option>
@@ -2953,28 +2977,28 @@ export default function PlantDetailPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">
               Date Taken (optional)
             </label>
             <input
               type="date"
               value={photoForm.dateTaken}
               onChange={(e) => setPhotoForm({ ...photoForm, dateTaken: e.target.value })}
-              className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-[var(--clay)] mt-1">
               📸 Date will be automatically extracted from photo EXIF data if available
             </p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">
               Notes (optional)
             </label>
             <textarea
               value={photoForm.notes}
               onChange={(e) => setPhotoForm({ ...photoForm, notes: e.target.value })}
-              className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
               rows={2}
               placeholder="Add any notes about these photos..."
             />
@@ -2993,7 +3017,7 @@ export default function PlantDetailPage() {
                   dateTaken: new Date().toISOString().split('T')[0]
                 })
               }}
-              className="flex-1 px-4 py-2 border border-gray-200 rounded-xl hover:bg-gray-50"
+              className="flex-1 px-4 py-2 border border-black/[0.08] rounded text-[var(--bark)] hover:bg-[var(--parchment)]"
               disabled={uploadingPhoto}
             >
               Cancel
@@ -3001,7 +3025,7 @@ export default function PlantDetailPage() {
             <button
               onClick={photoForm.photoId ? handleUpdatePhoto : handlePhotoUpload}
               disabled={uploadingPhoto || (!photoForm.photoId && selectedFiles.length === 0)}
-              className="flex-1 px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl hover:from-emerald-600 hover:to-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-2 bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {uploadingPhoto ? (
                 <>

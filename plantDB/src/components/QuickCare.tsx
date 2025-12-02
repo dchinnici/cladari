@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
 import { Modal } from './modal'
 import { showToast } from './toast'
-import { Droplets, Leaf, Zap, Command } from 'lucide-react'
+import { Droplets } from 'lucide-react'
 
 interface QuickCareProps {
   isOpen: boolean
@@ -22,67 +22,21 @@ export default function QuickCare({ isOpen, onClose, plants, onSuccess }: QuickC
 
   // Filter plants needing attention first
   const plantsNeedingWater = plants.filter(p => {
-    const lastWater = p.careLogs?.find((log: any) =>
-      ['water', 'watering'].includes(log.action.toLowerCase())
-    )
+    const lastWater = p.careLogs?.find((log: any) => {
+      const action = (log.action || '').toLowerCase()
+      return action.includes('water') || action.includes('fertil')
+    })
     if (!lastWater) return true
     const daysSince = Math.floor((Date.now() - new Date(lastWater.date).getTime()) / (1000 * 60 * 60 * 24))
-    return daysSince >= 5 // Show plants not watered in 5+ days
-  }).sort((a, b) => a.hybridName?.localeCompare(b.hybridName))
+    return daysSince >= 5
+  }).sort((a, b) => (a.name || a.plantId)?.localeCompare(b.name || b.plantId))
 
   const filteredPlants = searchTerm
     ? plants.filter(p =>
-        p.hybridName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.plantId?.toLowerCase().includes(searchTerm.toLowerCase())
+        (p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (p.plantId || '').toLowerCase().includes(searchTerm.toLowerCase())
       )
     : plantsNeedingWater.length > 0 ? plantsNeedingWater : plants
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    if (!isOpen) return
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Number keys to quick-select first 9 plants
-      if (e.key >= '1' && e.key <= '9' && !e.metaKey && !e.ctrlKey) {
-        const index = parseInt(e.key) - 1
-        if (filteredPlants[index]) {
-          const plantId = filteredPlants[index].id
-          setSelectedPlants(prev =>
-            prev.includes(plantId)
-              ? prev.filter(id => id !== plantId)
-              : [...prev, plantId]
-          )
-        }
-      }
-
-      // Cmd/Ctrl + A to select all visible
-      if ((e.metaKey || e.ctrlKey) && e.key === 'a') {
-        e.preventDefault()
-        setSelectedPlants(filteredPlants.map(p => p.id))
-      }
-
-      // W for water, F for fertilize
-      if (e.key === 'w' && !e.metaKey) {
-        setActivityType('water')
-      }
-      if (e.key === 'f' && !e.metaKey) {
-        setActivityType('fertilize')
-      }
-
-      // B for baseline toggle
-      if (e.key === 'b' && !e.metaKey) {
-        setIncludeBaseline(prev => !prev)
-      }
-
-      // Enter to save
-      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-        handleSave()
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, filteredPlants, selectedPlants])
 
   const handleSave = async () => {
     if (selectedPlants.length === 0) {
@@ -98,9 +52,9 @@ export default function QuickCare({ isOpen, onClose, plants, onSuccess }: QuickC
         date: new Date().toISOString().split('T')[0] + 'T12:00:00',
         notes,
         ...(includeBaseline && {
-          ecIn: 1.1,
+          ecIn: 1.15,
           ecOut: null,
-          phIn: 5.9,
+          phIn: 5.7,
           phOut: null,
         })
       }
@@ -113,7 +67,7 @@ export default function QuickCare({ isOpen, onClose, plants, onSuccess }: QuickC
 
       if (!response.ok) throw new Error('Failed to save')
 
-      showToast({ type: 'success', title: `✓ Logged ${activityType} for ${selectedPlants.length} plants` })
+      showToast({ type: 'success', title: `Logged ${activityType} for ${selectedPlants.length} plants` })
       onSuccess()
       onClose()
 
@@ -128,44 +82,60 @@ export default function QuickCare({ isOpen, onClose, plants, onSuccess }: QuickC
     }
   }
 
+  const handleSelectAll = () => {
+    setSelectedPlants(filteredPlants.map(p => p.id))
+  }
+
+  const handleClearAll = () => {
+    setSelectedPlants([])
+  }
+
   if (!isOpen) return null
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={
-        <div className="flex items-center gap-2">
-          <Zap className="h-5 w-5 text-yellow-500" />
-          Quick Care Log
-          <span className="text-xs text-gray-500 ml-2">
-            Press 1-9 to select, W/F for activity, B for baseline
-          </span>
-        </div>
-      }
+      title="Quick Care Log"
     >
       <div className="space-y-4">
         {/* Search */}
         <input
           type="text"
-          placeholder="Search plants... (or use number keys 1-9)"
+          placeholder="Search plants..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-3 py-2 bg-white/80 border border-gray-200 rounded-lg"
+          className="w-full px-3 py-2 border border-black/[0.08] rounded text-sm focus:outline-none focus:border-[var(--moss)]"
           autoFocus
         />
 
+        {/* Selection controls */}
+        <div className="flex gap-2 text-xs">
+          <button
+            onClick={handleSelectAll}
+            className="px-2 py-1 bg-[var(--parchment)] text-[var(--bark)] rounded hover:bg-[var(--sage)]/20"
+          >
+            Select All ({filteredPlants.length})
+          </button>
+          <button
+            onClick={handleClearAll}
+            className="px-2 py-1 bg-[var(--parchment)] text-[var(--bark)] rounded hover:bg-[var(--sage)]/20"
+          >
+            Clear
+          </button>
+        </div>
+
         {/* Plant Selection Grid */}
-        <div className="max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-2">
-          <div className="grid grid-cols-2 gap-2">
-            {filteredPlants.slice(0, 20).map((plant, index) => (
+        <div className="max-h-64 overflow-y-auto border border-black/[0.08] rounded p-2">
+          <div className="grid grid-cols-1 gap-1">
+            {filteredPlants.slice(0, 30).map((plant) => (
               <label
                 key={plant.id}
                 className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${
                   selectedPlants.includes(plant.id)
-                    ? 'bg-green-100 border-green-500'
-                    : 'bg-white hover:bg-gray-50'
-                } border`}
+                    ? 'bg-[var(--moss)]/20 border-[var(--moss)]'
+                    : 'bg-white hover:bg-[var(--parchment)]'
+                } border border-black/[0.08]`}
               >
                 <input
                   type="checkbox"
@@ -180,43 +150,38 @@ export default function QuickCare({ isOpen, onClose, plants, onSuccess }: QuickC
                   className="rounded"
                 />
                 <div className="flex-1 text-sm">
-                  <span className="font-mono text-xs text-gray-500 mr-1">
-                    {index < 9 ? `[${index + 1}]` : ''}
-                  </span>
-                  {plant.hybridName || plant.species || plant.plantId}
-                  {plant.needsWater && (
-                    <Droplets className="inline ml-1 h-3 w-3 text-blue-500" />
+                  <span className="text-[var(--bark)]">{plant.name || plant.plantId}</span>
+                  {plant.plantId && plant.name && (
+                    <span className="text-xs text-[var(--clay)] ml-2 font-mono">{plant.plantId}</span>
                   )}
                 </div>
               </label>
             ))}
           </div>
-          {filteredPlants.length > 20 && (
-            <p className="text-xs text-gray-500 mt-2 text-center">
-              Showing first 20 plants. Use search to find specific plants.
+          {filteredPlants.length > 30 && (
+            <p className="text-xs text-[var(--clay)] mt-2 text-center">
+              Showing first 30 plants. Use search to find specific plants.
             </p>
           )}
         </div>
 
         {/* Selected count */}
-        <div className="text-sm text-gray-600">
+        <div className="text-sm text-[var(--bark)]">
           {selectedPlants.length} plant{selectedPlants.length !== 1 ? 's' : ''} selected
         </div>
 
         {/* Activity Type */}
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {['water', 'fertilize', 'repot', 'prune'].map(type => (
             <button
               key={type}
               onClick={() => setActivityType(type)}
-              className={`px-3 py-2 rounded-lg capitalize transition-colors ${
+              className={`px-3 py-2 rounded capitalize text-sm transition-colors ${
                 activityType === type
-                  ? 'bg-green-500 text-white'
-                  : 'bg-gray-100 hover:bg-gray-200'
+                  ? 'bg-[var(--forest)] text-white'
+                  : 'bg-[var(--parchment)] text-[var(--bark)] hover:bg-[var(--sage)]/30'
               }`}
             >
-              {type === 'water' && <span className="text-xs mr-1">[W]</span>}
-              {type === 'fertilize' && <span className="text-xs mr-1">[F]</span>}
               {type}
             </button>
           ))}
@@ -224,7 +189,7 @@ export default function QuickCare({ isOpen, onClose, plants, onSuccess }: QuickC
 
         {/* Baseline Feed Checkbox */}
         {(activityType === 'water' || activityType === 'fertilize') && (
-          <label className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg cursor-pointer">
+          <label className="flex items-center gap-2 p-3 bg-[var(--water-blue)]/10 rounded cursor-pointer border border-[var(--water-blue)]/20">
             <input
               type="checkbox"
               checked={includeBaseline}
@@ -232,8 +197,8 @@ export default function QuickCare({ isOpen, onClose, plants, onSuccess }: QuickC
               className="rounded"
             />
             <div>
-              <span className="font-medium">Include baseline feed <span className="text-xs">[B]</span></span>
-              <span className="text-sm text-gray-600 ml-2">(pH 5.9, EC 1.1)</span>
+              <span className="font-medium text-sm text-[var(--bark)]">Include baseline feed</span>
+              <span className="text-xs text-[var(--clay)] ml-2">(pH 5.7, EC 1.15)</span>
             </div>
           </label>
         )}
@@ -243,30 +208,24 @@ export default function QuickCare({ isOpen, onClose, plants, onSuccess }: QuickC
           placeholder="Optional notes..."
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          className="w-full px-3 py-2 bg-white/80 border border-gray-200 rounded-lg h-20"
+          className="w-full px-3 py-2 border border-black/[0.08] rounded text-sm h-20 focus:outline-none focus:border-[var(--moss)]"
         />
 
         {/* Actions */}
-        <div className="flex justify-between items-center">
-          <div className="text-xs text-gray-500 flex items-center gap-1">
-            <Command className="h-3 w-3" />
-            <span>Cmd+Enter to save</span>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={saving || selectedPlants.length === 0}
-              className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 flex items-center gap-2"
-            >
-              {saving ? 'Saving...' : `Log Care (${selectedPlants.length})`}
-            </button>
-          </div>
+        <div className="flex gap-2 pt-2">
+          <button
+            onClick={handleSave}
+            disabled={saving || selectedPlants.length === 0}
+            className="flex-1 px-4 py-2 bg-[var(--forest)] text-white text-sm rounded disabled:opacity-50"
+          >
+            {saving ? 'Saving...' : `Log Care (${selectedPlants.length})`}
+          </button>
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2 border border-black/[0.08] text-sm rounded text-[var(--bark)]"
+          >
+            Cancel
+          </button>
         </div>
       </div>
     </Modal>

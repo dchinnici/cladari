@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 import { carePredictor } from '@/lib/ml/carePredictor';
 
 export async function POST(request: NextRequest) {
@@ -23,17 +23,18 @@ export async function POST(request: NextRequest) {
     const plant = await prisma.plant.findUnique({
       where: { id: plantId },
       include: {
-        location: true,
+        currentLocation: true,
+        genetics: true,
         careLogs: {
           orderBy: { date: 'desc' },
           take: 50 // Get recent history
         },
         measurements: {
-          orderBy: { date: 'desc' },
+          orderBy: { measurementDate: 'desc' },
           take: 10
         },
         traits: {
-          orderBy: { observedAt: 'desc' },
+          orderBy: { observationDate: 'desc' },
           take: 10
         }
       }
@@ -46,36 +47,69 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Parse EC/pH from care log details JSON
+    const parseDetails = (details: string | null) => {
+      if (!details) return {};
+      try {
+        return JSON.parse(details);
+      } catch {
+        return {};
+      }
+    };
+
+    // Extract EC/pH from recent care logs for substrate health
+    const ecphMeasurements = plant.careLogs
+      .map(log => {
+        const details = parseDetails(log.details);
+        if (details.ecIn || details.ecOut || details.phIn || details.phOut) {
+          return {
+            date: log.date,
+            ecInput: details.ecIn || undefined,
+            ecOutput: details.ecOut || undefined,
+            phInput: details.phIn || undefined,
+            phOutput: details.phOut || undefined
+          };
+        }
+        return null;
+      })
+      .filter((m): m is NonNullable<typeof m> => m !== null);
+
+    // Build genetics string for the predictor
+    const geneticsStr = plant.genetics
+      ? [
+          plant.genetics.raNumber,
+          plant.genetics.ogNumber,
+          plant.genetics.provenance
+        ].filter(Boolean).join(' ')
+      : undefined;
+
     // Prepare data for prediction
     const plantData = {
       id: plant.id,
-      accessionNumber: plant.accessionNumber,
+      accessionNumber: plant.plantId,
       healthStatus: plant.healthStatus,
-      vigor: plant.vigor,
-      genetics: plant.genetics || undefined,
-      location: plant.location ? {
-        temperature: plant.location.temperature || undefined,
-        humidity: plant.location.humidity || undefined,
-        dli: plant.location.dli || undefined,
-        vpd: plant.location.vpd || undefined,
-        co2: plant.location.co2Level || undefined
+      vigor: plant.measurements[0]?.vigorScore || undefined,
+      genetics: geneticsStr,
+      location: plant.currentLocation ? {
+        temperature: plant.currentLocation.temperature || undefined,
+        humidity: plant.currentLocation.humidity || undefined,
+        dli: plant.currentLocation.dli || undefined,
+        vpd: plant.currentLocation.vpd || undefined,
+        co2: plant.currentLocation.co2 || undefined
       } : undefined,
-      careHistory: plant.careLogs.map(log => ({
-        date: log.date,
-        action: log.action,
-        ecIn: log.ecIn || undefined,
-        ecOut: log.ecOut || undefined,
-        phIn: log.phIn || undefined,
-        phOut: log.phOut || undefined,
-        details: log.details
-      })),
-      measurements: plant.measurements.map(m => ({
-        date: m.date,
-        ecInput: m.ecInput || undefined,
-        ecOutput: m.ecOutput || undefined,
-        phInput: m.phInput || undefined,
-        phOutput: m.phOutput || undefined
-      })),
+      careHistory: plant.careLogs.map(log => {
+        const details = parseDetails(log.details);
+        return {
+          date: log.date,
+          action: log.action,
+          ecIn: details.ecIn || undefined,
+          ecOut: details.ecOut || undefined,
+          phIn: details.phIn || undefined,
+          phOut: details.phOut || undefined,
+          details: log.details
+        };
+      }),
+      measurements: ecphMeasurements,
       traits: plant.traits.map(t => t.value)
     };
 
@@ -90,7 +124,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       plantId: plant.id,
-      accessionNumber: plant.accessionNumber,
+      accessionNumber: plant.plantId,
       prediction: {
         ...prediction,
         nextCareDate: nextCareDate.toISOString().split('T')[0],

@@ -1,167 +1,222 @@
+'use client'
+
 import Link from 'next/link'
+import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
+import { AlertTriangle, Droplets, Clock, ChevronRight, Activity } from 'lucide-react'
+import QuickCare from '@/components/QuickCare'
+import { showToast } from '@/components/toast'
 
 export default function Home() {
-  const features = [
-    { icon: '🔐', title: 'QR Code Generation', color: 'from-purple-500 to-pink-500' },
-    { icon: '🧬', title: 'Lineage Tracking', color: 'from-blue-500 to-cyan-500' },
-    { icon: '📸', title: 'Photo Management', color: 'from-green-500 to-emerald-500' },
-    { icon: '✨', title: 'AI/ML Ready', color: 'from-yellow-500 to-orange-500' },
-    { icon: '🧪', title: 'Trait Prediction', color: 'from-indigo-500 to-purple-500' },
-    { icon: '📈', title: 'Market Analysis', color: 'from-red-500 to-pink-500' },
-  ]
+  const [quickCareOpen, setQuickCareOpen] = useState(false)
+  const [plants, setPlants] = useState<any[]>([])
+
+  const { data: stats, isLoading, refetch } = useQuery({
+    queryKey: ['dashboard-stats'],
+    queryFn: async () => {
+      const res = await fetch('/api/dashboard/stats')
+      return res.json()
+    }
+  })
+
+  const { data: plantsData } = useQuery({
+    queryKey: ['plants'],
+    queryFn: async () => {
+      const res = await fetch('/api/plants')
+      const data = await res.json()
+      setPlants(Array.isArray(data) ? data : [])
+      return data
+    }
+  })
+
+  // Calculate stale plants (no activity in 7+ days)
+  const stalePlants = plants.filter((plant: any) => {
+    const lastActivity = plant.lastActivityDate || plant.updatedAt
+    const daysSince = Math.floor((Date.now() - new Date(lastActivity).getTime()) / (1000 * 60 * 60 * 24))
+    return daysSince >= 7
+  })
+
+  // Plants needing water (5+ days since last watering)
+  const needsWater = plants.filter((plant: any) => {
+    if (!plant.careLogs || plant.careLogs.length === 0) return true
+    // Check for various water-related action names
+    const lastWater = plant.careLogs.find((log: any) => {
+      const action = (log.action || '').toLowerCase()
+      return action.includes('water') || action.includes('fertil')
+    })
+    if (!lastWater) return true
+    const daysSince = Math.floor((Date.now() - new Date(lastWater.date).getTime()) / (1000 * 60 * 60 * 24))
+    return daysSince >= 5
+  })
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-[var(--clay)]">Loading...</p>
+      </div>
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 overflow-hidden">
-      {/* Animated Background */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-emerald-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-teal-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float" style={{ animationDelay: '2s' }} />
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-green-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float" style={{ animationDelay: '4s' }} />
-      </div>
-
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20">
-        {/* Hero Section */}
-        <div className="text-center mb-16">
-          <div className="inline-block animate-float">
-            <span className="text-8xl mb-6 block">🌿</span>
-          </div>
-          <h1 className="text-6xl md:text-7xl font-black mb-6">
-            <span className="gradient-text">Cladari</span>
-            <br />
-            <span className="text-gray-800">Plant Management</span>
-          </h1>
-          <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            Professional plant management for breeding and conservation
-            <br />
-            <span className="text-lg text-emerald-600 font-semibold">
-              67 Elite Plants • $11,469 Collection • RA Lineages
-            </span>
-          </p>
-
-          {/* Quick Stats */}
-          <div className="flex flex-wrap justify-center gap-6 mb-12">
-            {[
-              { label: 'Total Plants', value: '67', icon: '🌱' },
-              { label: 'Investment', value: '$11.5K', icon: '💎' },
-              { label: 'Breeding Lines', value: '12', icon: '🧬' },
-              { label: 'Vendors', value: '14', icon: '📦' },
-            ].map((stat, i) => (
-              <div
-                key={i}
-                className="glass rounded-2xl px-6 py-4 animate-float"
-                style={{ animationDelay: `${i * 200}ms` }}
-              >
-                <div className="text-3xl mb-2">{stat.icon}</div>
-                <div className="text-2xl font-bold text-gray-800">{stat.value}</div>
-                <div className="text-sm text-gray-600">{stat.label}</div>
-              </div>
-            ))}
-          </div>
+    <div className="min-h-screen">
+      <div className="max-w-4xl mx-auto px-4 py-6">
+        {/* Header - minimal */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold text-[var(--forest)]">Cladari</h1>
+          <p className="text-sm text-[var(--clay)]">{stats?.totalPlants || 0} plants in collection</p>
         </div>
 
-        {/* Main Action Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-          <Link
-            href="/dashboard"
-            className="group relative glass rounded-3xl p-8 hover-lift overflow-hidden"
+        {/* Action buttons - immediately visible */}
+        <div className="flex gap-3 mb-6">
+          <button
+            onClick={() => setQuickCareOpen(true)}
+            className="flex-1 flex items-center justify-center gap-2 py-3 bg-[var(--forest)] text-white rounded font-medium"
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-400/10 to-green-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="relative z-10">
-              <div className="w-16 h-16 bg-gradient-to-br from-emerald-400 to-green-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                <span className="text-3xl text-white">📊</span>
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Dashboard</h3>
-              <p className="text-gray-600">Real-time analytics and collection insights</p>
-            </div>
-          </Link>
-
+            <Droplets className="w-5 h-5" />
+            Log Care
+          </button>
           <Link
             href="/plants"
-            className="group relative glass rounded-3xl p-8 hover-lift overflow-hidden"
+            className="flex-1 flex items-center justify-center gap-2 py-3 border border-black/[0.08] rounded font-medium text-[var(--bark)]"
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-teal-400/10 to-cyan-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="relative z-10">
-              <div className="w-16 h-16 bg-gradient-to-br from-teal-400 to-cyan-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                <span className="text-3xl text-white">🌱</span>
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Plant Collection</h3>
-              <p className="text-gray-600">Browse and manage your anthurium specimens</p>
-            </div>
+            View Plants
+            <ChevronRight className="w-4 h-4" />
           </Link>
+        </div>
 
+        {/* Alerts - what needs attention */}
+        {(stalePlants.length > 0 || needsWater.length > 0) && (
+          <div className="bg-white border border-black/[0.08] rounded-lg p-4 mb-6">
+            <h2 className="text-sm font-medium text-[var(--bark)] mb-3">Needs Attention</h2>
+            <div className="space-y-2">
+              {stalePlants.length > 0 && (
+                <Link
+                  href="/plants?filter=stale"
+                  className="flex items-center justify-between p-3 bg-[var(--alert-red)]/5 border border-[var(--alert-red)]/20 rounded"
+                >
+                  <div className="flex items-center gap-3">
+                    <AlertTriangle className="w-5 h-5 text-[var(--alert-red)]" />
+                    <div>
+                      <p className="font-medium text-[var(--alert-red)]">{stalePlants.length} stale plants</p>
+                      <p className="text-xs text-[var(--clay)]">No activity in 7+ days</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-[var(--clay)]" />
+                </Link>
+              )}
+              {needsWater.length > 0 && (
+                <Link
+                  href="/plants?filter=water"
+                  className="flex items-center justify-between p-3 bg-[var(--water-blue)]/5 border border-[var(--water-blue)]/20 rounded"
+                >
+                  <div className="flex items-center gap-3">
+                    <Droplets className="w-5 h-5 text-[var(--water-blue)]" />
+                    <div>
+                      <p className="font-medium text-[var(--water-blue)]">{needsWater.length} may need water</p>
+                      <p className="text-xs text-[var(--clay)]">5+ days since last watering</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-[var(--clay)]" />
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Quick stats grid */}
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          <div className="bg-white border border-black/[0.08] rounded-lg p-4">
+            <p className="text-xs text-[var(--clay)] mb-1">Healthy</p>
+            <p className="text-2xl font-semibold text-[var(--moss)]">{stats?.healthyPlants || 0}</p>
+          </div>
+          <div className="bg-white border border-black/[0.08] rounded-lg p-4">
+            <p className="text-xs text-[var(--clay)] mb-1">Struggling</p>
+            <p className="text-2xl font-semibold text-[var(--spadix-yellow)]">
+              {(stats?.totalPlants || 0) - (stats?.healthyPlants || 0)}
+            </p>
+          </div>
+          {stats?.avgWateringFrequency && (
+            <div className="bg-white border border-black/[0.08] rounded-lg p-4">
+              <p className="text-xs text-[var(--clay)] mb-1">Avg Watering</p>
+              <p className="text-2xl font-semibold text-[var(--bark)]">{stats.avgWateringFrequency}d</p>
+            </div>
+          )}
+          {stats?.ecPhInsights?.avgEC && (
+            <div className="bg-white border border-black/[0.08] rounded-lg p-4">
+              <p className="text-xs text-[var(--clay)] mb-1">Avg EC</p>
+              <p className="text-2xl font-semibold text-[var(--bark)]">{stats.ecPhInsights.avgEC}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Recent activity */}
+        {stats?.recentActivity && stats.recentActivity.length > 0 && (
+          <div className="bg-white border border-black/[0.08] rounded-lg overflow-hidden mb-6">
+            <div className="px-4 py-3 border-b border-black/[0.04]">
+              <h2 className="text-sm font-medium text-[var(--bark)] flex items-center gap-2">
+                <Activity className="w-4 h-4" />
+                Recent Activity
+              </h2>
+            </div>
+            <div className="divide-y divide-black/[0.04]">
+              {stats.recentActivity.slice(0, 5).map((activity: any, i: number) => (
+                <div key={i} className="px-4 py-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-[var(--bark)]">{activity.description}</p>
+                    <p className="text-xs text-[var(--clay)]">{activity.date}</p>
+                  </div>
+                  <span className="text-xs px-2 py-1 bg-[var(--parchment)] text-[var(--clay)] rounded">
+                    {activity.type}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Quick links */}
+        <div className="grid grid-cols-2 gap-3">
+          <Link
+            href="/locations"
+            className="bg-white border border-black/[0.08] rounded-lg p-4 flex items-center justify-between"
+          >
+            <span className="text-sm font-medium text-[var(--bark)]">Locations</span>
+            <ChevronRight className="w-4 h-4 text-[var(--clay)]" />
+          </Link>
           <Link
             href="/breeding"
-            className="group relative glass rounded-3xl p-8 hover-lift overflow-hidden"
+            className="bg-white border border-black/[0.08] rounded-lg p-4 flex items-center justify-between"
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-400/10 to-pink-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="relative z-10">
-              <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-pink-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                <span className="text-3xl text-white">🧬</span>
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Breeding Planner</h3>
-              <p className="text-gray-600">Plan crosses and predict offspring traits</p>
-            </div>
+            <span className="text-sm font-medium text-[var(--bark)]">Breeding</span>
+            <ChevronRight className="w-4 h-4 text-[var(--clay)]" />
           </Link>
-        </div>
-
-        {/* Features Grid */}
-        <div className="glass rounded-3xl p-8 mb-16">
-          <h2 className="text-3xl font-bold text-center mb-8">
-            <span className="gradient-text">Advanced Features</span>
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-            {features.map((feature, i) => (
-              <div
-                key={i}
-                className="group relative rounded-2xl p-6 bg-white/50 hover:bg-white/80 transition-all duration-300 cursor-pointer hover-lift"
-              >
-                <div className={`w-12 h-12 bg-gradient-to-br ${feature.color} rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300`}>
-                  <span className="text-2xl">{feature.icon}</span>
-                </div>
-                <h3 className="font-semibold text-gray-800">{feature.title}</h3>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Elite Genetics Showcase */}
-        <div className="glass rounded-3xl p-8 mb-16">
-          <h2 className="text-3xl font-bold text-center mb-8">
-            <span className="gradient-text">Elite Genetics Collection</span>
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { code: 'RA8', name: 'Papillilaminum', value: '$2,200', color: 'from-purple-500 to-indigo-600' },
-              { code: 'RA5', name: '40x40 Line', value: '$1,500', color: 'from-pink-500 to-rose-600' },
-              { code: 'RA6', name: 'Carlablackiae', value: '$800', color: 'from-emerald-500 to-teal-600' },
-              { code: 'OG5', name: 'Original Line', value: '$600', color: 'from-amber-500 to-orange-600' },
-            ].map((genetic) => (
-              <div
-                key={genetic.code}
-                className="relative overflow-hidden rounded-2xl p-6 bg-white/50 hover:bg-white/80 transition-all duration-300 hover-lift"
-              >
-                <div className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-br ${genetic.color} opacity-10 rounded-full -mr-10 -mt-10`} />
-                <div className="relative">
-                  <div className="text-2xl font-black text-gray-800 mb-1">{genetic.code}</div>
-                  <div className="text-sm text-gray-600 mb-2">{genetic.name}</div>
-                  <div className="text-lg font-bold gradient-text">{genetic.value}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* CTA Section */}
-        <div className="text-center pb-20">
           <Link
-            href="/dashboard"
-            className="inline-flex items-center px-8 py-4 text-lg font-bold text-white bg-gradient-to-r from-emerald-500 to-green-600 rounded-full hover:from-emerald-600 hover:to-green-700 transform hover:scale-105 transition-all duration-300 shadow-xl"
+            href="/genetics"
+            className="bg-white border border-black/[0.08] rounded-lg p-4 flex items-center justify-between"
           >
-            Enter System
-            <span className="ml-2">✨</span>
+            <span className="text-sm font-medium text-[var(--bark)]">Genetics</span>
+            <ChevronRight className="w-4 h-4 text-[var(--clay)]" />
+          </Link>
+          <Link
+            href="/batch-care"
+            className="bg-white border border-black/[0.08] rounded-lg p-4 flex items-center justify-between"
+          >
+            <span className="text-sm font-medium text-[var(--bark)]">Batch Care</span>
+            <ChevronRight className="w-4 h-4 text-[var(--clay)]" />
           </Link>
         </div>
       </div>
+
+      {/* Quick Care Modal */}
+      <QuickCare
+        isOpen={quickCareOpen}
+        onClose={() => setQuickCareOpen(false)}
+        plants={plants}
+        onSuccess={() => {
+          refetch()
+          showToast({ type: 'success', title: 'Care logged' })
+        }}
+      />
     </div>
   )
 }
