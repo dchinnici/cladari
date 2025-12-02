@@ -1,14 +1,14 @@
 /**
  * Semantic Search API Endpoint
- * Uses embeddings to find plants by natural language queries
+ * Uses keyword search currently, will use embeddings after PostgreSQL migration
  * Example: "Show me velvety dark plants that are struggling"
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { EmbeddingService } from '@/lib/ml/embeddings';
 
-const embedder = new EmbeddingService();
+// Note: EmbeddingService will be enabled after PostgreSQL + pgvector migration
+// import { EmbeddingService } from '@/lib/ml/embeddings';
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,8 +21,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate query embedding
-    const queryEmbedding = await embedder.generateQueryEmbedding(query);
+    // TODO: Generate query embedding after pgvector migration
+    // const queryEmbedding = await embedder.generateQueryEmbedding(query);
 
     // For SQLite (current), fall back to keyword search
     // This will be replaced with vector similarity when using PostgreSQL
