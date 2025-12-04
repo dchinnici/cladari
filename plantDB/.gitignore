@@ -57,8 +57,9 @@ prisma/dev.db*
 # backups
 prisma/backups/
 
-# photos (comment out if you want to commit photos)
-# photos/
+# User uploaded photos - use external storage for production
+public/uploads/photos/
+public/uploads/thumbnails/
 
 # IDE
 .vscode/
