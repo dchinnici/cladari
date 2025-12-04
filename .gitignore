@@ -44,3 +44,6 @@ plantDB/coverage/
 
 # Misc
 *.orig
+
+# Database backups (keep local, don't commit)
+backups/
