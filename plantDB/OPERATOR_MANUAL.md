@@ -1,5 +1,5 @@
 # Cladari PlantDB - Operator Manual
-**Version 1.2.0** | **Updated: November 12, 2025**
+**Version 1.3.0** | **Updated: December 4, 2025**
 
 ## 🌿 Welcome to Your Plant Management System
 
@@ -15,9 +15,10 @@ This guide will help you use all the features of your Anthurium collection datab
 4. [Photo Management](#-photo-management)
 5. [EC/pH Monitoring](#-ecph-monitoring)
 6. [Batch Operations](#-batch-operations)
-7. [Dashboard Features](#-dashboard-features)
-8. [Keyboard Shortcuts](#-keyboard-shortcuts)
-9. [Troubleshooting](#-troubleshooting)
+7. [Breeding Pipeline](#-breeding-pipeline) *(NEW)*
+8. [Dashboard Features](#-dashboard-features)
+9. [Keyboard Shortcuts](#-keyboard-shortcuts)
+10. [Troubleshooting](#-troubleshooting)
 
 ---
 
@@ -227,6 +228,102 @@ When plants get rained on:
 
 ---
 
+## 🧬 Breeding Pipeline
+
+Track your breeding program from pollination to accessioned plants.
+
+### Accessing Breeding Records
+
+1. Go to **http://localhost:3000/breeding**
+2. View all crosses with their pipeline status
+
+### Creating a New Cross
+
+1. Click **"New Cross"** button
+2. Select **Female Parent** from dropdown (shows name + plantId)
+3. Select **Male Parent** from dropdown
+4. Enter **Pollination Date**
+5. Add **Notes** about the cross
+6. Optionally set **Target Traits** (breeding goals)
+7. Click **Create Cross**
+
+The system auto-generates:
+- **Cross ID**: CLX-YYYY-### format
+- **Cross Category**: INTRASPECIFIC, INTERSPECIFIC, or INTERSECTIONAL based on parent sections
+
+### Understanding Cross Categories
+
+- **INTRASPECIFIC**: Same species (e.g., crystallinum × crystallinum)
+- **INTERSPECIFIC**: Different species, same section
+- **INTERSECTIONAL**: Different sections (most challenging, most interesting)
+
+### Breeding Pipeline Stages
+
+Each cross progresses through these stages:
+
+1. **Cross Created** → Pollination recorded
+2. **Harvest Added** → Berries collected (can have multiple harvests)
+3. **Seed Batch Sown** → Seeds planted with conditions tracked
+4. **Seedlings Emerged** → Individual seedlings tracked
+5. **Selection Made** → Keepers/holdbacks chosen
+6. **Graduated** → Seedling becomes a full Plant record
+
+### Recording a Harvest
+
+When berries ripen:
+1. Click **"Add Harvest"** on a cross card
+2. Enter **Harvest Date**
+3. Record **Berry Count** and **Seed Count**
+4. Add notes about berry quality
+
+### Managing Seed Batches
+
+After harvesting:
+1. Create a Seed Batch from the harvest
+2. Track sowing conditions:
+   - **Substrate**: Sphagnum, perlite mix, etc.
+   - **Temperature**: Germination temp
+   - **Humidity**: Dome conditions
+   - **Heat Mat**: Yes/No
+3. Update germination progress
+
+### Seedling Selection
+
+Follow the selection philosophy:
+- **GROWING**: Default status, still evaluating
+- **KEEPER**: Top performers (max 5 per batch)
+- **HOLDBACK**: Promising but not top tier (max 2 per batch)
+- **CULL**: Does not meet standards
+- **DECEASED**: Died during evaluation
+
+### Graduating Seedlings
+
+When a KEEPER or HOLDBACK is ready:
+1. The seedling gets promoted to the Plant table
+2. Receives a proper **ANT-YYYY-####** plant ID
+3. Maintains full lineage:
+   - Female parent linked
+   - Male parent linked
+   - Breeding record linked
+   - Seedling origin preserved
+
+### ID Conventions
+
+- **CLX-YYYY-###**: Cross/Breeding Record (e.g., CLX-2025-001)
+- **SDB-YYYY-###**: Seed Batch (e.g., SDB-2025-001)
+- **SDL-YYYY-####**: Seedling (e.g., SDL-2025-0001)
+- **ANT-YYYY-####**: Accessioned Plant (e.g., ANT-2025-0042)
+
+### Deleting Crosses
+
+You can only delete a cross if:
+- It has no harvests
+- It has no graduated offspring
+
+Click the trash icon on the cross card to delete.
+
+---
+
 ## 📊 Dashboard Features
 
 ### Care Queue Widget
@@ -404,11 +501,13 @@ Every action creates a journal entry:
 
 ### Breeding Management
 
-Track your breeding program:
-- Parent plant relationships
-- F1/F2 generation tracking
+Track your breeding program at **/breeding**:
+- Full pipeline: Cross → Harvest → Seed Batch → Seedling → Plant
+- Parent plant relationships with proper female × male notation
+- F1/F2/S1 generation tracking
 - Cross success rates
 - Trait inheritance patterns
+- Selection philosophy enforcement (max 5 keepers + 2 holdbacks)
 
 ---
 
@@ -450,4 +549,4 @@ Remember: This system grows with your collection. Every plant tracked, every mea
 
 ---
 
-*End of Operator Manual v1.2.0*
+*End of Operator Manual v1.3.0*

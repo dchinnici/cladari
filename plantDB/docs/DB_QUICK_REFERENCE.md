@@ -123,11 +123,19 @@ measurementDate → When measured
 ecValue, phValue, tdsValue → Solution metrics
 ```
 
-### BreedingRecord (Crosses)
+### Breeding Pipeline (v1.3.0)
 ```
-crossId (X-2025-XXXX) → Unique cross identifier
-femalePlantId, malePlantId → Parents
-seedsProduced, germinationRate → Results
+BreedingRecord (CLX-YYYY-###) → Cross tracking
+├── Harvest → Berry collections per cross
+│   └── SeedBatch (SDB-YYYY-###) → Germination tracking
+│       └── Seedling (SDL-YYYY-####) → Individual seedlings
+│           └── graduatedToPlant → Links to Plant when promoted
+
+Plant lineage fields:
+- femaleParentId, maleParentId → Sexual parents
+- breedingRecordId → Link to cross
+- cloneSourceId → Asexual parent (offset/TC/division)
+- generation → F1, F2, S1, BC1, etc.
 ```
 
 ## JSON Fields (Important!)

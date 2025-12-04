@@ -1,7 +1,7 @@
 # Cladari Plant Database - Engineering Manual
-**Version:** 1.2.0
-**Last Updated:** November 12, 2025
-**Status:** PRODUCTION PHASE - Photo Management & Data Optimization
+**Version:** 1.3.0
+**Last Updated:** December 4, 2025
+**Status:** PRODUCTION PHASE - Full Breeding Pipeline
 **Architecture:** SQLite + Next.js 15 + Prisma ORM
 
 ---
@@ -30,12 +30,12 @@ The Cladari Plant Database is a comprehensive Anthurium breeding management syst
 
 ---
 
-## 📊 Current System State (November 12, 2025)
+## 📊 Current System State (December 4, 2025)
 
 ### What's Working ✅
 ```
 ✅ Web UI (http://localhost:3000): Plant browsing, detail pages, editing
-✅ SQLite Database: 67+ plants, relationships, vendor data
+✅ SQLite Database: 70+ plants, relationships, vendor data
 ✅ API Endpoints: CRUD operations for plants, care logs, measurements
 ✅ Prisma ORM: Type-safe database access, migrations
 ✅ Hot Reload: Code changes appear immediately in browser
@@ -45,10 +45,25 @@ The Cladari Plant Database is a comprehensive Anthurium breeding management syst
 ✅ Pest Management: Discovery and treatment tracking
 ✅ Advanced Care Features: Batch care, quick care (Cmd+K), rain tracking
 ✅ Dashboard Analytics: Care queue, collection stats, critical alerts
+✅ BREEDING PIPELINE: Full cross tracking from pollination to graduated plants
 ```
 
 ### Recent Improvements 🚀
 ```
+Dec 4: COMPLETE BREEDING PIPELINE (v1.3.0) - Full provenance tracking
+        - BreedingRecord: CLX-YYYY-### cross notation
+        - Harvest: Multiple berry harvests per cross
+        - SeedBatch: SDB-YYYY-### germination tracking
+        - Seedling: SDL-YYYY-#### individual tracking
+        - Graduation workflow: Seedlings → Plant (ANT-YYYY-####)
+        - Cross categories: INTRASPECIFIC, INTERSPECIFIC, INTERSECTIONAL
+        - Lineage tracking: femaleParentId, maleParentId, breedingRecordId
+        - Asexual lineage: cloneSource/clones for offsets, TC, divisions
+        - Selection workflow: GROWING → KEEPER/HOLDBACK/CULL/GRADUATED
+        - Generation tracking: F1, F2, S1, BC1, etc.
+        - New API endpoints: /api/breeding, /api/seed-batches, /api/seedlings
+        - ID generation: src/lib/breeding-ids.ts
+
 Nov 17: MCP SERVER INTEGRATION - Natural language AI interface
         - Implemented Model Context Protocol (MCP) server
         - 4 tools: search_plants, predict_care, diagnose_symptoms, get_plant_details
@@ -124,13 +139,14 @@ Oct 18: LOCATION MANAGEMENT SYSTEM - Comprehensive environmental tracking
 
 ### Collection Statistics 📈
 ```
-Total Plants: 67+
-Collection Value: $11,469+
+Total Plants: 70+
+Collection Value: $15,000+
 Vendors: Multiple tracked with reputation
 Locations: Environmental monitoring active
-Breeding Records: Crosses and offspring relationships
+Breeding Records: Full pipeline tracking (Cross → Harvest → Seedling → Plant)
 Photos: 500+ with EXIF data
 Care Logs: EC/pH tracking active
+Active Crosses: 1+ with harvests and seed batches
 ```
 
 ---
@@ -167,9 +183,19 @@ Plant            - Main plant records with coverPhotoId
 ├── Measurement  - Growth measurements over time
 ├── CareLog      - Care activities with EC/pH data
 ├── PlantJournal - Unified activity log for ML training
-└── FloweringCycle - Reproductive phenology tracking
+├── FloweringCycle - Reproductive phenology tracking
+├── femaleParentId → Parent plant (female)
+├── maleParentId → Parent plant (male)
+├── cloneSource → Parent plant (asexual propagation)
+└── seedlingOrigin → Seedling record (if graduated)
 
-BreedingRecord   - Cross tracking (female × male → offspring)
+BREEDING PIPELINE (NEW v1.3.0):
+BreedingRecord   - CLX-YYYY-### cross tracking (female × male)
+├── Harvest      - Berry collection (harvestNumber, berryCount, seedCount)
+│   └── SeedBatch - SDB-YYYY-### germination tracking
+│       └── Seedling - SDL-YYYY-#### individual seedling records
+│           └── graduatedToPlant → Plant (when promoted)
+
 Vendor           - Source vendors and reputation
 Location         - Growing locations with environmental data
 Treatment        - Fertilizers, pesticides, fungicides
@@ -529,9 +555,11 @@ sqlite3 prisma/dev.db "SELECT date, action, details FROM CareLog WHERE plantId='
   // Core Features
   standardized_dropdowns: true,    // Section, Health Status, etc.
   alphabetical_sorting: true,      // Plants sorted by name
-  breeding_tracking: true,         // Parent/offspring relationships
+  full_breeding_pipeline: true,    // Cross → Harvest → SeedBatch → Seedling → Plant
   flowering_cycles: true,          // Reproductive phenology tracking
   temporal_morphology: true,       // Track phenotype changes over time
+  lineage_tracking: true,          // Sexual and asexual parent relationships
+  generation_tracking: true,       // F1, F2, S1, BC1, etc.
 
   // Care Management
   care_logging: true,              // Water, fertilize, repot tracking
@@ -964,4 +992,73 @@ tail -f .next-dev.log
 
 ---
 
-**End of Engineering Manual v1.2.0**
+## 🧬 Breeding Pipeline API
+
+### Endpoints
+
+**Breeding Records (Crosses)**
+```
+GET    /api/breeding           - List all crosses with summary stats
+POST   /api/breeding           - Create new cross (auto-generates CLX-YYYY-###)
+GET    /api/breeding/{id}      - Get cross with full pipeline
+PATCH  /api/breeding/{id}      - Update cross details
+DELETE /api/breeding/{id}      - Delete cross (only if no harvests)
+```
+
+**Harvests**
+```
+GET    /api/breeding/{id}/harvests           - List harvests for cross
+POST   /api/breeding/{id}/harvests           - Add harvest (auto-increments harvestNumber)
+GET    /api/breeding/{id}/harvests/{hid}     - Get single harvest
+PATCH  /api/breeding/{id}/harvests/{hid}     - Update harvest
+DELETE /api/breeding/{id}/harvests/{hid}     - Delete harvest
+```
+
+**Seed Batches**
+```
+GET    /api/seed-batches           - List all seed batches
+POST   /api/seed-batches           - Create batch (auto-generates SDB-YYYY-###)
+GET    /api/seed-batches/{id}      - Get batch with seedlings
+PATCH  /api/seed-batches/{id}      - Update batch
+DELETE /api/seed-batches/{id}      - Delete batch (only if no seedlings)
+```
+
+**Seedlings**
+```
+GET    /api/seedlings              - List seedlings with filters
+POST   /api/seedlings              - Create seedling(s) (bulk supported)
+GET    /api/seedlings/{id}         - Get seedling with full lineage
+PATCH  /api/seedlings/{id}         - Update seedling
+DELETE /api/seedlings/{id}         - Delete seedling (only if not graduated)
+POST   /api/seedlings/{id}/graduate - Graduate to Plant table
+```
+
+### ID Generation
+
+Located in `src/lib/breeding-ids.ts`:
+```typescript
+generateCrossId()     // Returns CLX-YYYY-### (e.g., CLX-2025-001)
+generateSeedBatchId() // Returns SDB-YYYY-### (e.g., SDB-2025-001)
+generateSeedlingId()  // Returns SDL-YYYY-#### (e.g., SDL-2025-0001)
+generatePlantId()     // Returns ANT-YYYY-#### (e.g., ANT-2025-0070)
+```
+
+### Graduation Workflow
+
+When a seedling is graduated:
+1. Seedling must have selectionStatus = KEEPER or HOLDBACK
+2. Creates Plant record with:
+   - Auto-generated ANT-YYYY-#### plantId
+   - femaleParentId and maleParentId from breeding record
+   - breedingRecordId linking to the cross
+   - generation (F1, F2, S1 auto-detected)
+   - propagationType = 'seed'
+3. Updates seedling:
+   - Sets graduatedToPlantId
+   - Sets graduationDate
+   - Sets selectionStatus = GRADUATED
+4. Updates breeding record f1PlantsRaised count
+
+---
+
+**End of Engineering Manual v1.3.0**

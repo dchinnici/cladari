@@ -2,6 +2,43 @@
 
 All notable changes to the Cladari Plant Management System will be documented in this file.
 
+## [1.3.0] - 2025-12-04
+
+### Added
+- **Complete Breeding Pipeline** - Full tracking from pollination to accessioned plants
+  - **Breeding Records (Crosses)**: Track CLX-YYYY-### crosses with female/male parents
+  - **Cross Categories**: INTRASPECIFIC, INTERSPECIFIC, INTERSECTIONAL auto-detection
+  - **Harvests**: Multiple berry harvests per cross (waves of ripening)
+  - **Seed Batches (SDB-YYYY-###)**: Germination tracking with substrate, temp, humidity
+  - **Seedlings (SDL-YYYY-####)**: Individual seedling tracking from emergence to graduation
+  - **Selection Philosophy**: GROWING → KEEPER/HOLDBACK/CULL/DECEASED workflow
+  - **Graduation Workflow**: Seedlings graduate to Plant table as ANT-YYYY-#### records
+
+- **Lineage Tracking** - Enhanced parent/offspring relationships
+  - Sexual reproduction: femaleParentId + maleParentId + breedingRecordId
+  - Asexual reproduction: cloneSource/clones for offsets, TC, divisions
+  - Generation tracking: F1, F2, S1, BC1, etc.
+  - Target traits field for breeding goals
+
+- **New API Endpoints**
+  - `/api/breeding` - List/create breeding records
+  - `/api/breeding/[id]` - CRUD for individual crosses
+  - `/api/breeding/[id]/harvests` - Manage harvests per cross
+  - `/api/seed-batches` and `/api/seed-batches/[id]` - Seed batch management
+  - `/api/seedlings` and `/api/seedlings/[id]` - Seedling CRUD
+  - `/api/seedlings/[id]/graduate` - Graduate seedlings to Plant table
+
+- **Breeding UI** - New `/breeding` page
+  - Plant dropdowns showing hybridName/species (plantId)
+  - Expandable cross cards with pipeline visualization
+  - Delete functionality for crosses without harvests
+  - Summary stats: harvests, seeds, seedlings, graduated plants
+
+### Technical
+- New Prisma models: Harvest, SeedBatch, Seedling
+- ID generation utilities in `src/lib/breeding-ids.ts`
+- Self-referential Plant relations for clonal lineage
+
 ## [1.2.0] - 2025-11-12
 
 ### Added

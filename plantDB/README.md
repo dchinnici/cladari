@@ -4,7 +4,7 @@
 
 A production-grade web application for managing high-value Anthurium collections with comprehensive tracking of genetics, morphology, care schedules, and breeding programs.
 
-![Version](https://img.shields.io/badge/version-1.2.0-green.svg)
+![Version](https://img.shields.io/badge/version-1.3.0-green.svg)
 ![Status](https://img.shields.io/badge/status-production-brightgreen.svg)
 ![Plants](https://img.shields.io/badge/plants-67+-blue.svg)
 ![Value](https://img.shields.io/badge/value-$11,469-yellow.svg)
@@ -48,6 +48,15 @@ Also includes:
 - **MCP Server** for external AI integration
 - **Vector embeddings** schema ready
 - **Care prediction** algorithms
+
+### 🧬 Breeding Pipeline (NEW v1.3.0)
+- **Cross Tracking** - CLX-YYYY-### notation with female × male parents
+- **Category Detection** - INTRASPECIFIC, INTERSPECIFIC, INTERSECTIONAL
+- **Harvest Management** - Multiple berry harvests per cross
+- **Seed Batches** - Germination tracking (SDB-YYYY-###)
+- **Seedling Records** - Individual tracking (SDL-YYYY-####)
+- **Selection Workflow** - GROWING → KEEPER/HOLDBACK/CULL
+- **Graduation System** - Seedlings promote to Plant table
 
 ### 📊 Analytics Dashboard
 - **Care queue** with priority sorting
@@ -144,6 +153,7 @@ plantDB/
 ├── src/
 │   ├── app/             # Next.js app routes
 │   │   ├── plants/      # Plant management
+│   │   ├── breeding/    # Breeding pipeline UI
 │   │   ├── batch-care/  # Batch operations
 │   │   ├── locations/   # Location management
 │   │   └── api/        # API endpoints
@@ -204,9 +214,19 @@ See [Integration Guide](INTEGRATION.md) for complete setup instructions.
 ### Plant Management
 - **Unique IDs**: ANT-2025-XXXX format
 - **13 Anthurium sections**: Full taxonomic support
-- **Parent/offspring tracking**: Complete lineage
+- **Parent/offspring tracking**: Complete lineage (sexual + asexual)
 - **Morphological traits**: Detailed phenotyping
 - **Financial valuation**: Market value tracking
+- **Generation tracking**: F1, F2, S1, BC1, etc.
+
+### Breeding Pipeline
+- **Cross notation**: CLX-YYYY-### with female × male
+- **Cross categories**: Auto-detected from parent sections
+- **Harvest tracking**: Multiple harvests per cross
+- **Seed batches**: SDB-YYYY-### with germination conditions
+- **Seedling tracking**: SDL-YYYY-#### individual records
+- **Selection status**: GROWING, KEEPER, HOLDBACK, CULL, GRADUATED
+- **Graduation**: Promotes seedlings to full Plant records
 
 ### Care Tracking
 - **Smart scheduling**: ML-powered predictions
@@ -386,8 +406,9 @@ curl http://localhost:3000/api/plants/export > plants.csv
 
 ---
 
-## 🌟 Recent Updates (November 2025)
+## 🌟 Recent Updates
 
+- **v1.3.0** - Complete breeding pipeline (Dec 2025)
 - **v1.2.0** - Cover photo selection, bug fixes
 - **v1.1.9** - Photo management system
 - **v1.1.8** - EC/pH analysis system
@@ -403,4 +424,4 @@ curl http://localhost:3000/api/plants/export > plants.csv
 
 **Happy Growing! 🌱**
 
-*Last Updated: November 12, 2025*
+*Last Updated: December 4, 2025*
