@@ -271,7 +271,7 @@ CREATE TABLE IF NOT EXISTS "Plant" (
     "notes" TEXT,
     "tags" TEXT NOT NULL DEFAULT '[]',
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "updatedAt" DATETIME NOT NULL, "coverPhotoId" TEXT,
     CONSTRAINT "Plant_femaleParentId_fkey" FOREIGN KEY ("femaleParentId") REFERENCES "Plant" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT "Plant_maleParentId_fkey" FOREIGN KEY ("maleParentId") REFERENCES "Plant" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT "Plant_vendorId_fkey" FOREIGN KEY ("vendorId") REFERENCES "Vendor" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
@@ -283,60 +283,32 @@ CREATE INDEX "Plant_vendorId_idx" ON "Plant"("vendorId");
 CREATE INDEX "Plant_locationId_idx" ON "Plant"("locationId");
 CREATE INDEX "Plant_section_idx" ON "Plant"("section");
 CREATE INDEX "Plant_isArchived_idx" ON "Plant"("isArchived");
-CREATE INDEX idx_plant_health_updated
-  ON Plant(healthStatus, updatedAt DESC);
-CREATE INDEX idx_plant_location_updated
-  ON Plant(locationId, updatedAt DESC);
-CREATE INDEX idx_plant_archived_updated
-  ON Plant(isArchived, updatedAt DESC);
-CREATE INDEX idx_plant_elite
-  ON Plant(isEliteGenetics, updatedAt DESC);
-CREATE INDEX idx_plant_breeder_code
-  ON Plant(breederCode);
-CREATE INDEX idx_carelog_plant_date
-  ON CareLog(plantId, date DESC);
-CREATE INDEX idx_carelog_action_date
-  ON CareLog(action, date DESC);
-CREATE INDEX idx_carelog_date_only
-  ON CareLog(date DESC);
-CREATE INDEX idx_measurement_plant_date
-  ON Measurement(plantId, measurementDate DESC);
 CREATE INDEX idx_flowering_female_start
   ON FloweringCycle(femaleStart DESC) WHERE femaleStart IS NOT NULL;
 CREATE INDEX idx_flowering_male_start
   ON FloweringCycle(maleStart DESC) WHERE maleStart IS NOT NULL;
-CREATE INDEX idx_trait_plant_category
-  ON Trait(plantId, category);
-CREATE INDEX idx_trait_observation_date
-  ON Trait(observationDate DESC);
-CREATE INDEX idx_photo_plant_taken
-  ON Photo(plantId, dateTaken DESC);
 CREATE INDEX idx_location_name
   ON Location(name);
 CREATE INDEX idx_vendor_name
   ON Vendor(name);
-CREATE INDEX idx_plant_location_health
-  ON Plant(locationId, healthStatus, updatedAt DESC);
-CREATE INDEX idx_carelog_plant_action_date
-  ON CareLog(plantId, action, date DESC);
 CREATE TABLE sqlite_stat1(tbl,idx,stat);
-CREATE TABLE PlantJournal (
-    id TEXT PRIMARY KEY NOT NULL,
-    plantId TEXT NOT NULL,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-    entryType TEXT NOT NULL,
-    context TEXT,
-    entry TEXT NOT NULL,
-    referenceId TEXT,
-    referenceType TEXT,
-    author TEXT,
-    tags TEXT DEFAULT '[]',
-    embedding BLOB,
-    summary TEXT,
-    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (plantId) REFERENCES Plant(id) ON DELETE CASCADE ON UPDATE CASCADE
+CREATE TABLE IF NOT EXISTS "PlantJournal" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "plantId" TEXT NOT NULL,
+    "timestamp" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "entryType" TEXT NOT NULL,
+    "context" TEXT,
+    "entry" TEXT NOT NULL,
+    "referenceId" TEXT,
+    "referenceType" TEXT,
+    "author" TEXT,
+    "tags" TEXT NOT NULL DEFAULT '[]',
+    "embedding" BLOB,
+    "summary" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "PlantJournal_plantId_fkey" FOREIGN KEY ("plantId") REFERENCES "Plant" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
-CREATE INDEX idx_journal_plant_timestamp ON PlantJournal(plantId, timestamp);
-CREATE INDEX idx_journal_entrytype ON PlantJournal(entryType);
-CREATE INDEX idx_journal_context ON PlantJournal(context);
+CREATE INDEX "PlantJournal_plantId_timestamp_idx" ON "PlantJournal"("plantId", "timestamp");
+CREATE INDEX "PlantJournal_entryType_idx" ON "PlantJournal"("entryType");
+CREATE INDEX "PlantJournal_context_idx" ON "PlantJournal"("context");
