@@ -123,6 +123,50 @@ export default function BreedingPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [expandedCross, setExpandedCross] = useState<string | null>(null)
 
+  // Harvest modal state
+  const [harvestModalOpen, setHarvestModalOpen] = useState(false)
+  const [harvestCrossId, setHarvestCrossId] = useState<string | null>(null)
+  const [harvestForm, setHarvestForm] = useState({
+    harvestDate: new Date().toISOString().split('T')[0],
+    berryCount: '',
+    seedCount: '',
+    seedViability: 'good',
+    notes: ''
+  })
+
+  // Seed Batch modal state
+  const [batchModalOpen, setBatchModalOpen] = useState(false)
+  const [batchHarvestId, setBatchHarvestId] = useState<string | null>(null)
+  const [batchForm, setBatchForm] = useState({
+    sowDate: new Date().toISOString().split('T')[0],
+    seedCount: '',
+    substrate: 'sphagnum',
+    container: '4-inch pot',
+    temperature: '75',
+    humidity: '90',
+    heatMat: true,
+    domed: true,
+    notes: ''
+  })
+
+  // Seedling modal state
+  const [seedlingModalOpen, setSeedlingModalOpen] = useState(false)
+  const [seedlingBatchId, setSeedlingBatchId] = useState<string | null>(null)
+  const [seedlingForm, setSeedlingForm] = useState({
+    count: '1',
+    emergenceDate: new Date().toISOString().split('T')[0],
+    positionLabel: '',
+    notes: ''
+  })
+
+  // Seedling detail/graduate modal state
+  const [selectedSeedling, setSelectedSeedling] = useState<Seedling | null>(null)
+  const [seedlingDetailOpen, setSeedlingDetailOpen] = useState(false)
+  const [graduateForm, setGraduateForm] = useState({
+    hybridName: '',
+    notes: ''
+  })
+
   // Form state
   const [crossForm, setCrossForm] = useState({
     femalePlantId: '',
@@ -250,6 +294,216 @@ export default function BreedingPage() {
     } catch (error) {
       console.error('Error deleting cross:', error)
       showToast({ type: 'error', title: 'Error deleting cross' })
+    }
+  }
+
+  // Harvest handlers
+  const openHarvestModal = (crossId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setHarvestCrossId(crossId)
+    setHarvestForm({
+      harvestDate: new Date().toISOString().split('T')[0],
+      berryCount: '',
+      seedCount: '',
+      seedViability: 'good',
+      notes: ''
+    })
+    setHarvestModalOpen(true)
+  }
+
+  const handleSaveHarvest = async () => {
+    if (!harvestCrossId) return
+
+    try {
+      const response = await fetch(`/api/breeding/${harvestCrossId}/harvests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          harvestDate: harvestForm.harvestDate,
+          berryCount: harvestForm.berryCount ? parseInt(harvestForm.berryCount) : null,
+          seedCount: parseInt(harvestForm.seedCount) || 0,
+          seedViability: harvestForm.seedViability || null,
+          notes: harvestForm.notes || null
+        })
+      })
+
+      if (response.ok) {
+        await fetchData()
+        setHarvestModalOpen(false)
+        showToast({ type: 'success', title: 'Harvest recorded' })
+      } else {
+        const err = await response.json()
+        showToast({ type: 'error', title: err.error || 'Failed to save harvest' })
+      }
+    } catch (error) {
+      console.error('Error saving harvest:', error)
+      showToast({ type: 'error', title: 'Error saving harvest' })
+    }
+  }
+
+  // Seed Batch handlers
+  const openBatchModal = (harvestId: string, seedCount: number, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setBatchHarvestId(harvestId)
+    setBatchForm({
+      sowDate: new Date().toISOString().split('T')[0],
+      seedCount: seedCount.toString(),
+      substrate: 'sphagnum',
+      container: '4-inch pot',
+      temperature: '75',
+      humidity: '90',
+      heatMat: true,
+      domed: true,
+      notes: ''
+    })
+    setBatchModalOpen(true)
+  }
+
+  const handleSaveBatch = async () => {
+    if (!batchHarvestId) return
+
+    try {
+      const response = await fetch('/api/seed-batches', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          harvestId: batchHarvestId,
+          sowDate: batchForm.sowDate,
+          seedCount: parseInt(batchForm.seedCount) || 0,
+          substrate: batchForm.substrate,
+          container: batchForm.container,
+          temperature: batchForm.temperature,
+          humidity: batchForm.humidity,
+          heatMat: batchForm.heatMat,
+          domed: batchForm.domed,
+          notes: batchForm.notes || null
+        })
+      })
+
+      if (response.ok) {
+        const batch = await response.json()
+        await fetchData()
+        setBatchModalOpen(false)
+        showToast({ type: 'success', title: `Seed batch ${batch.batchId} created` })
+      } else {
+        const err = await response.json()
+        showToast({ type: 'error', title: err.error || 'Failed to create batch' })
+      }
+    } catch (error) {
+      console.error('Error creating batch:', error)
+      showToast({ type: 'error', title: 'Error creating batch' })
+    }
+  }
+
+  // Seedling handlers
+  const openSeedlingModal = (batchId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setSeedlingBatchId(batchId)
+    setSeedlingForm({
+      count: '1',
+      emergenceDate: new Date().toISOString().split('T')[0],
+      positionLabel: '',
+      notes: ''
+    })
+    setSeedlingModalOpen(true)
+  }
+
+  const handleSaveSeedling = async () => {
+    if (!seedlingBatchId) return
+
+    try {
+      const count = parseInt(seedlingForm.count) || 1
+      const seedlings = []
+
+      for (let i = 0; i < count; i++) {
+        seedlings.push({
+          seedBatchId: seedlingBatchId,
+          emergenceDate: seedlingForm.emergenceDate,
+          positionLabel: count > 1 ? `${seedlingForm.positionLabel || ''}${i + 1}`.trim() : seedlingForm.positionLabel || null,
+          notes: seedlingForm.notes || null
+        })
+      }
+
+      const response = await fetch('/api/seedlings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(count === 1 ? seedlings[0] : seedlings)
+      })
+
+      if (response.ok) {
+        await fetchData()
+        setSeedlingModalOpen(false)
+        showToast({ type: 'success', title: `${count} seedling${count > 1 ? 's' : ''} added` })
+      } else {
+        const err = await response.json()
+        showToast({ type: 'error', title: err.error || 'Failed to add seedling' })
+      }
+    } catch (error) {
+      console.error('Error adding seedling:', error)
+      showToast({ type: 'error', title: 'Error adding seedling' })
+    }
+  }
+
+  // Seedling detail/graduate handlers
+  const openSeedlingDetail = (seedling: Seedling, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setSelectedSeedling(seedling)
+    setGraduateForm({ hybridName: '', notes: '' })
+    setSeedlingDetailOpen(true)
+  }
+
+  const handleUpdateSeedlingStatus = async (status: string) => {
+    if (!selectedSeedling) return
+
+    try {
+      const response = await fetch(`/api/seedlings/${selectedSeedling.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ selectionStatus: status })
+      })
+
+      if (response.ok) {
+        await fetchData()
+        setSeedlingDetailOpen(false)
+        showToast({ type: 'success', title: `Status updated to ${status}` })
+      } else {
+        const err = await response.json()
+        showToast({ type: 'error', title: err.error || 'Failed to update' })
+      }
+    } catch (error) {
+      console.error('Error updating seedling:', error)
+      showToast({ type: 'error', title: 'Error updating seedling' })
+    }
+  }
+
+  const handleGraduateSeedling = async () => {
+    if (!selectedSeedling) return
+
+    try {
+      const response = await fetch(`/api/seedlings/${selectedSeedling.id}/graduate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          hybridName: graduateForm.hybridName || null,
+          notes: graduateForm.notes || null
+        })
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        await fetchData()
+        setSeedlingDetailOpen(false)
+        showToast({
+          type: 'success',
+          title: `Graduated to ${result.plant.plantId}`
+        })
+      } else {
+        const err = await response.json()
+        showToast({ type: 'error', title: err.error || 'Failed to graduate' })
+      }
+    } catch (error) {
+      console.error('Error graduating seedling:', error)
+      showToast({ type: 'error', title: 'Error graduating seedling' })
     }
   }
 
@@ -472,10 +726,7 @@ export default function BreedingPage() {
                             Harvests & Seed Batches
                           </h4>
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              showToast({ type: 'info', title: 'Add Harvest coming soon' })
-                            }}
+                            onClick={(e) => openHarvestModal(cross.id, e)}
                             className="text-xs text-[var(--moss)] hover:text-[var(--forest)] flex items-center gap-1"
                           >
                             <Plus className="w-3 h-3" />
@@ -502,6 +753,15 @@ export default function BreedingPage() {
                               {/* Seed Batches */}
                               {harvest.seedBatches.length > 0 ? (
                                 <div className="mt-3 space-y-2">
+                                  <div className="flex justify-end mb-1">
+                                    <button
+                                      onClick={(e) => openBatchModal(harvest.id, harvest.seedCount, e)}
+                                      className="text-[10px] text-[var(--moss)] hover:text-[var(--forest)] flex items-center gap-0.5"
+                                    >
+                                      <Plus className="w-2.5 h-2.5" />
+                                      Add Batch
+                                    </button>
+                                  </div>
                                   {harvest.seedBatches.map((batch) => (
                                     <div
                                       key={batch.id}
@@ -526,31 +786,48 @@ export default function BreedingPage() {
                                       </div>
 
                                       {/* Seedlings */}
-                                      {batch.seedlings && batch.seedlings.length > 0 && (
-                                        <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-black/[0.04]">
-                                          {batch.seedlings.slice(0, 10).map((seedling) => (
-                                            <span
+                                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-black/[0.04]">
+                                        <div className="flex flex-wrap gap-1">
+                                          {batch.seedlings && batch.seedlings.slice(0, 10).map((seedling) => (
+                                            <button
                                               key={seedling.id}
-                                              className={`text-[10px] px-1.5 py-0.5 rounded ${getSelectionColor(seedling.selectionStatus)}`}
-                                              title={`${seedling.seedlingId} - ${seedling.selectionStatus}`}
+                                              onClick={(e) => openSeedlingDetail(seedling, e)}
+                                              className={`text-[10px] px-1.5 py-0.5 rounded cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-[var(--moss)]/30 transition-all ${getSelectionColor(seedling.selectionStatus)}`}
+                                              title={`${seedling.seedlingId} - ${seedling.selectionStatus} (click to manage)`}
                                             >
                                               {seedling.seedlingId.split('-').pop()}
-                                            </span>
+                                            </button>
                                           ))}
-                                          {batch.seedlings.length > 10 && (
+                                          {batch.seedlings && batch.seedlings.length > 10 && (
                                             <span className="text-[10px] text-[var(--clay)]">
                                               +{batch.seedlings.length - 10} more
                                             </span>
                                           )}
                                         </div>
-                                      )}
+                                        <button
+                                          onClick={(e) => openSeedlingModal(batch.id, e)}
+                                          className="text-[10px] text-lime-600 hover:text-lime-700 flex items-center gap-0.5 ml-2"
+                                        >
+                                          <Plus className="w-2.5 h-2.5" />
+                                          Add Seedling
+                                        </button>
+                                      </div>
                                     </div>
                                   ))}
                                 </div>
                               ) : (
-                                <p className="text-xs text-[var(--clay)] italic mt-2">
-                                  No seed batches yet. Create one when you sow these seeds.
-                                </p>
+                                <div className="mt-2 flex items-center justify-between">
+                                  <p className="text-xs text-[var(--clay)] italic">
+                                    No seed batches yet
+                                  </p>
+                                  <button
+                                    onClick={(e) => openBatchModal(harvest.id, harvest.seedCount, e)}
+                                    className="text-xs text-[var(--moss)] hover:text-[var(--forest)] flex items-center gap-1"
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                    Sow Seeds
+                                  </button>
+                                </div>
                               )}
                             </div>
                           ))}
@@ -560,10 +837,7 @@ export default function BreedingPage() {
                       <div className="p-4 text-center">
                         <p className="text-sm text-[var(--clay)] mb-3">No harvests yet. Record one when berries ripen.</p>
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            showToast({ type: 'info', title: 'Add Harvest coming soon' })
-                          }}
+                          onClick={(e) => openHarvestModal(cross.id, e)}
                           className="text-xs px-3 py-1.5 bg-[var(--moss)]/10 text-[var(--moss)] rounded-lg hover:bg-[var(--moss)]/20 transition-colors"
                         >
                           <Plus className="w-3 h-3 inline mr-1" />
@@ -751,6 +1025,416 @@ export default function BreedingPage() {
                 setModalOpen(false)
                 resetForm()
               }}
+              className="flex-1 px-4 py-2.5 border border-black/[0.08] text-sm rounded-lg text-[var(--bark)] hover:bg-black/[0.02] transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Harvest Modal */}
+      <Modal
+        isOpen={harvestModalOpen}
+        onClose={() => setHarvestModalOpen(false)}
+        title="Record Harvest"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm text-[var(--bark)] mb-1">
+              Harvest Date <span className="text-rose-500">*</span>
+            </label>
+            <input
+              type="date"
+              value={harvestForm.harvestDate}
+              onChange={(e) => setHarvestForm({ ...harvestForm, harvestDate: e.target.value })}
+              className="w-full p-2.5 rounded-lg border border-black/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)]/20 focus:border-[var(--moss)]"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm text-[var(--bark)] mb-1">Berry Count</label>
+              <input
+                type="number"
+                value={harvestForm.berryCount}
+                onChange={(e) => setHarvestForm({ ...harvestForm, berryCount: e.target.value })}
+                placeholder="e.g., 5"
+                className="w-full p-2.5 rounded-lg border border-black/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)]/20 focus:border-[var(--moss)]"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-[var(--bark)] mb-1">
+                Seed Count <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="number"
+                value={harvestForm.seedCount}
+                onChange={(e) => setHarvestForm({ ...harvestForm, seedCount: e.target.value })}
+                placeholder="e.g., 25"
+                className="w-full p-2.5 rounded-lg border border-black/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)]/20 focus:border-[var(--moss)]"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm text-[var(--bark)] mb-1">Seed Viability</label>
+            <select
+              value={harvestForm.seedViability}
+              onChange={(e) => setHarvestForm({ ...harvestForm, seedViability: e.target.value })}
+              className="w-full p-2.5 rounded-lg border border-black/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)]/20 focus:border-[var(--moss)]"
+            >
+              <option value="excellent">Excellent - fully developed</option>
+              <option value="good">Good - mostly viable</option>
+              <option value="fair">Fair - some underdeveloped</option>
+              <option value="poor">Poor - many empty/underdeveloped</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm text-[var(--bark)] mb-1">Notes</label>
+            <textarea
+              value={harvestForm.notes}
+              onChange={(e) => setHarvestForm({ ...harvestForm, notes: e.target.value })}
+              className="w-full p-2.5 rounded-lg border border-black/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)]/20 focus:border-[var(--moss)]"
+              rows={2}
+              placeholder="Berry color, size, extraction notes..."
+            />
+          </div>
+
+          <div className="flex gap-2 pt-2">
+            <button
+              onClick={handleSaveHarvest}
+              disabled={!harvestForm.seedCount}
+              className="flex-1 px-4 py-2.5 bg-[var(--forest)] text-white text-sm rounded-lg hover:bg-[var(--forest)]/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Save Harvest
+            </button>
+            <button
+              onClick={() => setHarvestModalOpen(false)}
+              className="flex-1 px-4 py-2.5 border border-black/[0.08] text-sm rounded-lg text-[var(--bark)] hover:bg-black/[0.02] transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Seed Batch Modal */}
+      <Modal
+        isOpen={batchModalOpen}
+        onClose={() => setBatchModalOpen(false)}
+        title="Create Seed Batch"
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm text-[var(--bark)] mb-1">Sow Date</label>
+              <input
+                type="date"
+                value={batchForm.sowDate}
+                onChange={(e) => setBatchForm({ ...batchForm, sowDate: e.target.value })}
+                className="w-full p-2.5 rounded-lg border border-black/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)]/20 focus:border-[var(--moss)]"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-[var(--bark)] mb-1">Seed Count</label>
+              <input
+                type="number"
+                value={batchForm.seedCount}
+                onChange={(e) => setBatchForm({ ...batchForm, seedCount: e.target.value })}
+                className="w-full p-2.5 rounded-lg border border-black/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)]/20 focus:border-[var(--moss)]"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm text-[var(--bark)] mb-1">Substrate</label>
+              <select
+                value={batchForm.substrate}
+                onChange={(e) => setBatchForm({ ...batchForm, substrate: e.target.value })}
+                className="w-full p-2.5 rounded-lg border border-black/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)]/20 focus:border-[var(--moss)]"
+              >
+                <option value="sphagnum">Sphagnum moss</option>
+                <option value="perlite">Perlite</option>
+                <option value="sphagnum-perlite">Sphagnum + Perlite</option>
+                <option value="pon">PON</option>
+                <option value="seed-mix">Seed starting mix</option>
+                <option value="paper-towel">Paper towel</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm text-[var(--bark)] mb-1">Container</label>
+              <input
+                type="text"
+                value={batchForm.container}
+                onChange={(e) => setBatchForm({ ...batchForm, container: e.target.value })}
+                placeholder="e.g., 4-inch pot, takeout container"
+                className="w-full p-2.5 rounded-lg border border-black/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)]/20 focus:border-[var(--moss)]"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm text-[var(--bark)] mb-1">Temperature (°F)</label>
+              <input
+                type="text"
+                value={batchForm.temperature}
+                onChange={(e) => setBatchForm({ ...batchForm, temperature: e.target.value })}
+                placeholder="e.g., 75-80"
+                className="w-full p-2.5 rounded-lg border border-black/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)]/20 focus:border-[var(--moss)]"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-[var(--bark)] mb-1">Humidity (%)</label>
+              <input
+                type="text"
+                value={batchForm.humidity}
+                onChange={(e) => setBatchForm({ ...batchForm, humidity: e.target.value })}
+                placeholder="e.g., 80-90"
+                className="w-full p-2.5 rounded-lg border border-black/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)]/20 focus:border-[var(--moss)]"
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-4">
+            <label className="flex items-center gap-2 text-sm text-[var(--bark)]">
+              <input
+                type="checkbox"
+                checked={batchForm.heatMat}
+                onChange={(e) => setBatchForm({ ...batchForm, heatMat: e.target.checked })}
+                className="rounded border-black/[0.08]"
+              />
+              Heat mat
+            </label>
+            <label className="flex items-center gap-2 text-sm text-[var(--bark)]">
+              <input
+                type="checkbox"
+                checked={batchForm.domed}
+                onChange={(e) => setBatchForm({ ...batchForm, domed: e.target.checked })}
+                className="rounded border-black/[0.08]"
+              />
+              Domed/covered
+            </label>
+          </div>
+
+          <div>
+            <label className="block text-sm text-[var(--bark)] mb-1">Notes</label>
+            <textarea
+              value={batchForm.notes}
+              onChange={(e) => setBatchForm({ ...batchForm, notes: e.target.value })}
+              className="w-full p-2.5 rounded-lg border border-black/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)]/20 focus:border-[var(--moss)]"
+              rows={2}
+              placeholder="Sowing method, pre-treatment..."
+            />
+          </div>
+
+          <div className="flex gap-2 pt-2">
+            <button
+              onClick={handleSaveBatch}
+              className="flex-1 px-4 py-2.5 bg-[var(--forest)] text-white text-sm rounded-lg hover:bg-[var(--forest)]/90 transition-colors"
+            >
+              Create Batch
+            </button>
+            <button
+              onClick={() => setBatchModalOpen(false)}
+              className="flex-1 px-4 py-2.5 border border-black/[0.08] text-sm rounded-lg text-[var(--bark)] hover:bg-black/[0.02] transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Seedling Detail/Graduate Modal */}
+      <Modal
+        isOpen={seedlingDetailOpen}
+        onClose={() => setSeedlingDetailOpen(false)}
+        title={selectedSeedling ? `Seedling ${selectedSeedling.seedlingId}` : 'Seedling Details'}
+      >
+        {selectedSeedling && (
+          <div className="space-y-4">
+            {/* Current Status */}
+            <div className="flex items-center justify-between p-3 bg-[var(--bg-primary)] rounded-lg">
+              <span className="text-sm text-[var(--bark)]">Current Status</span>
+              <span className={`text-xs px-2 py-1 rounded-full ${getSelectionColor(selectedSeedling.selectionStatus)}`}>
+                {selectedSeedling.selectionStatus}
+              </span>
+            </div>
+
+            {/* Info */}
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <span className="text-[var(--clay)]">Emerged:</span>
+                <span className="ml-2 text-[var(--bark)]">
+                  {new Date(selectedSeedling.emergenceDate).toLocaleDateString()}
+                </span>
+              </div>
+              {selectedSeedling.leafCount && (
+                <div>
+                  <span className="text-[var(--clay)]">Leaves:</span>
+                  <span className="ml-2 text-[var(--bark)]">{selectedSeedling.leafCount}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Status Actions */}
+            {selectedSeedling.selectionStatus !== 'GRADUATED' && (
+              <div>
+                <label className="block text-sm text-[var(--bark)] mb-2">Change Status</label>
+                <div className="flex flex-wrap gap-2">
+                  {['GROWING', 'KEEPER', 'HOLDBACK', 'CULLED', 'DIED'].map((status) => (
+                    <button
+                      key={status}
+                      onClick={() => handleUpdateSeedlingStatus(status)}
+                      disabled={selectedSeedling.selectionStatus === status}
+                      className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+                        selectedSeedling.selectionStatus === status
+                          ? 'opacity-50 cursor-not-allowed'
+                          : 'hover:bg-black/[0.02]'
+                      } ${getSelectionColor(status)} border-current/20`}
+                    >
+                      {status}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Graduate Section */}
+            {(selectedSeedling.selectionStatus === 'KEEPER' || selectedSeedling.selectionStatus === 'HOLDBACK') && (
+              <div className="border-t border-black/[0.06] pt-4 mt-4">
+                <h4 className="text-sm font-medium text-emerald-700 mb-3 flex items-center gap-2">
+                  <TreeDeciduous className="w-4 h-4" />
+                  Graduate to Plant
+                </h4>
+                <p className="text-xs text-[var(--clay)] mb-3">
+                  Promote this seedling to a full Plant record with an ANT-YYYY-#### ID.
+                </p>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm text-[var(--bark)] mb-1">Hybrid Name (optional)</label>
+                    <input
+                      type="text"
+                      value={graduateForm.hybridName}
+                      onChange={(e) => setGraduateForm({ ...graduateForm, hybridName: e.target.value })}
+                      placeholder="Auto-generated from parents if empty"
+                      className="w-full p-2.5 rounded-lg border border-black/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-[var(--bark)] mb-1">Notes</label>
+                    <textarea
+                      value={graduateForm.notes}
+                      onChange={(e) => setGraduateForm({ ...graduateForm, notes: e.target.value })}
+                      placeholder="Why this seedling was selected..."
+                      className="w-full p-2.5 rounded-lg border border-black/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                      rows={2}
+                    />
+                  </div>
+                  <button
+                    onClick={handleGraduateSeedling}
+                    className="w-full px-4 py-2.5 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <TreeDeciduous className="w-4 h-4" />
+                    Graduate Seedling
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Already Graduated */}
+            {selectedSeedling.selectionStatus === 'GRADUATED' && selectedSeedling.graduatedToPlant && (
+              <div className="p-3 bg-emerald-50 rounded-lg">
+                <p className="text-sm text-emerald-700">
+                  Graduated to{' '}
+                  <a
+                    href={`/plants/${selectedSeedling.graduatedToPlant.plantId}`}
+                    className="font-medium underline"
+                  >
+                    {selectedSeedling.graduatedToPlant.plantId}
+                  </a>
+                </p>
+              </div>
+            )}
+
+            <button
+              onClick={() => setSeedlingDetailOpen(false)}
+              className="w-full px-4 py-2.5 border border-black/[0.08] text-sm rounded-lg text-[var(--bark)] hover:bg-black/[0.02] transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        )}
+      </Modal>
+
+      {/* Seedling Modal */}
+      <Modal
+        isOpen={seedlingModalOpen}
+        onClose={() => setSeedlingModalOpen(false)}
+        title="Add Seedlings"
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm text-[var(--bark)] mb-1">Number of Seedlings</label>
+              <input
+                type="number"
+                min="1"
+                value={seedlingForm.count}
+                onChange={(e) => setSeedlingForm({ ...seedlingForm, count: e.target.value })}
+                className="w-full p-2.5 rounded-lg border border-black/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)]/20 focus:border-[var(--moss)]"
+              />
+              <p className="text-xs text-[var(--clay)] mt-1">IDs auto-generated (SDL-YYYY-####)</p>
+            </div>
+            <div>
+              <label className="block text-sm text-[var(--bark)] mb-1">Emergence Date</label>
+              <input
+                type="date"
+                value={seedlingForm.emergenceDate}
+                onChange={(e) => setSeedlingForm({ ...seedlingForm, emergenceDate: e.target.value })}
+                className="w-full p-2.5 rounded-lg border border-black/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)]/20 focus:border-[var(--moss)]"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm text-[var(--bark)] mb-1">Position Label (optional)</label>
+            <input
+              type="text"
+              value={seedlingForm.positionLabel}
+              onChange={(e) => setSeedlingForm({ ...seedlingForm, positionLabel: e.target.value })}
+              placeholder="e.g., A, Row-1, Corner"
+              className="w-full p-2.5 rounded-lg border border-black/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)]/20 focus:border-[var(--moss)]"
+            />
+            <p className="text-xs text-[var(--clay)] mt-1">
+              {parseInt(seedlingForm.count) > 1 ? 'Numbers will be appended (A1, A2, A3...)' : 'Physical position in tray/pot'}
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm text-[var(--bark)] mb-1">Notes</label>
+            <textarea
+              value={seedlingForm.notes}
+              onChange={(e) => setSeedlingForm({ ...seedlingForm, notes: e.target.value })}
+              className="w-full p-2.5 rounded-lg border border-black/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)]/20 focus:border-[var(--moss)]"
+              rows={2}
+              placeholder="Observations about emergence..."
+            />
+          </div>
+
+          <div className="flex gap-2 pt-2">
+            <button
+              onClick={handleSaveSeedling}
+              className="flex-1 px-4 py-2.5 bg-lime-600 text-white text-sm rounded-lg hover:bg-lime-700 transition-colors"
+            >
+              Add {parseInt(seedlingForm.count) > 1 ? `${seedlingForm.count} Seedlings` : 'Seedling'}
+            </button>
+            <button
+              onClick={() => setSeedlingModalOpen(false)}
               className="flex-1 px-4 py-2.5 border border-black/[0.08] text-sm rounded-lg text-[var(--bark)] hover:bg-black/[0.02] transition-colors"
             >
               Cancel
