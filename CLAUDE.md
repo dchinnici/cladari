@@ -82,10 +82,15 @@ Cross (CLX-YYYY-###) → Harvest → SeedBatch (SDB-YYYY-###) → Seedling (SDL-
 - Asexual lineage: cloneSource/clones for offsets, TC, divisions
 - Generation tracking: F1, F2, S1, BC1, etc.
 
-### Still Pending
+### Still Pending (Phase 1 Priorities)
 - Harvest modal UI (API complete)
+- Seed batch modal UI (API complete)
 - Seedling modal UI (API complete)
 - Graduation workflow UI (API complete)
+- QR code generation per plant
+- QR scan → quick care log flow
+- Postgres migration for production
+- Auth layer (Clerk/Supabase) for multi-tenant
 
 ## Domain Context: Anthurium Breeding
 
@@ -152,5 +157,58 @@ npx prisma studio      # Visual inspection
 - DB_QUICK_REFERENCE.md - Database commands
 - CHANGELOG.md - Version history and recent changes
 
+## Strategic Direction (Dec 2025)
+
+### What We're Building
+A **pro breeding/growing intelligence platform**, not a consumer plant care app.
+
+**Decided against**: Native mobile app, consumer market, competing with Planta/Greg.
+**Decided for**: Web-first PWA, serious breeders/growers, B2B path to commercial operations.
+
+### The Thesis
+This is Layer 2 (Biological Biography) of the Stream Protocol - verification through continuous narrative rather than point-in-time snapshots. The breeding pipeline (Cross → Harvest → SeedBatch → Seedling → Plant) creates the documented lineage that proves provenance.
+
+### Phased Roadmap
+
+**Phase 1: Pro Web Tool (Now → 6 months)**
+- Finish breeding pipeline UI (harvest/seedling modals, graduation)
+- Deploy with Postgres + auth (multi-tenant ready)
+- QR code scanning → quick care logging (key mobile feature)
+- PWA for mobile access (add to homescreen works now)
+- Alpha test with 5-10 serious breeders
+
+**Phase 2: ML Layer (6-12 months)**
+- Vector embeddings on care/growth/breeding data
+- Pattern detection across environmental conditions
+- Germination prediction, trait correlation
+- Insights humans don't see
+
+**Phase 3: Commercial (12-18 months)**
+- Nursery/commercial operation pilots (Urban Roots, etc.)
+- Connect actions to financials (cost per plant, time to market)
+- ROI dashboards ("this protocol saved $X")
+- Enterprise pricing
+
+### Key Mobile Feature: QR Quick Log
+The mobile unlock isn't an app - it's frictionless data entry:
+- QR code on plant tag → opens plant bio page
+- Quick action buttons: water, fertilize, note, photo
+- Walk past a bench, notice something, log it in 5 seconds
+- Makes one-off VALUABLE data entry possible in real-time
+
+### Why Not Consumer App
+- Red ocean market (Planta, Greg, etc.)
+- Shallow data (watering reminders) doesn't train useful ML
+- Consumer revenue ceiling ~$2K/month even if successful
+- Distraction from core thesis (verification, breeding intelligence)
+
+### Why Pro Tool + B2B
+- Blue ocean (nobody does breeding pipeline well)
+- Rich data (crosses, harvests, conditions, outcomes)
+- Commercial ops will pay $500/month for breeding cycle optimization
+- Data quality > data quantity for ML training
+
 ## Owner Context
-Dave operates Cladari as an elite anthurium breeding program in Fort Lauderdale. Conservation focus, transparent documentation, anti-counterfeiting measures. Building toward becoming one of the highest quality breeders in the Americas within five years. This isn't a hobby app - it's infrastructure for a serious breeding operation.
+Dave operates Cladari as an elite anthurium breeding program in Fort Lauderdale. Conservation focus, transparent documentation, anti-counterfeiting measures. Building toward becoming one of the highest quality breeders in the Americas within five years.
+
+**Bigger picture**: Cladari is the first implementation of the Stream Protocol (see `CLAUDE READ/Authenticity 5.1.md`). PlantDB is infrastructure for biological verification that may expand to other domains. VA Collective is the meta-framework. This isn't a hobby app - it's proof of concept for verification infrastructure.
