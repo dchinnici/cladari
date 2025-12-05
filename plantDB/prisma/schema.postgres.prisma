@@ -33,6 +33,7 @@ model Plant {
   cloneSource       Plant?   @relation("Clones", fields: [cloneSourceId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   cloneSourceId     String?
   clones            Plant[]  @relation("Clones")
+  cloneBatchesSourced CloneBatch[] @relation("CloneSourceBatch") // Batches made from this plant
 
   // Source & Acquisition
   breeder           String?
@@ -88,9 +89,14 @@ model Plant {
   archivedAt        DateTime?
   archiveReason     String?  // died, sold, culled, divided, lost, etc.
 
+  // Clone Batch Origin (for plants from TC, cuttings, divisions)
+  cloneBatch        CloneBatch? @relation("CloneBatchPlants", fields: [cloneBatchId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  cloneBatchId      String?
+
   // Metadata
   notes             String?
   tags              Json     @default("[]") // JSON array
+  identifier        String?  @unique // QR/RFID/NFC tag for quick scanning
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -101,6 +107,7 @@ model Plant {
   @@index([isArchived])
   @@index([cloneSourceId])
   @@index([breedingRecordId])
+  @@index([cloneBatchId])
 }
 
 model BreedingRecord {
@@ -374,6 +381,7 @@ model Location {
 
   plants          Plant[]
   seedlings       Seedling[] @relation("SeedlingLocation")
+  cloneBatches    CloneBatch[] @relation("CloneBatchLocation")
 
   notes           String?
   createdAt       DateTime @default(now())
@@ -572,12 +580,65 @@ model SeedBatch {
 
   notes           String?
   photos          Json     @default("[]") // JSON array
+  identifier      String?  @unique // QR/RFID/NFC tag for batch scanning
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   @@index([harvestId])
   @@index([sowDate])
   @@index([status])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CLONE BATCH - For asexual propagation (TC, cuttings, divisions, offsets)
+// Tracks groups of genetically identical plants until individualization
+// ═══════════════════════════════════════════════════════════════════════════
+
+model CloneBatch {
+  id                String   @id @default(cuid())
+  batchId           String   @unique // CLB-YYYY-### format
+
+  propagationType   String   // TC, CUTTING, DIVISION, OFFSET
+
+  // Source - one of these should be populated
+  sourcePlant       Plant?   @relation("CloneSourceBatch", fields: [sourcePlantId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  sourcePlantId     String?  // If from our collection (e.g., division from ANT-2025-0042)
+  externalSource    String?  // If acquired (e.g., "NSE Tropicals TC pack")
+
+  // Identity
+  species           String?  // e.g., "forgetii"
+  cultivarName      String?  // e.g., "Dark Mama"
+
+  // Batch tracking
+  acquiredDate      DateTime
+  acquiredCount     Int      // Started with 10
+  currentCount      Int?     // After losses/separations
+  containerCount    Int      @default(1)
+  containerType     String?  // "2-inch pots", "TC cups", etc.
+
+  // Status
+  status            String   @default("GROWING")
+  // GROWING | SEPARATING | COMPLETE
+
+  // When individualized, link to Plants
+  plants            Plant[]  @relation("CloneBatchPlants")
+
+  // Location
+  location          Location? @relation("CloneBatchLocation", fields: [locationId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  locationId        String?
+
+  // Tag identifier (QR/RFID/NFC)
+  identifier        String?  @unique
+
+  notes             String?
+  photos            Json     @default("[]") // JSON array
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([batchId])
+  @@index([sourcePlantId])
+  @@index([status])
+  @@index([locationId])
 }
 
 model Seedling {
