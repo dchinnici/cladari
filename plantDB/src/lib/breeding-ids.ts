@@ -91,3 +91,24 @@ export async function generatePlantId(): Promise<string> {
 
   return `${prefix}${nextNum.toString().padStart(4, '0')}`
 }
+
+export async function generateCloneBatchId(): Promise<string> {
+  const year = new Date().getFullYear()
+  const prefix = `CLB-${year}-`
+
+  // Find the highest existing batchId for this year
+  const latest = await prisma.cloneBatch.findFirst({
+    where: {
+      batchId: { startsWith: prefix }
+    },
+    orderBy: { batchId: 'desc' }
+  })
+
+  let nextNum = 1
+  if (latest) {
+    const currentNum = parseInt(latest.batchId.split('-')[2], 10)
+    nextNum = currentNum + 1
+  }
+
+  return `${prefix}${nextNum.toString().padStart(3, '0')}`
+}

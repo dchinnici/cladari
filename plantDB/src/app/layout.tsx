@@ -45,6 +45,7 @@ export default function RootLayout({
                         { name: 'Plants', href: '/plants' },
                         { name: 'Locations', href: '/locations' },
                         { name: 'Breeding', href: '/breeding' },
+                        { name: 'Batches', href: '/batches' },
                         { name: 'Genetics', href: '/genetics' },
                       ].map((item) => (
                         <Link
