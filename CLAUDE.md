@@ -87,10 +87,33 @@ Cross (CLX-YYYY-###) → Harvest → SeedBatch (SDB-YYYY-###) → Seedling (SDL-
 - Seed batch modal UI (API complete)
 - Seedling modal UI (API complete)
 - Graduation workflow UI (API complete)
-- QR code generation per plant
+- QR code generation per plant/batch
 - QR scan → quick care log flow
 - Postgres migration for production
 - Auth layer (Clerk/Supabase) for multi-tenant
+
+### Just Completed (Dec 5, 2025)
+- **CloneBatch model** added to schema (CLB-YYYY-###)
+- **API routes**: `/api/clone-batches` (CRUD complete)
+- **UI**: `/batches` page with create modal, stats, list view
+- Supports TC, CUTTING, DIVISION, OFFSET propagation types
+- Links to source plant or external source
+- Postgres schema synced
+
+### Phase 2 Backlog: ML Improvements
+**Substrate Health Analysis needs upgrade:**
+Current: Snapshot of last 3 logs → threshold check
+Needed: Time series since last repot → trend analysis
+
+Should analyze:
+- Input consistency (EC/pH variance over time)
+- Output trend direction (acidifying? EC building?)
+- Delta trend (gap widening or stabilizing?)
+- Data density → confidence weighting
+
+Example output: "Based on 12 readings over 8 weeks, 85% confidence substrate is acidifying at 0.15 pH/month. Consider CalMag buffer."
+
+Infrastructure exists in `/lib/ml/` (healthTrajectory.ts, statisticalAnalyzer.ts) but not wired into recommendations.ts properly.
 
 ## Domain Context: Anthurium Breeding
 

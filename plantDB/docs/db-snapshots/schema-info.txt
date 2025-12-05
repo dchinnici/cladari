@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS "BreedingRecord" (
     "notes" TEXT,
     "photos" TEXT NOT NULL DEFAULT '[]',
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "updatedAt" DATETIME NOT NULL, "crossCategory" TEXT, "targetTraits" TEXT,
     CONSTRAINT "BreedingRecord_femalePlantId_fkey" FOREIGN KEY ("femalePlantId") REFERENCES "Plant" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT "BreedingRecord_malePlantId_fkey" FOREIGN KEY ("malePlantId") REFERENCES "Plant" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
@@ -238,51 +238,6 @@ CREATE TABLE IF NOT EXISTS "GrowthMetric" (
 );
 CREATE INDEX "GrowthMetric_plantId_idx" ON "GrowthMetric"("plantId");
 CREATE INDEX "GrowthMetric_date_idx" ON "GrowthMetric"("date");
-CREATE TABLE IF NOT EXISTS "Plant" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "plantId" TEXT NOT NULL,
-    "accessionDate" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "genus" TEXT NOT NULL DEFAULT 'Anthurium',
-    "section" TEXT,
-    "species" TEXT,
-    "hybridName" TEXT,
-    "crossNotation" TEXT,
-    "femaleParentId" TEXT,
-    "maleParentId" TEXT,
-    "generation" TEXT,
-    "breeder" TEXT,
-    "breederCode" TEXT,
-    "vendorId" TEXT,
-    "acquisitionCost" REAL,
-    "propagationType" TEXT,
-    "locationId" TEXT,
-    "healthStatus" TEXT NOT NULL DEFAULT 'healthy',
-    "conservationStatus" TEXT,
-    "currentPotSize" REAL,
-    "currentPotType" TEXT,
-    "lastRepotDate" DATETIME,
-    "marketValue" REAL,
-    "isForSale" BOOLEAN NOT NULL DEFAULT false,
-    "isMother" BOOLEAN NOT NULL DEFAULT false,
-    "isEliteGenetics" BOOLEAN NOT NULL DEFAULT false,
-    "isArchived" BOOLEAN NOT NULL DEFAULT false,
-    "archivedAt" DATETIME,
-    "archiveReason" TEXT,
-    "notes" TEXT,
-    "tags" TEXT NOT NULL DEFAULT '[]',
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL, "coverPhotoId" TEXT,
-    CONSTRAINT "Plant_femaleParentId_fkey" FOREIGN KEY ("femaleParentId") REFERENCES "Plant" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT "Plant_maleParentId_fkey" FOREIGN KEY ("maleParentId") REFERENCES "Plant" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT "Plant_vendorId_fkey" FOREIGN KEY ("vendorId") REFERENCES "Vendor" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT "Plant_locationId_fkey" FOREIGN KEY ("locationId") REFERENCES "Location" ("id") ON DELETE SET NULL ON UPDATE CASCADE
-);
-CREATE UNIQUE INDEX "Plant_plantId_key" ON "Plant"("plantId");
-CREATE INDEX "Plant_plantId_idx" ON "Plant"("plantId");
-CREATE INDEX "Plant_vendorId_idx" ON "Plant"("vendorId");
-CREATE INDEX "Plant_locationId_idx" ON "Plant"("locationId");
-CREATE INDEX "Plant_section_idx" ON "Plant"("section");
-CREATE INDEX "Plant_isArchived_idx" ON "Plant"("isArchived");
 CREATE INDEX idx_flowering_female_start
   ON FloweringCycle(femaleStart DESC) WHERE femaleStart IS NOT NULL;
 CREATE INDEX idx_flowering_male_start
@@ -312,3 +267,168 @@ CREATE TABLE IF NOT EXISTS "PlantJournal" (
 CREATE INDEX "PlantJournal_plantId_timestamp_idx" ON "PlantJournal"("plantId", "timestamp");
 CREATE INDEX "PlantJournal_entryType_idx" ON "PlantJournal"("entryType");
 CREATE INDEX "PlantJournal_context_idx" ON "PlantJournal"("context");
+CREATE TABLE IF NOT EXISTS "Harvest" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "breedingRecordId" TEXT NOT NULL,
+    "harvestNumber" INTEGER NOT NULL,
+    "harvestDate" DATETIME NOT NULL,
+    "berryCount" INTEGER,
+    "seedCount" INTEGER NOT NULL,
+    "seedViability" TEXT,
+    "notes" TEXT,
+    "photos" TEXT NOT NULL DEFAULT '[]',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "Harvest_breedingRecordId_fkey" FOREIGN KEY ("breedingRecordId") REFERENCES "BreedingRecord" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE TABLE IF NOT EXISTS "SeedBatch" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "batchId" TEXT NOT NULL,
+    "harvestId" TEXT NOT NULL,
+    "sowDate" DATETIME NOT NULL,
+    "seedCount" INTEGER NOT NULL,
+    "substrate" TEXT NOT NULL,
+    "container" TEXT,
+    "temperature" REAL,
+    "humidity" REAL,
+    "heatMat" BOOLEAN NOT NULL DEFAULT false,
+    "domed" BOOLEAN NOT NULL DEFAULT true,
+    "lightLevel" TEXT,
+    "germinatedCount" INTEGER,
+    "germinationRate" REAL,
+    "firstEmergence" DATETIME,
+    "lastEmergence" DATETIME,
+    "status" TEXT NOT NULL DEFAULT 'SOWN',
+    "notes" TEXT,
+    "photos" TEXT NOT NULL DEFAULT '[]',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL, "identifier" TEXT,
+    CONSTRAINT "SeedBatch_harvestId_fkey" FOREIGN KEY ("harvestId") REFERENCES "Harvest" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE TABLE IF NOT EXISTS "Seedling" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "seedlingId" TEXT NOT NULL,
+    "seedBatchId" TEXT NOT NULL,
+    "positionLabel" TEXT,
+    "emergenceDate" DATETIME NOT NULL,
+    "firstTrueLeaf" DATETIME,
+    "prickOutDate" DATETIME,
+    "potSize" REAL,
+    "leafCount" INTEGER,
+    "largestLeafCm" REAL,
+    "healthStatus" TEXT NOT NULL DEFAULT 'HEALTHY',
+    "selectionStatus" TEXT NOT NULL DEFAULT 'GROWING',
+    "selectionDate" DATETIME,
+    "selectionNotes" TEXT,
+    "graduatedToPlantId" TEXT,
+    "graduationDate" DATETIME,
+    "locationId" TEXT,
+    "notes" TEXT,
+    "photos" TEXT NOT NULL DEFAULT '[]',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "Seedling_seedBatchId_fkey" FOREIGN KEY ("seedBatchId") REFERENCES "SeedBatch" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "Seedling_graduatedToPlantId_fkey" FOREIGN KEY ("graduatedToPlantId") REFERENCES "Plant" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "Seedling_locationId_fkey" FOREIGN KEY ("locationId") REFERENCES "Location" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+CREATE INDEX "Harvest_breedingRecordId_idx" ON "Harvest"("breedingRecordId");
+CREATE INDEX "Harvest_harvestDate_idx" ON "Harvest"("harvestDate");
+CREATE UNIQUE INDEX "Harvest_breedingRecordId_harvestNumber_key" ON "Harvest"("breedingRecordId", "harvestNumber");
+CREATE UNIQUE INDEX "SeedBatch_batchId_key" ON "SeedBatch"("batchId");
+CREATE INDEX "SeedBatch_harvestId_idx" ON "SeedBatch"("harvestId");
+CREATE INDEX "SeedBatch_sowDate_idx" ON "SeedBatch"("sowDate");
+CREATE INDEX "SeedBatch_status_idx" ON "SeedBatch"("status");
+CREATE UNIQUE INDEX "Seedling_seedlingId_key" ON "Seedling"("seedlingId");
+CREATE UNIQUE INDEX "Seedling_graduatedToPlantId_key" ON "Seedling"("graduatedToPlantId");
+CREATE INDEX "Seedling_seedBatchId_idx" ON "Seedling"("seedBatchId");
+CREATE INDEX "Seedling_selectionStatus_idx" ON "Seedling"("selectionStatus");
+CREATE INDEX "Seedling_emergenceDate_idx" ON "Seedling"("emergenceDate");
+CREATE INDEX "Seedling_locationId_idx" ON "Seedling"("locationId");
+CREATE INDEX "BreedingRecord_crossCategory_idx" ON "BreedingRecord"("crossCategory");
+CREATE TABLE IF NOT EXISTS "CloneBatch" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "batchId" TEXT NOT NULL,
+    "propagationType" TEXT NOT NULL,
+    "sourcePlantId" TEXT,
+    "externalSource" TEXT,
+    "species" TEXT,
+    "cultivarName" TEXT,
+    "acquiredDate" DATETIME NOT NULL,
+    "acquiredCount" INTEGER NOT NULL,
+    "currentCount" INTEGER,
+    "containerCount" INTEGER NOT NULL DEFAULT 1,
+    "containerType" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'GROWING',
+    "locationId" TEXT,
+    "identifier" TEXT,
+    "notes" TEXT,
+    "photos" TEXT NOT NULL DEFAULT '[]',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "CloneBatch_sourcePlantId_fkey" FOREIGN KEY ("sourcePlantId") REFERENCES "Plant" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "CloneBatch_locationId_fkey" FOREIGN KEY ("locationId") REFERENCES "Location" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+CREATE TABLE IF NOT EXISTS "Plant" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "plantId" TEXT NOT NULL,
+    "accessionDate" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "genus" TEXT NOT NULL DEFAULT 'Anthurium',
+    "section" TEXT,
+    "species" TEXT,
+    "hybridName" TEXT,
+    "crossNotation" TEXT,
+    "femaleParentId" TEXT,
+    "maleParentId" TEXT,
+    "generation" TEXT,
+    "cloneSourceId" TEXT,
+    "breeder" TEXT,
+    "breederCode" TEXT,
+    "vendorId" TEXT,
+    "acquisitionCost" REAL,
+    "propagationType" TEXT,
+    "locationId" TEXT,
+    "healthStatus" TEXT NOT NULL DEFAULT 'healthy',
+    "conservationStatus" TEXT,
+    "currentPotSize" REAL,
+    "currentPotType" TEXT,
+    "lastRepotDate" DATETIME,
+    "coverPhotoId" TEXT,
+    "breedingRecordId" TEXT,
+    "marketValue" REAL,
+    "isForSale" BOOLEAN NOT NULL DEFAULT false,
+    "isMother" BOOLEAN NOT NULL DEFAULT false,
+    "isEliteGenetics" BOOLEAN NOT NULL DEFAULT false,
+    "isArchived" BOOLEAN NOT NULL DEFAULT false,
+    "archivedAt" DATETIME,
+    "archiveReason" TEXT,
+    "cloneBatchId" TEXT,
+    "notes" TEXT,
+    "tags" TEXT NOT NULL DEFAULT '[]',
+    "identifier" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "Plant_femaleParentId_fkey" FOREIGN KEY ("femaleParentId") REFERENCES "Plant" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "Plant_maleParentId_fkey" FOREIGN KEY ("maleParentId") REFERENCES "Plant" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "Plant_cloneSourceId_fkey" FOREIGN KEY ("cloneSourceId") REFERENCES "Plant" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "Plant_vendorId_fkey" FOREIGN KEY ("vendorId") REFERENCES "Vendor" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "Plant_locationId_fkey" FOREIGN KEY ("locationId") REFERENCES "Location" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "Plant_breedingRecordId_fkey" FOREIGN KEY ("breedingRecordId") REFERENCES "BreedingRecord" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "Plant_cloneBatchId_fkey" FOREIGN KEY ("cloneBatchId") REFERENCES "CloneBatch" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+CREATE UNIQUE INDEX "Plant_plantId_key" ON "Plant"("plantId");
+CREATE UNIQUE INDEX "Plant_identifier_key" ON "Plant"("identifier");
+CREATE INDEX "Plant_plantId_idx" ON "Plant"("plantId");
+CREATE INDEX "Plant_vendorId_idx" ON "Plant"("vendorId");
+CREATE INDEX "Plant_locationId_idx" ON "Plant"("locationId");
+CREATE INDEX "Plant_section_idx" ON "Plant"("section");
+CREATE INDEX "Plant_isArchived_idx" ON "Plant"("isArchived");
+CREATE INDEX "Plant_cloneSourceId_idx" ON "Plant"("cloneSourceId");
+CREATE INDEX "Plant_breedingRecordId_idx" ON "Plant"("breedingRecordId");
+CREATE INDEX "Plant_cloneBatchId_idx" ON "Plant"("cloneBatchId");
+CREATE UNIQUE INDEX "CloneBatch_batchId_key" ON "CloneBatch"("batchId");
+CREATE UNIQUE INDEX "CloneBatch_identifier_key" ON "CloneBatch"("identifier");
+CREATE INDEX "CloneBatch_batchId_idx" ON "CloneBatch"("batchId");
+CREATE INDEX "CloneBatch_sourcePlantId_idx" ON "CloneBatch"("sourcePlantId");
+CREATE INDEX "CloneBatch_status_idx" ON "CloneBatch"("status");
+CREATE INDEX "CloneBatch_locationId_idx" ON "CloneBatch"("locationId");
+CREATE UNIQUE INDEX "SeedBatch_identifier_key" ON "SeedBatch"("identifier");

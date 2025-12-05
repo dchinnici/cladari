@@ -17,10 +17,12 @@ CREATE TABLE IF NOT EXISTS "BreedingRecord" (
     "notes" TEXT,
     "photos" TEXT NOT NULL DEFAULT '[]',
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "updatedAt" DATETIME NOT NULL, "crossCategory" TEXT, "targetTraits" TEXT,
     CONSTRAINT "BreedingRecord_femalePlantId_fkey" FOREIGN KEY ("femalePlantId") REFERENCES "Plant" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT "BreedingRecord_malePlantId_fkey" FOREIGN KEY ("malePlantId") REFERENCES "Plant" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
+INSERT INTO BreedingRecord VALUES('cmirz1iq10001fzqmf7hcwq8p','CLX-2025-001',1757548800000,'cmgsezkj5002vgw74dp76jwci','cmgsezkj6002zgw744z7vg0xi','CONTROLLED','fresh',NULL,NULL,NULL,NULL,'[]','[]','First successful controlled cross. Regale×Besseae (Cardiolonchium) × Luxurians (Pachyneurium).','[]',1764885136393,1764885136393,'INTERSECTIONAL','["bullate texture","dark velvet","vigor"]');
+INSERT INTO BreedingRecord VALUES('cmis1ag1l000181t9i5cjgng7','CLX-2025-003',1757635200000,'cmgsezkj5002vgw74dp76jwci','cmgsezkj6002zgw744z7vg0xi','CONTROLLED','fresh',NULL,NULL,NULL,NULL,'[]','[]','hand pollinated on 9/12, documented on instagram','[]',1764888912057,1764889060749,'INTERSECTIONAL','["dark velvet","bullate texture","contrasting veins"]');
 CREATE TABLE IF NOT EXISTS "Treatment" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "name" TEXT NOT NULL,
@@ -830,6 +832,27 @@ INSERT INTO CareLog VALUES('cminotor9007bvryar7qc32z6','cmgsezkjh004bgw74r8t5rej
 INSERT INTO CareLog VALUES('cmip37f620009ojk30anpyzih','cmgsezkis001fgw74ccl5m7cs',1764694800000,'watering',NULL,NULL,NULL,'{"notes":"Baseline feed: CalMag 1ml/L, TPS One 1.5-2ml/L,","inputEC":1.15,"inputPH":5.7}',NULL,NULL,1764710731658);
 INSERT INTO CareLog VALUES('cmiqm7eo4000dojk3qjggjsu6','cmgsezkit001jgw74f1l5lkoq',1764781200000,'watering',NULL,NULL,NULL,'{"notes":"Baseline feed: CalMag 1ml/L, TPS One 1.5-2ml/L, K-Carb (pH Up) 0.4-0.6ml/L","inputEC":1.15,"inputPH":5.7}',NULL,NULL,1764803109892);
 INSERT INTO CareLog VALUES('cmiqm7r5b000hojk3uvspuvf4','cmgsezkiq0017gw741cm7c6qx',1764781200000,'watering',NULL,NULL,NULL,'{"notes":"Baseline feed: CalMag 1ml/L, TPS One 1.5-2ml/L, K-Carb (pH Up) 0.4-0.6ml/L","inputEC":1.15,"inputPH":5.7}',NULL,NULL,1764803126064);
+INSERT INTO CareLog VALUES('cmirj8hji000lojk3osatwwnc','cmgsezkiv001rgw745guvfw2t',1764781200000,'watering',NULL,NULL,NULL,'{"notes":"Baseline feed: CalMag 1.5ml/L, TPS One 2ml/L","inputEC":1.24,"inputPH":5.7,"outputEC":1.37,"outputPH":5.53}',NULL,NULL,1764858587598);
+INSERT INTO CareLog VALUES('cmirjakaa000rojk3r6j0qiqb','cmgsezkj80039gw74r26btl52',1764781200000,'watering',NULL,NULL,NULL,'{"notes":"Baseline feed: CalMag 1.5ml/L, TPS One 2ml/L","inputEC":1.24,"inputPH":5.7,"outputEC":1.31,"outputPH":5}',NULL,NULL,1764858684466);
+INSERT INTO CareLog VALUES('cmirjbyry000vojk3ds6kg2ys','cmgsezkj9003bgw74cqa3rkjx',1764720000000,'watering',NULL,NULL,NULL,'{"notes":"Baseline feed: CalMag 1.5ml/L, TPS One 2ml/L","inputEC":1.15,"inputPH":5.7,"outputEC":1.17,"outputPH":5.31}',NULL,NULL,1764858749902);
+INSERT INTO CareLog VALUES('cmirjfbf3000zojk3m93oiizh','cmgsezkj1002hgw74dugb7opq',1764781200000,'watering',NULL,NULL,NULL,'{"notes":"Baseline feed: CalMag 1.5ml/L, TPS One 2ml/L","inputEC":1.15,"inputPH":5.7,"outputEC":1.42,"outputPH":5.53}',NULL,NULL,1764858906256);
+INSERT INTO CareLog VALUES('cmirjjlsq0015ojk30ru5soxh','cmgsezkj70033gw749vd43ass',1764781200000,'watering',NULL,NULL,NULL,'{"notes":"Baseline feed: CalMag 1.5ml/L, TPS One 2ml/L","inputEC":1.24,"inputPH":5.7}',NULL,NULL,1764859106330);
+INSERT INTO CareLog VALUES('cmirjktpv0019ojk3q9gbz3si','cmgsezkjf0041gw74hdemtn2f',1764781200000,'watering',NULL,NULL,NULL,'{"notes":"Baseline feed: CalMag 1.5ml/L, TPS One 2ml/L","inputEC":1.24,"inputPH":5.7}',NULL,NULL,1764859163251);
+INSERT INTO CareLog VALUES('cmirjln19001dojk306xqeziv','cmgsezkjg0047gw74tozb8195',1764720000000,'watering',NULL,NULL,NULL,'{"notes":"Baseline feed: CalMag 1.5ml/L, TPS One 2.0ml/L","inputEC":1.24,"inputPH":5.7}',NULL,NULL,1764859201245);
+INSERT INTO CareLog VALUES('cmirjqify001jojk3vdyzhmmp','cmgsezkj2002lgw74cij26116',1764867600000,'watering',NULL,NULL,NULL,'{"notes":"Baseline feed: CalMag 1.5ml/L, TPS One 2ml/L","inputEC":1.24,"inputPH":5.7}',NULL,NULL,1764859428574);
+INSERT INTO CareLog VALUES('cmirjsc2h001nojk3wztjwkpn','cmgsezkj0002dgw74niow603y',1764720000000,'watering',NULL,NULL,NULL,'{"notes":"Baseline feed: CalMag 1.5ml/L, TPS One 2ml/L","inputEC":1.24,"inputPH":5.7}',NULL,NULL,1764859513625);
+INSERT INTO CareLog VALUES('cmisah5re0005uszpsiqbhnd7','cmgsezkjc003rgw74o897pydc',1764867600000,'watering',NULL,NULL,NULL,'{"notes":"Baseline feed: CalMag 1ml/L, TPS One 1.5-2ml/L","inputEC":1.3,"inputPH":5.5}',NULL,NULL,1764904341867);
+INSERT INTO CareLog VALUES('cmisakpzo000duszp7it4phrm','cmgsezkin000xgw74jhgpsbkx',1764867600000,'watering',NULL,NULL,NULL,'{"notes":"Baseline feed: CalMag 1ml/L, TPS One 1.5-2ml/L, K-Carb (pH Up) 0.4-0.6ml/L","inputEC":1.3,"inputPH":5.5}',NULL,NULL,1764904508053);
+INSERT INTO CareLog VALUES('cmisapupp000guszpr1s2x2cd','cmgsezkj0002dgw74niow603y',1764867600000,'watering',NULL,NULL,NULL,'{"inputEC":1.3,"inputPH":5.5}',NULL,NULL,1764904747454);
+INSERT INTO CareLog VALUES('cmisapupp000huszptpw6yoj4','cmgsezkis001hgw74qz33cdlh',1764867600000,'watering',NULL,NULL,NULL,'{"inputEC":1.3,"inputPH":5.5}',NULL,NULL,1764904747454);
+INSERT INTO CareLog VALUES('cmisapupp000iuszp2lv6qp05','cmgsezkiu001pgw7466lruqng',1764867600000,'watering',NULL,NULL,NULL,'{"inputEC":1.3,"inputPH":5.5}',NULL,NULL,1764904747454);
+INSERT INTO CareLog VALUES('cmisapupp000juszpiclknr1w','cmgsezkiz0027gw74izmypumf',1764867600000,'watering',NULL,NULL,NULL,'{"inputEC":1.3,"inputPH":5.5}',NULL,NULL,1764904747454);
+INSERT INTO CareLog VALUES('cmisapupp000kuszp1otwt9pp','cmgsezkjk004lgw7429ndpod8',1764867600000,'watering',NULL,NULL,NULL,'{"inputEC":1.3,"inputPH":5.5}',NULL,NULL,1764904747454);
+INSERT INTO CareLog VALUES('cmisapupp000luszpvcqnpxlf','cmgsezkj5002xgw746by1ljgh',1764867600000,'watering',NULL,NULL,NULL,'{"inputEC":1.3,"inputPH":5.5}',NULL,NULL,1764904747454);
+INSERT INTO CareLog VALUES('cmisapupp000muszp40ah9hj2','cmgsezkj6002zgw744z7vg0xi',1764867600000,'watering',NULL,NULL,NULL,'{"inputEC":1.3,"inputPH":5.5}',NULL,NULL,1764904747454);
+INSERT INTO CareLog VALUES('cmisapupp000nuszppulnelgp','cmgsezkj60031gw74dmy7kj3v',1764867600000,'watering',NULL,NULL,NULL,'{"inputEC":1.3,"inputPH":5.5}',NULL,NULL,1764904747454);
+INSERT INTO CareLog VALUES('cmisapupp000ouszp82q8d1v3','cmgsezkjc003pgw74hkchzz6p',1764867600000,'watering',NULL,NULL,NULL,'{"inputEC":1.3,"inputPH":5.5}',NULL,NULL,1764904747454);
+INSERT INTO CareLog VALUES('cmisapupp000puszpjzj4ib4n','cmgsezkjf0041gw74hdemtn2f',1764867600000,'watering',NULL,NULL,NULL,'{"inputEC":1.3,"inputPH":5.5}',NULL,NULL,1764904747454);
 CREATE TABLE IF NOT EXISTS "FloweringCycle" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "plantId" TEXT NOT NULL,
@@ -868,6 +891,7 @@ INSERT INTO FloweringCycle VALUES('cminozmxj007dvryag9mzohtg','cmgsezkiu001pgw74
 INSERT INTO FloweringCycle VALUES('cminp0unt007fvryaixmol1at','cmgsezkj2002lgw74cij26116',1763337600000,NULL,NULL,NULL,NULL,NULL,0,'',0,NULL,'[]',NULL,NULL,NULL,'',1764626444345,1764626444345);
 INSERT INTO FloweringCycle VALUES('cminp1pyl007hvryah2po4fir','cmgsezkje003xgw74hwav9bnc',1763337600000,1764374400000,NULL,NULL,NULL,NULL,0,'',0,NULL,'[]',NULL,NULL,NULL,'',1764626484909,1764626484909);
 INSERT INTO FloweringCycle VALUES('cmip2uoys0001ojk3w32dvwc8','cmgsezkis001fgw74ccl5m7cs',1763856000000,1764633600000,NULL,NULL,NULL,NULL,0,'',0,NULL,'[]',NULL,NULL,NULL,'',1764710137828,1764710137828);
+INSERT INTO FloweringCycle VALUES('cmirj9axz000pojk3at0tkz1u','cmgsezkj4002tgw74qejp56ig',1764720000000,NULL,NULL,NULL,NULL,NULL,0,'',0,NULL,'[]',NULL,NULL,NULL,'',1764858625704,1764858625704);
 CREATE TABLE IF NOT EXISTS "Genetics" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "plantId" TEXT NOT NULL,
@@ -1437,6 +1461,11 @@ INSERT INTO Photo VALUES('cminfeq3o0071vryacm0ohh8f','cmgsezkiy0025gw742wfvmspy'
 INSERT INTO Photo VALUES('cmip348gj0003ojk3jmgva8id','cmgsezkj5002vgw74dp76jwci','/uploads/photos/ANT-2025-0036_1764710582817.jpeg','/uploads/thumbnails/ANT-2025-0036_1764710582817_thumb.jpeg',1764694989000,'mature','spadix','{"width":4032,"height":3024,"format":"jpeg","space":"srgb","hasAlpha":false,"orientation":6,"exif":{"dateTimeOriginal":"2025-12-02T17:03:09.000Z","make":"Apple","model":"iPhone 16 Pro Max","software":26.2,"lensModel":"iPhone 16 Pro Max back triple camera 2.22mm f/2.2","focalLength":"2.2 mm","fNumber":2.2,"iso":320,"exposureTime":"1/40","flash":"Off, Did not fire","gpsLatitude":26.127881,"gpsLongitude":-80.144019}}',NULL,'Fruit is mostly matured and ready to harvest for germination ',1764710582995);
 INSERT INTO Photo VALUES('cmip349c20005ojk38yvsbdt7','cmgsezkj5002vgw74dp76jwci','/uploads/photos/ANT-2025-0036_1764710583927.jpeg','/uploads/thumbnails/ANT-2025-0036_1764710583927_thumb.jpeg',1764694985000,'mature','spadix','{"width":4032,"height":3024,"format":"jpeg","space":"srgb","hasAlpha":false,"orientation":6,"exif":{"dateTimeOriginal":"2025-12-02T17:03:05.000Z","make":"Apple","model":"iPhone 16 Pro Max","software":26.2,"lensModel":"iPhone 16 Pro Max back triple camera 2.22mm f/2.2","focalLength":"2.2 mm","fNumber":2.2,"iso":250,"exposureTime":"1/60","flash":"Off, Did not fire","gpsLatitude":26.127881,"gpsLongitude":-80.144019}}',NULL,'Fruit is mostly matured and ready to harvest for germination ',1764710584130);
 INSERT INTO Photo VALUES('cmip36r7n0007ojk3a1sxo742','cmgsezkjc003pgw74hkchzz6p','/uploads/photos/ANT-2025-0051_1764710700411.jpeg','/uploads/thumbnails/ANT-2025-0051_1764710700411_thumb.jpeg',1764521416000,'juvenile','leaf','{"width":4032,"height":3024,"format":"jpeg","space":"srgb","hasAlpha":false,"orientation":6,"exif":{"dateTimeOriginal":"2025-11-30T16:50:16.000Z","make":"Apple","model":"iPhone 16 Pro Max","software":26.2,"lensModel":"iPhone 16 Pro Max back triple camera 2.22mm f/2.2","focalLength":"2.2 mm","fNumber":2.2,"iso":160,"exposureTime":"1/120","flash":"Off, Did not fire","gpsLatitude":26.127811,"gpsLongitude":-80.14405}}',NULL,'New emergent starting to harden. ',1764710700611);
+INSERT INTO Photo VALUES('cmirjhq0i0013ojk3e15b7zif','cmgsezkiw001xgw74v9qp5xbw','/uploads/photos/ANT-2025-0019_1764859018305.jpeg','/uploads/thumbnails/ANT-2025-0019_1764859018305_thumb.jpeg',1764781200000,'juvenile','leaf','{"width":3024,"height":4032,"format":"jpeg","space":"srgb","hasAlpha":false,"orientation":1,"exif":{"dateTimeOriginal":"2025-12-03T22:22:02.000Z","make":"Apple","model":"iPhone 16 Pro Max","software":26.2,"lensModel":"iPhone 16 Pro Max back triple camera 6.765mm f/1.78","focalLength":"6.8 mm","fNumber":1.8,"iso":64,"exposureTime":"1/120","flash":"Off, Did not fire","gpsLatitude":26.127739,"gpsLongitude":-80.14405}}',NULL,'new leaf beginning to harden',1764859018482);
+INSERT INTO Photo VALUES('cmirjpco8001hojk3r7590wgk','cmgsezkj4002rgw742lhfkzb4','/uploads/photos/ANT-2025-0034_1764859374264.jpeg','/uploads/thumbnails/ANT-2025-0034_1764859374264_thumb.jpeg',1764800496000,'mature','leaf','{"width":3024,"height":4032,"format":"jpeg","space":"srgb","hasAlpha":false,"orientation":1,"exif":{"dateTimeOriginal":"2025-12-03T22:21:36.000Z","make":"Apple","model":"iPhone 16 Pro Max","software":26.2,"lensModel":"iPhone 16 Pro Max back triple camera 6.765mm f/1.78","focalLength":"6.8 mm","fNumber":1.8,"iso":200,"exposureTime":"1/40","flash":"Off, Did not fire","gpsLatitude":26.127739,"gpsLongitude":-80.14405}}',NULL,'New leaf fully formed. Starting to harden',1764859374440);
+INSERT INTO Photo VALUES('cmirjtjgd001rojk3msug810o','cmgsezkiz0027gw74izmypumf','/uploads/photos/ANT-2025-0024_1764859569676.jpeg','/uploads/thumbnails/ANT-2025-0024_1764859569676_thumb.jpeg',1764800503000,'juvenile','leaf','{"width":3024,"height":4032,"format":"jpeg","space":"srgb","hasAlpha":false,"orientation":1,"exif":{"dateTimeOriginal":"2025-12-03T22:21:43.000Z","make":"Apple","model":"iPhone 16 Pro Max","software":26.2,"lensModel":"iPhone 16 Pro Max back triple camera 6.765mm f/1.78","focalLength":"6.8 mm","fNumber":1.8,"iso":100,"exposureTime":"1/60","flash":"Off, Did not fire","gpsLatitude":26.12785,"gpsLongitude":-80.144014}}',NULL,NULL,1764859569854);
+INSERT INTO Photo VALUES('cmisaimu90009uszp1d1qpsau','cmgsezkjc003rgw74o897pydc','/uploads/photos/ANT-2025-0052_1764904410468.jpeg','/uploads/thumbnails/ANT-2025-0052_1764904410468_thumb.jpeg',1764870120000,'juvenile','leaf','{"width":4032,"height":3024,"format":"jpeg","space":"srgb","hasAlpha":false,"orientation":6,"exif":{"dateTimeOriginal":"2025-12-04T17:42:00.000Z","make":"Apple","model":"iPhone 16 Pro Max","software":26.2,"lensModel":"iPhone 16 Pro Max back triple camera 2.22mm f/2.2","focalLength":"2.2 mm","fNumber":2.2,"iso":250,"exposureTime":"1/60","flash":"Off, Did not fire","gpsLatitude":26.127739,"gpsLongitude":-80.14405}}',NULL,'Latest leaf hardening and darker then prior two. Sinus is more red and lobes appear partly fused',1764904410657);
+INSERT INTO Photo VALUES('cmisain8z000buszplqakf4ac','cmgsezkjc003rgw74o897pydc','/uploads/photos/ANT-2025-0052_1764904410980.jpeg','/uploads/thumbnails/ANT-2025-0052_1764904410980_thumb.jpeg',1764870123000,'juvenile','leaf','{"width":4032,"height":3024,"format":"jpeg","space":"srgb","hasAlpha":false,"orientation":6,"exif":{"dateTimeOriginal":"2025-12-04T17:42:03.000Z","make":"Apple","model":"iPhone 16 Pro Max","software":26.2,"lensModel":"iPhone 16 Pro Max back triple camera 2.22mm f/2.2","focalLength":"2.2 mm","fNumber":2.2,"iso":250,"exposureTime":"1/40","flash":"Off, Did not fire","gpsLatitude":26.127739,"gpsLongitude":-80.14405}}',NULL,'Latest leaf hardening and darker then prior two. Sinus is more red and lobes appear partly fused',1764904411187);
 CREATE TABLE IF NOT EXISTS "Trait" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "plantId" TEXT NOT NULL,
@@ -1517,123 +1546,7 @@ CREATE TABLE IF NOT EXISTS "GrowthMetric" (
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "GrowthMetric_plantId_fkey" FOREIGN KEY ("plantId") REFERENCES "Plant" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
-CREATE TABLE IF NOT EXISTS "Plant" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "plantId" TEXT NOT NULL,
-    "accessionDate" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "genus" TEXT NOT NULL DEFAULT 'Anthurium',
-    "section" TEXT,
-    "species" TEXT,
-    "hybridName" TEXT,
-    "crossNotation" TEXT,
-    "femaleParentId" TEXT,
-    "maleParentId" TEXT,
-    "generation" TEXT,
-    "breeder" TEXT,
-    "breederCode" TEXT,
-    "vendorId" TEXT,
-    "acquisitionCost" REAL,
-    "propagationType" TEXT,
-    "locationId" TEXT,
-    "healthStatus" TEXT NOT NULL DEFAULT 'healthy',
-    "conservationStatus" TEXT,
-    "currentPotSize" REAL,
-    "currentPotType" TEXT,
-    "lastRepotDate" DATETIME,
-    "marketValue" REAL,
-    "isForSale" BOOLEAN NOT NULL DEFAULT false,
-    "isMother" BOOLEAN NOT NULL DEFAULT false,
-    "isEliteGenetics" BOOLEAN NOT NULL DEFAULT false,
-    "isArchived" BOOLEAN NOT NULL DEFAULT false,
-    "archivedAt" DATETIME,
-    "archiveReason" TEXT,
-    "notes" TEXT,
-    "tags" TEXT NOT NULL DEFAULT '[]',
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL, "coverPhotoId" TEXT,
-    CONSTRAINT "Plant_femaleParentId_fkey" FOREIGN KEY ("femaleParentId") REFERENCES "Plant" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT "Plant_maleParentId_fkey" FOREIGN KEY ("maleParentId") REFERENCES "Plant" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT "Plant_vendorId_fkey" FOREIGN KEY ("vendorId") REFERENCES "Vendor" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT "Plant_locationId_fkey" FOREIGN KEY ("locationId") REFERENCES "Location" ("id") ON DELETE SET NULL ON UPDATE CASCADE
-);
-INSERT INTO Plant VALUES('cmgsezkin000xgw74jhgpsbkx','ANT-2025-0001',1759017600000,'Anthurium','Porphyrochitonium','unknown','Ace Of Spades (Dark Form)','Tezula AOS Dark Form',NULL,NULL,'F1',NULL,'TZ','cmgsezki30000gw74cf6l7wi7',400.0,'seed','cmgsezkie000fgw74fii6io1e','struggling',NULL,5.5,'plastic',1762819200000,NULL,0,0,1,0,NULL,NULL,'{"generalNotes":"‘Dark form’ purchase IAS 2025 from Tezula most pillowy of the selection. ","soilMix":"","lightRequirements":"","wateringFrequency":"","fertilizationSchedule":"","temperatureRange":"","humidityPreference":""}','[]',1760558354591,1763408715565,NULL);
-INSERT INTO Plant VALUES('cmgsezkin000zgw74xmwy9v5q','ANT-2025-0002',1754006400000,'Anthurium','Cardiolonchium','hybrid ','Batch 22','Bench × Bench',NULL,NULL,'F1','Fontanimal',NULL,'cmgsezki50001gw74zqw0y3hl',72.0,'seed','cmgsezkid000dgw74i8jmw464','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354592,1760889660964,NULL);
-INSERT INTO Plant VALUES('cmgsezkio0011gw742moi2gqy','ANT-2025-0003',1760486400000,'Anthurium','','Besseae aff','Besseae aff','Besseae aff × Besseae aff (self)',NULL,NULL,'F1',NULL,'Wu','cmgsezki60002gw74emj8fhtl',64.0,'Seed','cmgsezkie000fgw74fii6io1e','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354592,1760979859316,NULL);
-INSERT INTO Plant VALUES('cmgsezkip0013gw74wh66x8oc','ANT-2025-0004',1734220800000,'Anthurium','Porphyrochitonium','Hybrid','Besseae aff x AOS','Besseae aff × Ace of Spades',NULL,NULL,'F1','NSE Tropicals','NSE','cmgsezki70003gw746q8ouev6',161.0,'seed','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354593,1764626194887,NULL);
-INSERT INTO Plant VALUES('cmgsezkip0015gw7469zox65i','ANT-2025-0005',1734220800000,'Anthurium','Pachyneurium','Birds Nest','Renaissance','',NULL,NULL,'F1',NULL,NULL,'cmgsezki80004gw74b8c7814f',27.0,'tissue_culture','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354594,1762928793399,NULL);
-INSERT INTO Plant VALUES('cmgsezkiq0017gw741cm7c6qx','ANT-2025-0006',1760486400000,'Anthurium','Cardiolonchium','Crystallinum x Magnificum ','Brielle','',NULL,NULL,'P1','Sunset tropicals',NULL,'cmgsezki80005gw746sbx4y4y',98.0,'division','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354594,1764287749557,NULL);
-INSERT INTO Plant VALUES('cmgsezkiq0019gw74uslqjgtm','ANT-2025-0007',1759795200000,'Anthurium','Porphyrochitonium','BVEP/Antolakii','BVEP/Antolakii (F4)','Antolakii × Self (F4)',NULL,NULL,'F4','Tezula','TZ','cmgsezki30000gw74cf6l7wi7',400.0,'seed','cmgsezkie000fgw74fii6io1e','healthy',NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,'{"generalNotes":"Repot from SKG soil to 4.0 substrate on 11/8 with two divisions\n\n3 parts- tree fern fiber\n2 parts- unbleached perlite #3\n2 parts- PH buffered coco coir\n2 part- orchid bark\n1 part- Blackstone Pon\n1 part- Columbian 100% hardwood charcoal\n","soilMix":"Dave’s 4.0","lightRequirements":"","wateringFrequency":"","fertilizationSchedule":"2-1-.5 (CaMg-TPS One- K Carb)","temperatureRange":"","humidityPreference":">70%"}','[]',1760558354595,1762928912500,NULL);
-INSERT INTO Plant VALUES('cmgsezkis001fgw74ccl5m7cs','ANT-2025-0010',1760486400000,'Anthurium','Cardiolonchium','Chocolate crystal Dark Lux','Chocolate crystal Dark Lux','Crystallinum (Chocolate wu1) × Luxurians (Dark)',NULL,NULL,'F1','Wuhoo','Wu','cmgsezki60002gw74emj8fhtl',53.0,'seed','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354596,1764710767195,NULL);
-INSERT INTO Plant VALUES('cmgsezkis001hgw74qz33cdlh','ANT-2025-0011',1760486400000,'Anthurium','Cardiolonchium','Crystallinum Hybrid','Crystallinum Hybrid','Doriaki × Crystallinum',NULL,NULL,'F1',NULL,NULL,'cmgsezki90006gw74y7yvnc7q',100.0,'Seed','cmgsezkie000ggw74ycg57u0y','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354597,1762929005474,NULL);
-INSERT INTO Plant VALUES('cmgsezkit001jgw74f1l5lkoq','ANT-2025-0012',1733011200000,'Anthurium','Cardiolonchium','Hybrid','Dark Mama','Warocquanum x ',NULL,NULL,'F1',NULL,NULL,'cmgsezki80004gw74b8c7814f',68.0,'tissue_culture','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354597,1762929022842,NULL);
-INSERT INTO Plant VALUES('cmgsezkit001lgw74anwr2r6v','ANT-2025-0013',1734220800000,'Anthurium','','Dark Pheonix','Dark Pheonix Large','Dark Pheonix',NULL,NULL,'F1','Dandi',NULL,'cmgsezki80004gw74b8c7814f',90.0,'tissue_culture','cmgsezkie000fgw74fii6io1e','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354598,1760890023888,NULL);
-INSERT INTO Plant VALUES('cmgsezkiu001ngw742t5x2euz','ANT-2025-0014',1734220800000,'Anthurium','','Dark Pheonix','Dark Pheonix small','Dark Pheonix',NULL,NULL,'F1','Dandi',NULL,'cmgsezki80004gw74b8c7814f',90.0,'tissue_culture','cmgsezkie000fgw74fii6io1e','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354598,1760890029774,NULL);
-INSERT INTO Plant VALUES('cmgsezkiu001pgw7466lruqng','ANT-2025-0015',1733011200000,'Anthurium','cross-section hybrid','A. clarinervium × A. pedatoradiatum (Ree Gardens)','Delta Force','TC-F1',NULL,NULL,'F1','Dandi plants',NULL,'cmgsezki80004gw74b8c7814f',100.0,'tissue_culture','cmgsezkid000dgw74i8jmw464','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354599,1762573347359,NULL);
-INSERT INTO Plant VALUES('cmgsezkiv001rgw745guvfw2t','ANT-2025-0016',1760486400000,'Anthurium','Cardiolonchium','Delta Force','Delta Force','A. Clarinuvium x ?',NULL,NULL,'F1',NULL,'Wu','cmgsezki60002gw74emj8fhtl',55.0,'Seed','cmgsezkie000fgw74fii6io1e','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354599,1762980871131,NULL);
-INSERT INTO Plant VALUES('cmgsezkiv001tgw74w17qx7hc','ANT-2025-0017',1760486400000,'Anthurium','Porphyrochitonium','Dress x Nova DF','Dress x Nova DF','Dressleri (Windy FP1) × SP Nov DF',NULL,NULL,'F1',NULL,NULL,'cmgsezki50001gw74zqw0y3hl',70.0,'Seed','cmgsezkid000dgw74i8jmw464','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354600,1763408933822,NULL);
-INSERT INTO Plant VALUES('cmgsezkiw001vgw74pvxq8ru1','ANT-2025-0018',1759881600000,'Anthurium','Porphyrochitonium','Hybrid','Ree Gardens Dressleri open x RLFS','Dressleri (Ree Gardens) x Open × RLFS',NULL,NULL,'F1','Fontanimal',NULL,'cmgsezki50001gw74zqw0y3hl',77.0,'seed','cmgsezkie000fgw74fii6io1e','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354600,1764609947195,NULL);
-INSERT INTO Plant VALUES('cmgsezkiw001xgw74v9qp5xbw','ANT-2025-0019',1760486400000,'Anthurium','Porphyrochitonium','Dressleri "Windy"','Dressleri "Windy"','Dressleri (Windy FP1) × Dressleri (Windy FP2)',NULL,NULL,'F1',NULL,NULL,'cmgsezki50001gw74zqw0y3hl',200.0,'Seed','cmgsezkid000dgw74i8jmw464','healthy',NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,'[]',1760558354601,1762929132876,NULL);
-INSERT INTO Plant VALUES('cmgsezkix001zgw74j62tastp','ANT-2025-0020',1760486400000,'Anthurium','Porphyrochitonium','Dressleri','Dressleri Colón','Dressleri × self',NULL,NULL,'F1',NULL,'TZ','cmgsezki30000gw74cf6l7wi7',400.0,'seed','cmgsezkie000egw74p7t5bodw','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354601,1762929164178,NULL);
-INSERT INTO Plant VALUES('cmgsezkix0021gw7461yjiwmu','ANT-2025-0021',1759276800000,'Anthurium','Porphyrochitonium','Dressleri hybrid','Ree Gardens ‘Dressleri narrow’ x Dressleri Windy','Dressleri Narrow (Ree Gardens) × Dressleri (Windy)',NULL,NULL,'F1','Fontanimal',NULL,'cmgsezki50001gw74zqw0y3hl',61.0,'seed','cmgsezkie000egw74p7t5bodw','recovering',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354602,1762929544223,NULL);
-INSERT INTO Plant VALUES('cmgsezkiy0023gw74mmw3es0z','ANT-2025-0022',1759276800000,'Anthurium','Porphyrochitonium','Dressleri x Self','Dressleri (Rio Gauche) NSE','NSE Dressleri - selfed from DF dress',NULL,NULL,'F1',NULL,'NSE','cmgsezki70003gw746q8ouev6',NULL,'seed','cmgsezkie000fgw74fii6io1e','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354602,1762980888527,NULL);
-INSERT INTO Plant VALUES('cmgsezkiy0025gw742wfvmspy','ANT-2025-0023',1759795200000,'Anthurium','Cardiolonchium','Forgetii','Forgettii','Forgetii S1',NULL,NULL,'P1',NULL,'NSE','cmgsezki70003gw746q8ouev6',82.0,'seed','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354603,1762929181210,NULL);
-INSERT INTO Plant VALUES('cmgsezkiz0027gw74izmypumf','ANT-2025-0024',1751328000000,'Anthurium','Cardiolonchium','Crystallinum','FTG Crystallinum ','FTG × self',NULL,NULL,'F1',NULL,'NSE','cmgsezki70003gw746q8ouev6',87.0,'seed','cmgsezkid000dgw74i8jmw464','healthy',NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,'[]',1760558354603,1762629795581,NULL);
-INSERT INTO Plant VALUES('cmgsezkiz0029gw742lwabqmq','ANT-2025-0025',1734220800000,'Anthurium','cross-section hybrid','hybrid','AOS x BVEP X Crystallinum var','(Ace of Spades x Antolakii/BVEP) × Crystallinum (variegated)',NULL,NULL,'F1',NULL,'Wu','cmgsezki60002gw74emj8fhtl',53.0,'seed','cmgsezkie000ggw74ycg57u0y','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,'{"generalNotes":"","soilMix":"Dave''s 4.0","lightRequirements":"","wateringFrequency":"","fertilizationSchedule":"","temperatureRange":"","humidityPreference":""}','[]',1760558354603,1764626181858,NULL);
-INSERT INTO Plant VALUES('cmgsezkiz002bgw74p77czo99','ANT-2025-0026',1760486400000,'Anthurium','cross-section hybrid','hybrid','Dress/Pap round Hybrid','NOID',NULL,NULL,'F1','Dandi ',NULL,'cmgsezki80004gw74b8c7814f',110.0,'purchase','cmgsezkie000egw74p7t5bodw','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354604,1763325825578,NULL);
-INSERT INTO Plant VALUES('cmgsezkj0002dgw74niow603y','ANT-2025-0027',1760486400000,'Anthurium','Cardiolonchium','Hybrid','Crystal Mag x Michelle','Crystallinum x Magnificum × Michelle',NULL,NULL,'F1',NULL,NULL,'cmgsezki80004gw74b8c7814f',51.0,'Seed','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354604,1763409161719,NULL);
-INSERT INTO Plant VALUES('cmgsezkj1002hgw74dugb7opq','ANT-2025-0029',1733011200000,'Anthurium','Cardiolonchium','Hybrid','Doriyaki x forgettii X Lux','(Doriyaki x forgettii)× Luxurians',NULL,NULL,'F1','Dandi',NULL,'cmgsezki80004gw74b8c7814f',40.0,'purchase','cmgsezkie000ggw74ycg57u0y','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354605,1762929076028,NULL);
-INSERT INTO Plant VALUES('cmgsezkj2002lgw74cij26116','ANT-2025-0031',1760486400000,'Anthurium','','Hybrid','Pap mag x Lux','Papillilaminum/Magnificum × Luxurians',NULL,NULL,'F1',NULL,NULL,'cmgsezki80004gw74b8c7814f',225.0,'Seed','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354606,1760989481127,NULL);
-INSERT INTO Plant VALUES('cmgsezkj2002ngw74raw9hke9','ANT-2025-0032',1760486400000,'Anthurium','Cardiolonchium','Hybrid','Mag x (Zara x Michelle)','Magnificum × Zara x Michelle',NULL,NULL,'F1',NULL,NULL,'cmgsezki80004gw74b8c7814f',190.0,'Seed','cmgsezkid000dgw74i8jmw464','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354607,1762928685176,NULL);
-INSERT INTO Plant VALUES('cmgsezkj3002pgw74ay37rdm3','ANT-2025-0033',1751328000000,'Anthurium','cross-section hybrid','Hybrid','Carla x soul reaper (RLFS select)','Carlablackiae x Papillilaminum ''Soul Reaper'' (Tezula)',NULL,NULL,'F1','Tezula','TZ','cmgsezki30000gw74cf6l7wi7',448.0,'seed','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354608,1763408984122,NULL);
-INSERT INTO Plant VALUES('cmgsezkj4002rgw742lhfkzb4','ANT-2025-0034',1760486400000,'Anthurium','cross-section hybrid','Hybrid','Pap x Carla ','Papillilaminum (Wu9) × Carlablackiae (wu2)',NULL,NULL,'F1',NULL,'Wu','cmgsezki60002gw74emj8fhtl',53.0,'Seed','cmgsezkid000dgw74i8jmw464','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354608,1762980942431,NULL);
-INSERT INTO Plant VALUES('cmgsezkj4002tgw74qejp56ig','ANT-2025-0035',1760486400000,'Anthurium','Porphyrochitonium','Hybrid','NSE Port x Dress (windy)','Portilleae (NSE) × Dressleri (FP2)',NULL,NULL,'F1',NULL,NULL,'cmgsezki50001gw74zqw0y3hl',66.0,'Seed','cmgsezkie000egw74p7t5bodw','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,'{"generalNotes":"","soilMix":"","lightRequirements":"","wateringFrequency":"","fertilizationSchedule":"","temperatureRange":"","humidityPreference":""}','[]',1760558354609,1762929331646,NULL);
-INSERT INTO Plant VALUES('cmgsezkj5002vgw74dp76jwci','ANT-2025-0036',1760486400000,'Anthurium','','hybrid','Regale × Besseae aff','Regale × Besseae aff',NULL,NULL,'F1',NULL,'TZ','cmgsezkia0007gw745p4splyj',339.0,'Seed','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354609,1763409174306,NULL);
-INSERT INTO Plant VALUES('cmgsezkj5002xgw746by1ljgh','ANT-2025-0037',1760486400000,'Anthurium','cross-section hybrid','Lexi''s Dream','Lexi''s Dream','Red Crystallinum × AOS x Leland',NULL,NULL,'F1',NULL,NULL,'cmgsezki50001gw74zqw0y3hl',307.0,'Seed','cmgsezkid000dgw74i8jmw464','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354610,1763409216551,NULL);
-INSERT INTO Plant VALUES('cmgsezkj6002zgw744z7vg0xi','ANT-2025-0038',1729641600000,'Anthurium','','Luxurians','Luxurians','Luxurians ',NULL,NULL,'F1','Dandi',NULL,'cmgsezki80004gw74b8c7814f',190.0,'purchase','cmgsezkie000ggw74ycg57u0y','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354610,1760985977242,NULL);
-INSERT INTO Plant VALUES('cmgsezkj60031gw74dmy7kj3v','ANT-2025-0039',1760486400000,'Anthurium','Cardiolonchium','Magnificum','Magnificum','Magnificum',NULL,NULL,'F1',NULL,NULL,'cmgsezkia0008gw74dsa2rem9',53.0,'Clone','cmgsezkid000dgw74i8jmw464','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354611,1762928697300,NULL);
-INSERT INTO Plant VALUES('cmgsezkj70033gw749vd43ass','ANT-2025-0040',1760486400000,'Anthurium','Cardiolonchium','Hybrid','Michelle primary','Michelle × Michelle',NULL,NULL,'F1','Doc block',NULL,'cmgsezkib0009gw74j974w113',95.0,'Seed','cmgsezkid000dgw74i8jmw464','healthy',NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,'[]',1760558354611,1762982315016,NULL);
-INSERT INTO Plant VALUES('cmgsezkj70035gw74z2d04kpb','ANT-2025-0041',1760486400000,'Anthurium','Cardiolonchium','Michelle','Michelle TV','Michelle (MS)',NULL,NULL,'F1','Doc Block',NULL,'cmgsezkib0009gw74j974w113',95.0,'division','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354612,1763407876252,NULL);
-INSERT INTO Plant VALUES('cmgsezkj80037gw74hz5pirxd','ANT-2025-0042',1760486400000,'Anthurium','Cardiolonchium','Michelle','Michelle upstairs','Michelle (MS) × Michelle',NULL,NULL,'F1','Doc Block',NULL,'cmgsezkib0009gw74j974w113',NULL,'Clone','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354612,1763409251174,NULL);
-INSERT INTO Plant VALUES('cmgsezkj80039gw74r26btl52','ANT-2025-0043',1760486400000,'Anthurium','Porphyrochitonium','NSE Port - Dewey Fisk','NSE Portilleae','Portilleae (NSE) × Self',NULL,NULL,'F1',NULL,'NSE','cmgsezki70003gw746q8ouev6',NULL,'seed','cmgsezkie000fgw74fii6io1e','healthy',NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,'[]',1760558354613,1762929347086,NULL);
-INSERT INTO Plant VALUES('cmgsezkj9003bgw74cqa3rkjx','ANT-2025-0044',1760486400000,'Anthurium','','NSE Red Crystal','NSE Red Crystal Lux','Red Crystallinum × Luxurians',NULL,NULL,'P1',NULL,'NSE','cmgsezki70003gw746q8ouev6',161.0,'purchase','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354613,1762630636591,NULL);
-INSERT INTO Plant VALUES('cmgsezkj9003dgw741iifryqi','ANT-2025-0045',1734220800000,'Anthurium','Porphyrochitonium','Pallidiforum','Pallidiforum','Pallidiflorum × Pallidiforum',NULL,NULL,'F1','Dandi',NULL,'cmgsezki80004gw74b8c7814f',50.0,'purchase','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354614,1762929372234,NULL);
-INSERT INTO Plant VALUES('cmgsezkja003fgw74ovapo3yl','ANT-2025-0046',1759795200000,'Anthurium','Porphyrochitonium','Papallilinum','Pap - Colón form','Pap - Colón form',NULL,NULL,'F1','Sunset plants',NULL,'cmgsezki80005gw746sbx4y4y',64.0,'purchase','cmgsezkie000fgw74fii6io1e','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354614,1763153387846,NULL);
-INSERT INTO Plant VALUES('cmgsezkja003hgw74cry941wr','ANT-2025-0047',1760486400000,'Anthurium','Porphyrochitonium','Pap/Mag hybrid?','Pap x pap ‘red stem’','Papillilaminum × Papililaminum Red Stem',NULL,NULL,'F1',NULL,NULL,NULL,40.0,'Seed','cmgsezkie000ggw74ycg57u0y','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354615,1763409023325,NULL);
-INSERT INTO Plant VALUES('cmgsezkjb003jgw743sfwbm29','ANT-2025-0048',1760486400000,'Anthurium','Porphyrochitonium','Papililaminum','Papililaminum RA8','Papillilaminum (RA8) × Self',NULL,NULL,'S1',NULL,'TZ','cmgsezki30000gw74cf6l7wi7',250.0,'seed','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,'[]',1760558354615,1763409148170,NULL);
-INSERT INTO Plant VALUES('cmgsezkjb003lgw74nmxn50qw','ANT-2025-0049',1760486400000,'Anthurium','Porphyrochitonium','Papililaminum ','Papililaminum papa legba x papa midnight (40x40)','Papillilaminum (RA 8x5) × Papillilaminum (RA 8x5)',NULL,NULL,'F1','Tezula','TZ','cmgsezki30000gw74cf6l7wi7',350.0,'seed','cmhuyrpl90000p0c36qtffef5','struggling',NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,'[]',1760558354615,1762891674741,NULL);
-INSERT INTO Plant VALUES('cmgsezkjb003ngw747rvx7viw','ANT-2025-0050',1760486400000,'Anthurium','','Queen of Hearts','Queen of Hearts','Queen of Hearts',NULL,NULL,'F1',NULL,NULL,'cmgsezkia0007gw745p4splyj',69.0,'Seed','cmgwiaivs00014n5mq0oj6tq9','recovering',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,'{"generalNotes":"restarting from stump","soilMix":"SKG greenhouse mix","lightRequirements":"","wateringFrequency":"","fertilizationSchedule":"","temperatureRange":"","humidityPreference":""}','[]',1760558354616,1763409031915,NULL);
-INSERT INTO Plant VALUES('cmgsezkjc003pgw74hkchzz6p','ANT-2025-0051',1734220800000,'Anthurium','','Hybrid','Radicans x Luxurians','Radicans × Luxurians',NULL,NULL,'F1',NULL,NULL,'cmgsezki80004gw74b8c7814f',20.0,'purchase','cmgsezkie000ggw74ycg57u0y','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354616,1761001241004,NULL);
-INSERT INTO Plant VALUES('cmgsezkjc003rgw74o897pydc','ANT-2025-0052',1759276800000,'Anthurium','','Forgetii × (Papillilaminum × Magnificum)','Red Spider OS','Wuhoo OFFSET',NULL,NULL,'Clone','Wuhoo','Wu','cmgsezki60002gw74emj8fhtl',255.0,'purchase','cmgsezkie000fgw74fii6io1e','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354617,1762706276243,NULL);
-INSERT INTO Plant VALUES('cmgsezkjd003tgw74hosd87vo','ANT-2025-0053',1760486400000,'Anthurium',NULL,'Silver Blush','Silver Blush','Silver Blush',NULL,NULL,'F1',NULL,NULL,'cmgsezki50001gw74zqw0y3hl',61.0,'Seed','cmgsezkid000dgw74i8jmw464','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354617,1760558354617,NULL);
-INSERT INTO Plant VALUES('cmgsezkjd003vgw74tcaceemk','ANT-2025-0054',1760486400000,'Anthurium','Cardiolonchium','A. Crystallinum Hybrid ','Silver Chrome','Silver Chrome',NULL,NULL,'P1',NULL,NULL,'cmgsezki50001gw74zqw0y3hl',93.0,'Seed','cmgsezkie000fgw74fii6io1e','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354618,1763409044635,NULL);
-INSERT INTO Plant VALUES('cmgsezkje003xgw74hwav9bnc','ANT-2025-0055',1759795200000,'Anthurium','','Hybrid','SKG grey','SKG grey × self',NULL,NULL,'F1','SKG ',NULL,'cmgsezkib000agw743nix9r5e',190.0,'purchase','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,'[]',1760558354618,1764609971113,NULL);
-INSERT INTO Plant VALUES('cmgsezkje003zgw747z2lsbqn','ANT-2025-0056',1748736000000,'Anthurium','Strap leaf - section unknown','sp nova','sp nova Lavender','sp nova',NULL,NULL,'F1',NULL,'NSE','cmgsezki70003gw746q8ouev6',82.0,'seed','cmgsezkie000fgw74fii6io1e','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354619,1763064445745,NULL);
-INSERT INTO Plant VALUES('cmgsezkjf0041gw74hdemtn2f','ANT-2025-0057',1760486400000,'Anthurium','','Hybrid','Tezula purple x Red Crystal','Purple Crystallinum (Tezula) × Red Crystallinum (Tezula)',NULL,NULL,'F1',NULL,NULL,'cmgsezki80004gw74b8c7814f',179.0,'purchase','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,'[]',1760558354619,1762929586906,NULL);
-INSERT INTO Plant VALUES('cmgsezkjf0043gw74wpad4pb6','ANT-2025-0058',1760486400000,'Anthurium',NULL,'Tezula Red Crystal Mini','Tezula Red Crystal Mini','Red Crystallinum × Red Crystallinum',NULL,NULL,'F1',NULL,NULL,'cmgsezki30000gw74cf6l7wi7',150.0,'offset','cmgsezkie000fgw74fii6io1e','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354620,1761598091421,NULL);
-INSERT INTO Plant VALUES('cmgsezkjg0045gw74nqdjz5n3','ANT-2025-0059',1759795200000,'Anthurium','','Hybrid','Tezula Red Crystal Quilted','Red Crystal  × Self',NULL,NULL,'F1',NULL,'TZ','cmgsezki30000gw74cf6l7wi7',750.0,'purchase','cmgsezkie000ggw74ycg57u0y','healthy',NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,'[]',1760558354620,1763321041494,NULL);
-INSERT INTO Plant VALUES('cmgsezkjg0047gw74tozb8195','ANT-2025-0060',1760486400000,'Anthurium','Pachyneurium','Vittarifolum','Vittarifolum','Vittarifolum',NULL,NULL,'P1','Dandi ',NULL,'cmgsezki80004gw74b8c7814f',97.0,'TC','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760558354621,1762928436122,NULL);
-INSERT INTO Plant VALUES('cmgsezkjh0049gw74ixrelf90','ANT-2025-0061',1759795200000,'Anthurium','','Hybrid','Warocqueanum x Rugolusum','Warocqueanum × Rugolosum',NULL,NULL,'F1','SKG',NULL,'cmgsezkib000agw743nix9r5e',250.0,'division','cmgsezkie000fgw74fii6io1e','healthy',NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,'[]',1760558354621,1761598111749,NULL);
-INSERT INTO Plant VALUES('cmgsezkjh004bgw74r8t5rejr','ANT-2025-0062',1760486400000,'Anthurium','','Wendlingerii','Wendlingerii','wendlingerii × Self',NULL,NULL,'F1',NULL,'NSE','cmgsezki70003gw746q8ouev6',54.0,'Seeds 10','cmgsezkid000dgw74i8jmw464','healthy',NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,'[]',1760558354622,1762980776757,NULL);
-INSERT INTO Plant VALUES('cmgsezkji004dgw74cea2vbac','ANT-2025-0063',1760486400000,'Anthurium','Hybrid','King of Spades','King of Spades','',NULL,NULL,NULL,'Scott Cohen','SC','cmgsezkic000bgw74ay2k6trp',450.0,'Clone','cmgsezkie000egw74p7t5bodw','healthy','',NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,'Premium clone line','[]',1760558354622,1762963580762,NULL);
-INSERT INTO Plant VALUES('cmgsezkji004fgw743111zejv','ANT-2025-0064',1759017600000,'Anthurium','Xialophyllum','Carlablackiae','Carlablackiae OG5xRA6','Carlablackiae (OG5) × Carlablackiae (RA6)',NULL,NULL,'F1','Scott Cohen','SC','cmgsezkic000bgw74ay2k6trp',400.0,'Seed','cmgsezkie000fgw74fii6io1e','healthy','Critically Endangered',NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,'OG5 x RA6 lineage - documented genetics','[]',1760558354623,1762630046919,NULL);
-INSERT INTO Plant VALUES('cmgsezkjj004hgw741plapojf','ANT-2025-0065',1759017600000,'Anthurium','Pachyneurium','Papillilaminum Variegated hybrid ','Papillilaminum Variegated','Papillilaminum × Papillilaminum',NULL,NULL,'P1','Eddie Pronto','EPP','cmgsezkid000cgw74yimq02ai',1500.0,'purchase','cmgsezkie000fgw74fii6io1e','healthy','',NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,'EPP exclusive variegated selection','[]',1760558354623,1764287699225,NULL);
-INSERT INTO Plant VALUES('cmgsezkjj004jgw74jfbck8m3','ANT-2025-0066',1759017600000,'Anthurium','Hybrid','King of Spades (Red Sinus)','King of Spades (Red Sinus)','purple emergant red sinus',NULL,NULL,'','Unknown','','cmgsezkid000cgw74yimq02ai',400.0,'Seed','cmgsezkie000fgw74fii6io1e','healthy','',NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,'{"generalNotes":"EPP Red Sinus selection aquired from IAS 2025 @ Perfect Choice Nurseries","soilMix":"Dave 4.0","lightRequirements":"","wateringFrequency":"","fertilizationSchedule":"","temperatureRange":"","humidityPreference":""}','[]',1760558354624,1763408761391,NULL);
-INSERT INTO Plant VALUES('cmgsezkjk004lgw7429ndpod8','ANT-2025-0067',1751328000000,'Anthurium','cross-section hybrid','Hybrid','KOS X Papillilaminum × Crystallinum Antioquia (Variegated)','(King of Spades × Papillilaminum) × Crystallinum Antioquia',NULL,NULL,'Complex Hybrid','Tezula ','Tezula','cmgsezki30000gw74cf6l7wi7',2200.0,'purchase','cmgsezkie000egw74p7t5bodw','healthy','',NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,'{"generalNotes":"Tezula variegated selection - Antioquia crystallinum genetics","soilMix":"PON","lightRequirements":"","wateringFrequency":"","fertilizationSchedule":"","temperatureRange":"","humidityPreference":""}','[]',1760558354624,1764609687977,NULL);
-INSERT INTO Plant VALUES('cmgwuhdhu001k4n5m535j8so6','ANT-2025-1736',1759017600000,'Anthurium','','Sp nova - DF','Sp Nova DF','',NULL,NULL,NULL,NULL,'DF',NULL,1400.0,'division','cmgsezkie000fgw74fii6io1e','healthy',NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,'[]',1760826244243,1763329146984,NULL);
-INSERT INTO Plant VALUES('cmgwuif5i001l4n5mzy25tx2q','ANT-2025-2438',1759017600000,'Anthurium','Cardiolonchium','Hybrid','FTG x Port Dorito','FTG Crystallinum x Portilleae ‘Dorito’',NULL,NULL,'F1','Greaux',NULL,NULL,100.0,'seed','cmgsezkie000ggw74ycg57u0y','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1760826293046,1763329062812,NULL);
-INSERT INTO Plant VALUES('cmhcvf641005h7aidif7v7fxf','ANT-2025-2199',1761696000000,'Anthurium','Porphyrochitonium','','Pap Hybrid Variegated OS','Offset clone of mother ',NULL,NULL,'Clone',NULL,'EPP',NULL,0.0,'division','cmgsezkie000fgw74fii6io1e','healthy',NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,'[]',1761795279793,1762929412964,NULL);
-INSERT INTO Plant VALUES('cmhggqnvj00244827johwzezi','ANT-2025-9960',1759968000000,'Anthurium','Cardiolonchium','Crystallinum','NSE Red Crystal','RC x Self',NULL,NULL,NULL,NULL,'NSE',NULL,70.0,'purchase','cmgsezkie000fgw74fii6io1e','struggling',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1762012486496,1763328868088,NULL);
-INSERT INTO Plant VALUES('cmhkquz7000544827jap4vmyn','ANT-2025-8457',1761177600000,'Anthurium','Porphyrochitonium','Papillinanimum','Pap RA6','RA6 SC offset',NULL,NULL,'P1','Scott Cohen','SC',NULL,350.0,'division','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,'[]',1762271348652,1763409136707,NULL);
-INSERT INTO Plant VALUES('cmhkqzaiw00574827j9uuzyf6','ANT-2025-0232',1761091200000,'Anthurium','Xialophyllum','Carlablackiae ','Carla OG4xOG2','OG4xOG2',NULL,NULL,'F1',NULL,'SC',NULL,250.0,'purchase','cmgsezkie000fgw74fii6io1e','healthy',NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,'[]',1762271549961,1762928925020,NULL);
-INSERT INTO Plant VALUES('cmhkr2tf6005a4827d0z7fikf','ANT-2025-0286',1761177600000,'Anthurium','Cardiolonchium','(Black Widow x Michelle) x Dark Forgetii','Black Widow Michele x Dark Forgetii','',NULL,NULL,NULL,NULL,NULL,NULL,30.0,'purchase','cmgsezkie000fgw74fii6io1e','healthy',NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'[]',1762271714418,1762928883072,NULL);
 ANALYZE sqlite_schema;
-INSERT INTO sqlite_stat1 VALUES('Plant','Plant_isArchived_idx','70 70');
-INSERT INTO sqlite_stat1 VALUES('Plant','Plant_section_idx','70 8');
-INSERT INTO sqlite_stat1 VALUES('Plant','Plant_locationId_idx','70 12');
-INSERT INTO sqlite_stat1 VALUES('Plant','Plant_vendorId_idx','70 5');
-INSERT INTO sqlite_stat1 VALUES('Plant','Plant_plantId_idx','70 1');
-INSERT INTO sqlite_stat1 VALUES('Plant','Plant_plantId_key','70 1');
-INSERT INTO sqlite_stat1 VALUES('Plant','sqlite_autoindex_Plant_1','70 1');
 INSERT INTO sqlite_stat1 VALUES('Trait','Trait_observationDate_idx','28 4');
 INSERT INTO sqlite_stat1 VALUES('Trait','Trait_category_idx','28 7');
 INSERT INTO sqlite_stat1 VALUES('Trait','Trait_plantId_idx','28 4');
@@ -1774,6 +1687,225 @@ INSERT INTO PlantJournal VALUES('cminf5alt006tvrya1s9aqjyx','cmgsezkjb003lgw74nm
 INSERT INTO PlantJournal VALUES('cmip37f63000bojk3k29obbue','cmgsezkis001fgw74ccl5m7cs',1764694800000,'care','care_logs','watering - Baseline feed: CalMag 1ml/L, TPS One 1.5-2ml/L, [EC in: 1.15, pH in: 5.7]','cmip37f620009ojk30anpyzih','CareLog','system','[]',NULL,NULL,1764710731660,1764710731660);
 INSERT INTO PlantJournal VALUES('cmiqm7eo5000fojk3oq90dr4h','cmgsezkit001jgw74f1l5lkoq',1764781200000,'care','care_logs','watering - Baseline feed: CalMag 1ml/L, TPS One 1.5-2ml/L, K-Carb (pH Up) 0.4-0.6ml/L [EC in: 1.15, pH in: 5.7]','cmiqm7eo4000dojk3qjggjsu6','CareLog','system','[]',NULL,NULL,1764803109893,1764803109893);
 INSERT INTO PlantJournal VALUES('cmiqm7r5d000jojk3czqa7n4a','cmgsezkiq0017gw741cm7c6qx',1764781200000,'care','care_logs','watering - Baseline feed: CalMag 1ml/L, TPS One 1.5-2ml/L, K-Carb (pH Up) 0.4-0.6ml/L [EC in: 1.15, pH in: 5.7]','cmiqm7r5b000hojk3uvspuvf4','CareLog','system','[]',NULL,NULL,1764803126066,1764803126066);
+INSERT INTO PlantJournal VALUES('cmirj8hjj000nojk3c047h9h6','cmgsezkiv001rgw745guvfw2t',1764781200000,'care','care_logs','watering - Baseline feed: CalMag 1.5ml/L, TPS One 2ml/L [EC in: 1.24, pH in: 5.7] [Runoff: EC out: 1.37, pH out: 5.53]','cmirj8hji000lojk3osatwwnc','CareLog','system','[]',NULL,NULL,1764858587599,1764858587599);
+INSERT INTO PlantJournal VALUES('cmirjakab000tojk3hzwixowm','cmgsezkj80039gw74r26btl52',1764781200000,'care','care_logs','watering - Baseline feed: CalMag 1.5ml/L, TPS One 2ml/L [EC in: 1.24, pH in: 5.7] [Runoff: EC out: 1.31, pH out: 5]','cmirjakaa000rojk3r6j0qiqb','CareLog','system','[]',NULL,NULL,1764858684467,1764858684467);
+INSERT INTO PlantJournal VALUES('cmirjbys0000xojk3f2ti61iq','cmgsezkj9003bgw74cqa3rkjx',1764867600000,'care','care_logs','watering - Baseline feed: CalMag 1.5ml/L, TPS One 2ml/L [EC in: 1.15, pH in: 5.7] [Runoff: EC out: 1.17, pH out: 5.31]','cmirjbyry000vojk3ds6kg2ys','CareLog','system','[]',NULL,NULL,1764858749904,1764858749904);
+INSERT INTO PlantJournal VALUES('cmirjfbf50011ojk3my4mszxo','cmgsezkj1002hgw74dugb7opq',1764781200000,'care','care_logs','watering - Baseline feed: CalMag 1.5ml/L, TPS One 2ml/L [EC in: 1.15, pH in: 5.7] [Runoff: EC out: 1.42, pH out: 5.53]','cmirjfbf3000zojk3m93oiizh','CareLog','system','[]',NULL,NULL,1764858906258,1764858906258);
+INSERT INTO PlantJournal VALUES('cmirjjlsr0017ojk37r413do8','cmgsezkj70033gw749vd43ass',1764781200000,'care','care_logs','watering - Baseline feed: CalMag 1.5ml/L, TPS One 2ml/L [EC in: 1.24, pH in: 5.7]','cmirjjlsq0015ojk30ru5soxh','CareLog','system','[]',NULL,NULL,1764859106331,1764859106331);
+INSERT INTO PlantJournal VALUES('cmirjktpx001bojk3wv2burcn','cmgsezkjf0041gw74hdemtn2f',1764781200000,'care','care_logs','watering - Baseline feed: CalMag 1.5ml/L, TPS One 2ml/L [EC in: 1.24, pH in: 5.7]','cmirjktpv0019ojk3q9gbz3si','CareLog','system','[]',NULL,NULL,1764859163254,1764859163254);
+INSERT INTO PlantJournal VALUES('cmirjln1b001fojk3xtfiio3f','cmgsezkjg0047gw74tozb8195',1764867600000,'care','care_logs','watering - Baseline feed: CalMag 1.5ml/L, TPS One 2.0ml/L [EC in: 1.24, pH in: 5.7]','cmirjln19001dojk306xqeziv','CareLog','system','[]',NULL,NULL,1764859201248,1764859201248);
+INSERT INTO PlantJournal VALUES('cmirjqifz001lojk3mvuztsl5','cmgsezkj2002lgw74cij26116',1764867600000,'care','care_logs','watering - Baseline feed: CalMag 1.5ml/L, TPS One 2ml/L [EC in: 1.24, pH in: 5.7]','cmirjqify001jojk3vdyzhmmp','CareLog','system','[]',NULL,NULL,1764859428575,1764859428575);
+INSERT INTO PlantJournal VALUES('cmirjsc2j001pojk3e4cbpkky','cmgsezkj0002dgw74niow603y',1764867600000,'care','care_logs','watering - Baseline feed: CalMag 1.5ml/L, TPS One 2ml/L [EC in: 1.24, pH in: 5.7]','cmirjsc2h001nojk3wztjwkpn','CareLog','system','[]',NULL,NULL,1764859513627,1764859513627);
+INSERT INTO PlantJournal VALUES('cmisah5rh0007uszp6eku1d1q','cmgsezkjc003rgw74o897pydc',1764867600000,'care','care_logs','watering - Baseline feed: CalMag 1ml/L, TPS One 1.5-2ml/L [EC in: 1.3, pH in: 5.5]','cmisah5re0005uszpsiqbhnd7','CareLog','system','[]',NULL,NULL,1764904341870,1764904341870);
+INSERT INTO PlantJournal VALUES('cmisakpzp000fuszpm46n2xdo','cmgsezkin000xgw74jhgpsbkx',1764867600000,'care','care_logs','watering - Baseline feed: CalMag 1ml/L, TPS One 1.5-2ml/L, K-Carb (pH Up) 0.4-0.6ml/L [EC in: 1.3, pH in: 5.5]','cmisakpzo000duszp7it4phrm','CareLog','system','[]',NULL,NULL,1764904508054,1764904508054);
+CREATE TABLE IF NOT EXISTS "Harvest" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "breedingRecordId" TEXT NOT NULL,
+    "harvestNumber" INTEGER NOT NULL,
+    "harvestDate" DATETIME NOT NULL,
+    "berryCount" INTEGER,
+    "seedCount" INTEGER NOT NULL,
+    "seedViability" TEXT,
+    "notes" TEXT,
+    "photos" TEXT NOT NULL DEFAULT '[]',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "Harvest_breedingRecordId_fkey" FOREIGN KEY ("breedingRecordId") REFERENCES "BreedingRecord" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+INSERT INTO Harvest VALUES('cmirz1iq40003fzqmrswpevfq','cmirz1iq10001fzqmf7hcwq8p',1,1764806400000,NULL,25,'GOOD','First harvest. Berry fully ripe, seeds dark and plump.','[]',1764885136397,1764885136397);
+INSERT INTO Harvest VALUES('cmis8j2jy0001uszp25t0wpl8','cmis1ag1l000181t9i5cjgng7',1,1764892800000,70,50,'good','estimates is 20% non-viable, some empty some underdeveloped, 60% one small seed, 20% 2 seeds/fruit','[]',1764901071791,1764901071791);
+CREATE TABLE IF NOT EXISTS "SeedBatch" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "batchId" TEXT NOT NULL,
+    "harvestId" TEXT NOT NULL,
+    "sowDate" DATETIME NOT NULL,
+    "seedCount" INTEGER NOT NULL,
+    "substrate" TEXT NOT NULL,
+    "container" TEXT,
+    "temperature" REAL,
+    "humidity" REAL,
+    "heatMat" BOOLEAN NOT NULL DEFAULT false,
+    "domed" BOOLEAN NOT NULL DEFAULT true,
+    "lightLevel" TEXT,
+    "germinatedCount" INTEGER,
+    "germinationRate" REAL,
+    "firstEmergence" DATETIME,
+    "lastEmergence" DATETIME,
+    "status" TEXT NOT NULL DEFAULT 'SOWN',
+    "notes" TEXT,
+    "photos" TEXT NOT NULL DEFAULT '[]',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL, "identifier" TEXT,
+    CONSTRAINT "SeedBatch_harvestId_fkey" FOREIGN KEY ("harvestId") REFERENCES "Harvest" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+INSERT INTO SeedBatch VALUES('cmirz1iq50005fzqmd777xw05','SDB-2025-001','cmirz1iq40003fzqmrswpevfq',1764806400000,25,'TFF + chopped sphagnum + Fluval Stratum',NULL,75.0,NULL,1,1,'LOW',NULL,NULL,NULL,NULL,'SOWN','Sown same day as harvest. Seeds floated briefly to hydrate before pressing into substrate.','[]',1764885136398,1764885136398,NULL);
+CREATE TABLE IF NOT EXISTS "Seedling" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "seedlingId" TEXT NOT NULL,
+    "seedBatchId" TEXT NOT NULL,
+    "positionLabel" TEXT,
+    "emergenceDate" DATETIME NOT NULL,
+    "firstTrueLeaf" DATETIME,
+    "prickOutDate" DATETIME,
+    "potSize" REAL,
+    "leafCount" INTEGER,
+    "largestLeafCm" REAL,
+    "healthStatus" TEXT NOT NULL DEFAULT 'HEALTHY',
+    "selectionStatus" TEXT NOT NULL DEFAULT 'GROWING',
+    "selectionDate" DATETIME,
+    "selectionNotes" TEXT,
+    "graduatedToPlantId" TEXT,
+    "graduationDate" DATETIME,
+    "locationId" TEXT,
+    "notes" TEXT,
+    "photos" TEXT NOT NULL DEFAULT '[]',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "Seedling_seedBatchId_fkey" FOREIGN KEY ("seedBatchId") REFERENCES "SeedBatch" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "Seedling_graduatedToPlantId_fkey" FOREIGN KEY ("graduatedToPlantId") REFERENCES "Plant" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "Seedling_locationId_fkey" FOREIGN KEY ("locationId") REFERENCES "Location" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+CREATE TABLE IF NOT EXISTS "CloneBatch" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "batchId" TEXT NOT NULL,
+    "propagationType" TEXT NOT NULL,
+    "sourcePlantId" TEXT,
+    "externalSource" TEXT,
+    "species" TEXT,
+    "cultivarName" TEXT,
+    "acquiredDate" DATETIME NOT NULL,
+    "acquiredCount" INTEGER NOT NULL,
+    "currentCount" INTEGER,
+    "containerCount" INTEGER NOT NULL DEFAULT 1,
+    "containerType" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'GROWING',
+    "locationId" TEXT,
+    "identifier" TEXT,
+    "notes" TEXT,
+    "photos" TEXT NOT NULL DEFAULT '[]',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "CloneBatch_sourcePlantId_fkey" FOREIGN KEY ("sourcePlantId") REFERENCES "Plant" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "CloneBatch_locationId_fkey" FOREIGN KEY ("locationId") REFERENCES "Location" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+INSERT INTO CloneBatch VALUES('cmis8t9hv0003uszpzylx2yj5','CLB-2025-001','OFFSET','cmgsezkiq0019gw74uslqjgtm',NULL,'Antolakii','BVEP',1763424000000,2,2,2,'one leaf each, juvinile, ','GROWING',NULL,NULL,'after tropical storm required dividing, two one leaf and one mother stump','[]',1764901547347,1764901547347);
+CREATE TABLE IF NOT EXISTS "Plant" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "plantId" TEXT NOT NULL,
+    "accessionDate" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "genus" TEXT NOT NULL DEFAULT 'Anthurium',
+    "section" TEXT,
+    "species" TEXT,
+    "hybridName" TEXT,
+    "crossNotation" TEXT,
+    "femaleParentId" TEXT,
+    "maleParentId" TEXT,
+    "generation" TEXT,
+    "cloneSourceId" TEXT,
+    "breeder" TEXT,
+    "breederCode" TEXT,
+    "vendorId" TEXT,
+    "acquisitionCost" REAL,
+    "propagationType" TEXT,
+    "locationId" TEXT,
+    "healthStatus" TEXT NOT NULL DEFAULT 'healthy',
+    "conservationStatus" TEXT,
+    "currentPotSize" REAL,
+    "currentPotType" TEXT,
+    "lastRepotDate" DATETIME,
+    "coverPhotoId" TEXT,
+    "breedingRecordId" TEXT,
+    "marketValue" REAL,
+    "isForSale" BOOLEAN NOT NULL DEFAULT false,
+    "isMother" BOOLEAN NOT NULL DEFAULT false,
+    "isEliteGenetics" BOOLEAN NOT NULL DEFAULT false,
+    "isArchived" BOOLEAN NOT NULL DEFAULT false,
+    "archivedAt" DATETIME,
+    "archiveReason" TEXT,
+    "cloneBatchId" TEXT,
+    "notes" TEXT,
+    "tags" TEXT NOT NULL DEFAULT '[]',
+    "identifier" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "Plant_femaleParentId_fkey" FOREIGN KEY ("femaleParentId") REFERENCES "Plant" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "Plant_maleParentId_fkey" FOREIGN KEY ("maleParentId") REFERENCES "Plant" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "Plant_cloneSourceId_fkey" FOREIGN KEY ("cloneSourceId") REFERENCES "Plant" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "Plant_vendorId_fkey" FOREIGN KEY ("vendorId") REFERENCES "Vendor" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "Plant_locationId_fkey" FOREIGN KEY ("locationId") REFERENCES "Location" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "Plant_breedingRecordId_fkey" FOREIGN KEY ("breedingRecordId") REFERENCES "BreedingRecord" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "Plant_cloneBatchId_fkey" FOREIGN KEY ("cloneBatchId") REFERENCES "CloneBatch" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+INSERT INTO Plant VALUES('cmgsezkin000xgw74jhgpsbkx','ANT-2025-0001',1759017600000,'Anthurium','Porphyrochitonium','unknown','Ace Of Spades (Dark Form)','Tezula AOS Dark Form',NULL,NULL,NULL,NULL,NULL,'TZ','cmgsezki30000gw74cf6l7wi7',400.0,'seed','cmgsezkie000fgw74fii6io1e','critical',NULL,5.5,'plastic',1762819200000,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,'{"generalNotes":"‘Dark form’ purchase IAS 2025 from Tezula most pillowy of the selection. ","soilMix":"","lightRequirements":"","wateringFrequency":"","fertilizationSchedule":"","temperatureRange":"","humidityPreference":""}','[]',NULL,1760558354591,1764904469007);
+INSERT INTO Plant VALUES('cmgsezkin000zgw74xmwy9v5q','ANT-2025-0002',1754006400000,'Anthurium','Cardiolonchium','hybrid ','Batch 22','Bench × Bench',NULL,NULL,'F1',NULL,'Fontanimal',NULL,'cmgsezki50001gw74zqw0y3hl',72.0,'seed','cmgsezkid000dgw74i8jmw464','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354592,1760889660964);
+INSERT INTO Plant VALUES('cmgsezkio0011gw742moi2gqy','ANT-2025-0003',1760486400000,'Anthurium','','Besseae aff','Besseae aff','Besseae aff × Besseae aff (self)',NULL,NULL,'F1',NULL,NULL,'Wu','cmgsezki60002gw74emj8fhtl',64.0,'Seed','cmgsezkie000fgw74fii6io1e','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354592,1760979859316);
+INSERT INTO Plant VALUES('cmgsezkip0013gw74wh66x8oc','ANT-2025-0004',1734220800000,'Anthurium','Porphyrochitonium','Hybrid','Besseae aff x AOS','Besseae aff × Ace of Spades',NULL,NULL,'F1',NULL,'NSE Tropicals','NSE','cmgsezki70003gw746q8ouev6',161.0,'seed','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354593,1764626194887);
+INSERT INTO Plant VALUES('cmgsezkip0015gw7469zox65i','ANT-2025-0005',1734220800000,'Anthurium','Pachyneurium','Birds Nest','Renaissance','',NULL,NULL,'F1',NULL,NULL,NULL,'cmgsezki80004gw74b8c7814f',27.0,'tissue_culture','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354594,1762928793399);
+INSERT INTO Plant VALUES('cmgsezkiq0017gw741cm7c6qx','ANT-2025-0006',1760486400000,'Anthurium','Cardiolonchium','Crystallinum x Magnificum ','Brielle','',NULL,NULL,'P1',NULL,'Sunset tropicals',NULL,'cmgsezki80005gw746sbx4y4y',98.0,'division','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354594,1764287749557);
+INSERT INTO Plant VALUES('cmgsezkiq0019gw74uslqjgtm','ANT-2025-0007',1759795200000,'Anthurium','Porphyrochitonium','BVEP/Antolakii','BVEP/Antolakii (F4)','Antolakii × Self (F4)',NULL,NULL,'F4',NULL,'Tezula','TZ','cmgsezki30000gw74cf6l7wi7',400.0,'seed','cmgsezkie000fgw74fii6io1e','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,'{"generalNotes":"Repot from SKG soil to 4.0 substrate on 11/8 with two divisions\n\n3 parts- tree fern fiber\n2 parts- unbleached perlite #3\n2 parts- PH buffered coco coir\n2 part- orchid bark\n1 part- Blackstone Pon\n1 part- Columbian 100% hardwood charcoal\n","soilMix":"Dave’s 4.0","lightRequirements":"","wateringFrequency":"","fertilizationSchedule":"2-1-.5 (CaMg-TPS One- K Carb)","temperatureRange":"","humidityPreference":">70%"}','[]',NULL,1760558354595,1762928912500);
+INSERT INTO Plant VALUES('cmgsezkis001fgw74ccl5m7cs','ANT-2025-0010',1760486400000,'Anthurium','Cardiolonchium','Chocolate crystal Dark Lux','Chocolate crystal Dark Lux','Crystallinum (Chocolate wu1) × Luxurians (Dark)',NULL,NULL,'F1',NULL,'Wuhoo','Wu','cmgsezki60002gw74emj8fhtl',53.0,'seed','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354596,1764710767195);
+INSERT INTO Plant VALUES('cmgsezkis001hgw74qz33cdlh','ANT-2025-0011',1760486400000,'Anthurium','Cardiolonchium','Crystallinum Hybrid','Crystallinum Hybrid','Doriaki × Crystallinum',NULL,NULL,'F1',NULL,NULL,NULL,'cmgsezki90006gw74y7yvnc7q',100.0,'Seed','cmgsezkie000ggw74ycg57u0y','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354597,1762929005474);
+INSERT INTO Plant VALUES('cmgsezkit001jgw74f1l5lkoq','ANT-2025-0012',1733011200000,'Anthurium','Cardiolonchium','Hybrid','Dark Mama','Warocquanum x ',NULL,NULL,'F1',NULL,NULL,NULL,'cmgsezki80004gw74b8c7814f',68.0,'tissue_culture','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354597,1762929022842);
+INSERT INTO Plant VALUES('cmgsezkit001lgw74anwr2r6v','ANT-2025-0013',1734220800000,'Anthurium','','Dark Pheonix','Dark Pheonix Large','Dark Pheonix',NULL,NULL,'F1',NULL,'Dandi',NULL,'cmgsezki80004gw74b8c7814f',90.0,'tissue_culture','cmgsezkie000fgw74fii6io1e','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354598,1760890023888);
+INSERT INTO Plant VALUES('cmgsezkiu001ngw742t5x2euz','ANT-2025-0014',1734220800000,'Anthurium','','Dark Pheonix','Dark Pheonix small','Dark Pheonix',NULL,NULL,'F1',NULL,'Dandi',NULL,'cmgsezki80004gw74b8c7814f',90.0,'tissue_culture','cmgsezkie000fgw74fii6io1e','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354598,1760890029774);
+INSERT INTO Plant VALUES('cmgsezkiu001pgw7466lruqng','ANT-2025-0015',1733011200000,'Anthurium','cross-section hybrid','A. clarinervium × A. pedatoradiatum (Ree Gardens)','Delta Force','TC-F1',NULL,NULL,'F1',NULL,'Dandi plants',NULL,'cmgsezki80004gw74b8c7814f',100.0,'tissue_culture','cmgsezkid000dgw74i8jmw464','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354599,1762573347359);
+INSERT INTO Plant VALUES('cmgsezkiv001rgw745guvfw2t','ANT-2025-0016',1760486400000,'Anthurium','Cardiolonchium','Delta Force','Delta Force','A. Clarinuvium x ?',NULL,NULL,'F1',NULL,NULL,'Wu','cmgsezki60002gw74emj8fhtl',55.0,'Seed','cmgsezkie000fgw74fii6io1e','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354599,1762980871131);
+INSERT INTO Plant VALUES('cmgsezkiv001tgw74w17qx7hc','ANT-2025-0017',1760486400000,'Anthurium','Porphyrochitonium','Dress x Nova DF','Dress x Nova DF','Dressleri (Windy FP1) × SP Nov DF',NULL,NULL,'F1',NULL,NULL,NULL,'cmgsezki50001gw74zqw0y3hl',70.0,'Seed','cmgsezkid000dgw74i8jmw464','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354600,1763408933822);
+INSERT INTO Plant VALUES('cmgsezkiw001vgw74pvxq8ru1','ANT-2025-0018',1759881600000,'Anthurium','Porphyrochitonium','Hybrid','Ree Gardens Dressleri open x RLFS','Dressleri (Ree Gardens) x Open × RLFS',NULL,NULL,'F1',NULL,'Fontanimal',NULL,'cmgsezki50001gw74zqw0y3hl',77.0,'seed','cmgsezkie000fgw74fii6io1e','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354600,1764609947195);
+INSERT INTO Plant VALUES('cmgsezkiw001xgw74v9qp5xbw','ANT-2025-0019',1760486400000,'Anthurium','Porphyrochitonium','Dressleri "Windy"','Dressleri "Windy"','Dressleri (Windy FP1) × Dressleri (Windy FP2)',NULL,NULL,'F1',NULL,NULL,NULL,'cmgsezki50001gw74zqw0y3hl',200.0,'Seed','cmgsezkid000dgw74i8jmw464','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354601,1762929132876);
+INSERT INTO Plant VALUES('cmgsezkix001zgw74j62tastp','ANT-2025-0020',1760486400000,'Anthurium','Porphyrochitonium','Dressleri','Dressleri Colón','Dressleri × self',NULL,NULL,'F1',NULL,NULL,'TZ','cmgsezki30000gw74cf6l7wi7',400.0,'seed','cmgsezkie000egw74p7t5bodw','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354601,1762929164178);
+INSERT INTO Plant VALUES('cmgsezkix0021gw7461yjiwmu','ANT-2025-0021',1759276800000,'Anthurium','Porphyrochitonium','Dressleri hybrid','Ree Gardens ‘Dressleri narrow’ x Dressleri Windy','Dressleri Narrow (Ree Gardens) × Dressleri (Windy)',NULL,NULL,'F1',NULL,'Fontanimal',NULL,'cmgsezki50001gw74zqw0y3hl',61.0,'seed','cmgsezkie000egw74p7t5bodw','recovering',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354602,1762929544223);
+INSERT INTO Plant VALUES('cmgsezkiy0023gw74mmw3es0z','ANT-2025-0022',1759276800000,'Anthurium','Porphyrochitonium','Dressleri x Self','Dressleri (Rio Gauche) NSE','NSE Dressleri - selfed from DF dress',NULL,NULL,'F1',NULL,NULL,'NSE','cmgsezki70003gw746q8ouev6',NULL,'seed','cmgsezkie000fgw74fii6io1e','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354602,1762980888527);
+INSERT INTO Plant VALUES('cmgsezkiy0025gw742wfvmspy','ANT-2025-0023',1759795200000,'Anthurium','Cardiolonchium','Forgetii','Forgettii','Forgetii S1',NULL,NULL,'P1',NULL,NULL,'NSE','cmgsezki70003gw746q8ouev6',82.0,'seed','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354603,1762929181210);
+INSERT INTO Plant VALUES('cmgsezkiz0027gw74izmypumf','ANT-2025-0024',1751328000000,'Anthurium','Cardiolonchium','Crystallinum','FTG Crystallinum ','FTG × self',NULL,NULL,'F1',NULL,NULL,'NSE','cmgsezki70003gw746q8ouev6',87.0,'seed','cmgsezkid000dgw74i8jmw464','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354603,1762629795581);
+INSERT INTO Plant VALUES('cmgsezkiz0029gw742lwabqmq','ANT-2025-0025',1734220800000,'Anthurium','cross-section hybrid','hybrid','AOS x BVEP X Crystallinum var','(Ace of Spades x Antolakii/BVEP) × Crystallinum (variegated)',NULL,NULL,'F1',NULL,NULL,'Wu','cmgsezki60002gw74emj8fhtl',53.0,'seed','cmgsezkie000ggw74ycg57u0y','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'{"generalNotes":"","soilMix":"Dave''s 4.0","lightRequirements":"","wateringFrequency":"","fertilizationSchedule":"","temperatureRange":"","humidityPreference":""}','[]',NULL,1760558354603,1764626181858);
+INSERT INTO Plant VALUES('cmgsezkiz002bgw74p77czo99','ANT-2025-0026',1760486400000,'Anthurium','cross-section hybrid','hybrid','Dress/Pap round Hybrid','NOID',NULL,NULL,'F1',NULL,'Dandi ',NULL,'cmgsezki80004gw74b8c7814f',110.0,'purchase','cmgsezkie000egw74p7t5bodw','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354604,1763325825578);
+INSERT INTO Plant VALUES('cmgsezkj0002dgw74niow603y','ANT-2025-0027',1760486400000,'Anthurium','Cardiolonchium','Hybrid','Crystal Mag x Michelle','Crystallinum x Magnificum × Michelle',NULL,NULL,'F1',NULL,NULL,NULL,'cmgsezki80004gw74b8c7814f',51.0,'Seed','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354604,1763409161719);
+INSERT INTO Plant VALUES('cmgsezkj1002hgw74dugb7opq','ANT-2025-0029',1733011200000,'Anthurium','Cardiolonchium','Hybrid','Doriyaki x forgettii X Lux','(Doriyaki x forgettii)× Luxurians',NULL,NULL,'F1',NULL,'Dandi',NULL,'cmgsezki80004gw74b8c7814f',40.0,'purchase','cmgsezkie000ggw74ycg57u0y','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354605,1762929076028);
+INSERT INTO Plant VALUES('cmgsezkj2002lgw74cij26116','ANT-2025-0031',1760486400000,'Anthurium','','Hybrid','Pap mag x Lux','Papillilaminum/Magnificum × Luxurians',NULL,NULL,'F1',NULL,NULL,NULL,'cmgsezki80004gw74b8c7814f',225.0,'Seed','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354606,1760989481127);
+INSERT INTO Plant VALUES('cmgsezkj2002ngw74raw9hke9','ANT-2025-0032',1760486400000,'Anthurium','Cardiolonchium','Hybrid','Mag x (Zara x Michelle)','Magnificum × Zara x Michelle',NULL,NULL,'F1',NULL,NULL,NULL,'cmgsezki80004gw74b8c7814f',190.0,'Seed','cmgsezkid000dgw74i8jmw464','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354607,1762928685176);
+INSERT INTO Plant VALUES('cmgsezkj3002pgw74ay37rdm3','ANT-2025-0033',1751328000000,'Anthurium','cross-section hybrid','Hybrid','Carla x soul reaper (RLFS select)','Carlablackiae x Papillilaminum ''Soul Reaper'' (Tezula)',NULL,NULL,'F1',NULL,'Tezula','TZ','cmgsezki30000gw74cf6l7wi7',448.0,'seed','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354608,1763408984122);
+INSERT INTO Plant VALUES('cmgsezkj4002rgw742lhfkzb4','ANT-2025-0034',1760486400000,'Anthurium','cross-section hybrid','Hybrid','Pap x Carla ','Papillilaminum (Wu9) × Carlablackiae (wu2)',NULL,NULL,'F1',NULL,NULL,'Wu','cmgsezki60002gw74emj8fhtl',53.0,'Seed','cmgsezkid000dgw74i8jmw464','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354608,1762980942431);
+INSERT INTO Plant VALUES('cmgsezkj4002tgw74qejp56ig','ANT-2025-0035',1760486400000,'Anthurium','Porphyrochitonium','Hybrid','NSE Port x Dress (windy)','Portilleae (NSE) × Dressleri (FP2)',NULL,NULL,'F1',NULL,NULL,NULL,'cmgsezki50001gw74zqw0y3hl',66.0,'Seed','cmgsezkie000egw74p7t5bodw','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'{"generalNotes":"","soilMix":"","lightRequirements":"","wateringFrequency":"","fertilizationSchedule":"","temperatureRange":"","humidityPreference":""}','[]',NULL,1760558354609,1762929331646);
+INSERT INTO Plant VALUES('cmgsezkj5002vgw74dp76jwci','ANT-2025-0036',1760486400000,'Anthurium','','hybrid','Regale × Besseae aff','Regale × Besseae aff',NULL,NULL,'F1',NULL,NULL,'TZ','cmgsezkia0007gw745p4splyj',339.0,'Seed','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354609,1763409174306);
+INSERT INTO Plant VALUES('cmgsezkj5002xgw746by1ljgh','ANT-2025-0037',1760486400000,'Anthurium','cross-section hybrid','Lexi''s Dream','Lexi''s Dream','Red Crystallinum × AOS x Leland',NULL,NULL,'F1',NULL,NULL,NULL,'cmgsezki50001gw74zqw0y3hl',307.0,'Seed','cmgsezkid000dgw74i8jmw464','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354610,1763409216551);
+INSERT INTO Plant VALUES('cmgsezkj6002zgw744z7vg0xi','ANT-2025-0038',1729641600000,'Anthurium','','Luxurians','Luxurians','Luxurians ',NULL,NULL,'F1',NULL,'Dandi',NULL,'cmgsezki80004gw74b8c7814f',190.0,'purchase','cmgsezkie000ggw74ycg57u0y','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354610,1760985977242);
+INSERT INTO Plant VALUES('cmgsezkj60031gw74dmy7kj3v','ANT-2025-0039',1760486400000,'Anthurium','Cardiolonchium','Magnificum','Magnificum','Magnificum',NULL,NULL,'F1',NULL,NULL,NULL,'cmgsezkia0008gw74dsa2rem9',53.0,'Clone','cmgsezkid000dgw74i8jmw464','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354611,1762928697300);
+INSERT INTO Plant VALUES('cmgsezkj70033gw749vd43ass','ANT-2025-0040',1760486400000,'Anthurium','Cardiolonchium','Hybrid','Michelle primary','Michelle × Michelle',NULL,NULL,'F1',NULL,'Doc block',NULL,'cmgsezkib0009gw74j974w113',95.0,'Seed','cmgsezkid000dgw74i8jmw464','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354611,1762982315016);
+INSERT INTO Plant VALUES('cmgsezkj70035gw74z2d04kpb','ANT-2025-0041',1760486400000,'Anthurium','Cardiolonchium','Michelle','Michelle TV','Michelle (MS)',NULL,NULL,'F1',NULL,'Doc Block',NULL,'cmgsezkib0009gw74j974w113',95.0,'division','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354612,1763407876252);
+INSERT INTO Plant VALUES('cmgsezkj80037gw74hz5pirxd','ANT-2025-0042',1760486400000,'Anthurium','Cardiolonchium','Michelle','Michelle upstairs','Michelle (MS) × Michelle',NULL,NULL,'F1',NULL,'Doc Block',NULL,'cmgsezkib0009gw74j974w113',NULL,'Clone','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354612,1763409251174);
+INSERT INTO Plant VALUES('cmgsezkj80039gw74r26btl52','ANT-2025-0043',1760486400000,'Anthurium','Porphyrochitonium','NSE Port - Dewey Fisk','NSE Portilleae','Portilleae (NSE) × Self',NULL,NULL,'F1',NULL,NULL,'NSE','cmgsezki70003gw746q8ouev6',NULL,'seed','cmgsezkie000fgw74fii6io1e','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354613,1762929347086);
+INSERT INTO Plant VALUES('cmgsezkj9003bgw74cqa3rkjx','ANT-2025-0044',1760486400000,'Anthurium','','NSE Red Crystal','NSE Red Crystal Lux','Red Crystallinum × Luxurians',NULL,NULL,'P1',NULL,NULL,'NSE','cmgsezki70003gw746q8ouev6',161.0,'purchase','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354613,1762630636591);
+INSERT INTO Plant VALUES('cmgsezkj9003dgw741iifryqi','ANT-2025-0045',1734220800000,'Anthurium','Porphyrochitonium','Pallidiforum','Pallidiforum','Pallidiflorum × Pallidiforum',NULL,NULL,'F1',NULL,'Dandi',NULL,'cmgsezki80004gw74b8c7814f',50.0,'purchase','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354614,1762929372234);
+INSERT INTO Plant VALUES('cmgsezkja003fgw74ovapo3yl','ANT-2025-0046',1759795200000,'Anthurium','Porphyrochitonium','Papallilinum','Pap - Colón form','Pap - Colón form',NULL,NULL,'F1',NULL,'Sunset plants',NULL,'cmgsezki80005gw746sbx4y4y',64.0,'purchase','cmgsezkie000fgw74fii6io1e','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354614,1763153387846);
+INSERT INTO Plant VALUES('cmgsezkja003hgw74cry941wr','ANT-2025-0047',1760486400000,'Anthurium','Porphyrochitonium','Pap/Mag hybrid?','Pap x pap ‘red stem’','Papillilaminum × Papililaminum Red Stem',NULL,NULL,'F1',NULL,NULL,NULL,NULL,40.0,'Seed','cmgsezkie000ggw74ycg57u0y','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354615,1763409023325);
+INSERT INTO Plant VALUES('cmgsezkjb003jgw743sfwbm29','ANT-2025-0048',1760486400000,'Anthurium','Porphyrochitonium','Papililaminum','Papililaminum RA8','Papillilaminum (RA8) × Self',NULL,NULL,'S1',NULL,NULL,'TZ','cmgsezki30000gw74cf6l7wi7',250.0,'seed','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354615,1763409148170);
+INSERT INTO Plant VALUES('cmgsezkjb003lgw74nmxn50qw','ANT-2025-0049',1760486400000,'Anthurium','Porphyrochitonium','Papililaminum ','Papililaminum papa legba x papa midnight (40x40)','Papillilaminum (RA 8x5) × Papillilaminum (RA 8x5)',NULL,NULL,'F1',NULL,'Tezula','TZ','cmgsezki30000gw74cf6l7wi7',350.0,'seed','cmhuyrpl90000p0c36qtffef5','struggling',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354615,1762891674741);
+INSERT INTO Plant VALUES('cmgsezkjb003ngw747rvx7viw','ANT-2025-0050',1760486400000,'Anthurium','','Queen of Hearts','Queen of Hearts','Queen of Hearts',NULL,NULL,'F1',NULL,NULL,NULL,'cmgsezkia0007gw745p4splyj',69.0,'Seed','cmgwiaivs00014n5mq0oj6tq9','recovering',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,'{"generalNotes":"restarting from stump","soilMix":"SKG greenhouse mix","lightRequirements":"","wateringFrequency":"","fertilizationSchedule":"","temperatureRange":"","humidityPreference":""}','[]',NULL,1760558354616,1763409031915);
+INSERT INTO Plant VALUES('cmgsezkjc003pgw74hkchzz6p','ANT-2025-0051',1734220800000,'Anthurium','','Hybrid','Radicans x Luxurians','Radicans × Luxurians',NULL,NULL,'F1',NULL,NULL,NULL,'cmgsezki80004gw74b8c7814f',20.0,'purchase','cmgsezkie000ggw74ycg57u0y','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354616,1761001241004);
+INSERT INTO Plant VALUES('cmgsezkjc003rgw74o897pydc','ANT-2025-0052',1759276800000,'Anthurium','','Forgetii × (Papillilaminum × Magnificum)','Red Spider OS','Wuhoo OFFSET',NULL,NULL,'Clone',NULL,'Wuhoo','Wu','cmgsezki60002gw74emj8fhtl',255.0,'purchase','cmgsezkie000fgw74fii6io1e','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354617,1762706276243);
+INSERT INTO Plant VALUES('cmgsezkjd003tgw74hosd87vo','ANT-2025-0053',1760486400000,'Anthurium',NULL,'Silver Blush','Silver Blush','Silver Blush',NULL,NULL,'F1',NULL,NULL,NULL,'cmgsezki50001gw74zqw0y3hl',61.0,'Seed','cmgsezkid000dgw74i8jmw464','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354617,1760558354617);
+INSERT INTO Plant VALUES('cmgsezkjd003vgw74tcaceemk','ANT-2025-0054',1760486400000,'Anthurium','Cardiolonchium','A. Crystallinum Hybrid ','Silver Chrome','Silver Chrome',NULL,NULL,'P1',NULL,NULL,NULL,'cmgsezki50001gw74zqw0y3hl',93.0,'Seed','cmgsezkie000fgw74fii6io1e','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354618,1763409044635);
+INSERT INTO Plant VALUES('cmgsezkje003xgw74hwav9bnc','ANT-2025-0055',1759795200000,'Anthurium','','Hybrid','SKG grey','SKG grey × self',NULL,NULL,'F1',NULL,'SKG ',NULL,'cmgsezkib000agw743nix9r5e',190.0,'purchase','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354618,1764609971113);
+INSERT INTO Plant VALUES('cmgsezkje003zgw747z2lsbqn','ANT-2025-0056',1748736000000,'Anthurium','Strap leaf - section unknown','sp nova','sp nova Lavender','sp nova',NULL,NULL,'F1',NULL,NULL,'NSE','cmgsezki70003gw746q8ouev6',82.0,'seed','cmgsezkie000fgw74fii6io1e','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354619,1763064445745);
+INSERT INTO Plant VALUES('cmgsezkjf0041gw74hdemtn2f','ANT-2025-0057',1760486400000,'Anthurium','','Hybrid','Tezula purple x Red Crystal','Purple Crystallinum (Tezula) × Red Crystallinum (Tezula)',NULL,NULL,'F1',NULL,NULL,NULL,'cmgsezki80004gw74b8c7814f',179.0,'purchase','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354619,1762929586906);
+INSERT INTO Plant VALUES('cmgsezkjf0043gw74wpad4pb6','ANT-2025-0058',1760486400000,'Anthurium',NULL,'Tezula Red Crystal Mini','Tezula Red Crystal Mini','Red Crystallinum × Red Crystallinum',NULL,NULL,'F1',NULL,NULL,NULL,'cmgsezki30000gw74cf6l7wi7',150.0,'offset','cmgsezkie000fgw74fii6io1e','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354620,1761598091421);
+INSERT INTO Plant VALUES('cmgsezkjg0045gw74nqdjz5n3','ANT-2025-0059',1759795200000,'Anthurium','','Hybrid','Tezula Red Crystal Quilted','Red Crystal  × Self',NULL,NULL,'F1',NULL,NULL,'TZ','cmgsezki30000gw74cf6l7wi7',750.0,'purchase','cmgsezkie000ggw74ycg57u0y','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354620,1763321041494);
+INSERT INTO Plant VALUES('cmgsezkjg0047gw74tozb8195','ANT-2025-0060',1760486400000,'Anthurium','Pachyneurium','Vittarifolum','Vittarifolum','Vittarifolum',NULL,NULL,'P1',NULL,'Dandi ',NULL,'cmgsezki80004gw74b8c7814f',97.0,'TC','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354621,1762928436122);
+INSERT INTO Plant VALUES('cmgsezkjh0049gw74ixrelf90','ANT-2025-0061',1759795200000,'Anthurium','','Hybrid','Warocqueanum x Rugolusum','Warocqueanum × Rugolosum',NULL,NULL,'F1',NULL,'SKG',NULL,'cmgsezkib000agw743nix9r5e',250.0,'division','cmgsezkie000fgw74fii6io1e','struggling',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354621,1764859302313);
+INSERT INTO Plant VALUES('cmgsezkjh004bgw74r8t5rejr','ANT-2025-0062',1760486400000,'Anthurium','','Wendlingerii','Wendlingerii','wendlingerii × Self',NULL,NULL,'F1',NULL,NULL,'NSE','cmgsezki70003gw746q8ouev6',54.0,'Seeds 10','cmgsezkid000dgw74i8jmw464','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,NULL,'[]',NULL,1760558354622,1762980776757);
+INSERT INTO Plant VALUES('cmgsezkji004dgw74cea2vbac','ANT-2025-0063',1760486400000,'Anthurium','Hybrid','King of Spades','King of Spades','',NULL,NULL,NULL,NULL,'Scott Cohen','SC','cmgsezkic000bgw74ay2k6trp',450.0,'Clone','cmgsezkie000egw74p7t5bodw','healthy','',NULL,NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,'Premium clone line','[]',NULL,1760558354622,1762963580762);
+INSERT INTO Plant VALUES('cmgsezkji004fgw743111zejv','ANT-2025-0064',1759017600000,'Anthurium','Xialophyllum','Carlablackiae','Carlablackiae OG5xRA6','Carlablackiae (OG5) × Carlablackiae (RA6)',NULL,NULL,'F1',NULL,'Scott Cohen','SC','cmgsezkic000bgw74ay2k6trp',400.0,'Seed','cmgsezkie000fgw74fii6io1e','healthy','Critically Endangered',NULL,NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,'OG5 x RA6 lineage - documented genetics','[]',NULL,1760558354623,1762630046919);
+INSERT INTO Plant VALUES('cmgsezkjj004hgw741plapojf','ANT-2025-0065',1759017600000,'Anthurium','Pachyneurium','Papillilaminum Variegated hybrid ','Papillilaminum Variegated','Papillilaminum × Papillilaminum',NULL,NULL,'P1',NULL,'Eddie Pronto','EPP','cmgsezkid000cgw74yimq02ai',1500.0,'purchase','cmgsezkie000fgw74fii6io1e','healthy','',NULL,NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,'EPP exclusive variegated selection','[]',NULL,1760558354623,1764287699225);
+INSERT INTO Plant VALUES('cmgsezkjj004jgw74jfbck8m3','ANT-2025-0066',1759017600000,'Anthurium','Hybrid','King of Spades (Red Sinus)','King of Spades (Red Sinus)','purple emergant red sinus',NULL,NULL,'',NULL,'Unknown','','cmgsezkid000cgw74yimq02ai',400.0,'Seed','cmgsezkie000fgw74fii6io1e','healthy','',NULL,NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,'{"generalNotes":"EPP Red Sinus selection aquired from IAS 2025 @ Perfect Choice Nurseries","soilMix":"Dave 4.0","lightRequirements":"","wateringFrequency":"","fertilizationSchedule":"","temperatureRange":"","humidityPreference":""}','[]',NULL,1760558354624,1763408761391);
+INSERT INTO Plant VALUES('cmgsezkjk004lgw7429ndpod8','ANT-2025-0067',1751328000000,'Anthurium','cross-section hybrid','Hybrid','KOS X Papillilaminum × Crystallinum Antioquia (Variegated)','(King of Spades × Papillilaminum) × Crystallinum Antioquia',NULL,NULL,'Complex Hybrid',NULL,'Tezula ','Tezula','cmgsezki30000gw74cf6l7wi7',2200.0,'purchase','cmgsezkie000egw74p7t5bodw','healthy','',NULL,NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,'{"generalNotes":"Tezula variegated selection - Antioquia crystallinum genetics","soilMix":"PON","lightRequirements":"","wateringFrequency":"","fertilizationSchedule":"","temperatureRange":"","humidityPreference":""}','[]',NULL,1760558354624,1764609687977);
+INSERT INTO Plant VALUES('cmgwuhdhu001k4n5m535j8so6','ANT-2025-1736',1759017600000,'Anthurium','','Sp nova - DF','Sp Nova DF','',NULL,NULL,NULL,NULL,NULL,'DF',NULL,1400.0,'division','cmgsezkie000fgw74fii6io1e','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,NULL,'[]',NULL,1760826244243,1763329146984);
+INSERT INTO Plant VALUES('cmgwuif5i001l4n5mzy25tx2q','ANT-2025-2438',1759017600000,'Anthurium','Cardiolonchium','Hybrid','FTG x Port Dorito','FTG Crystallinum x Portilleae ‘Dorito’',NULL,NULL,'F1',NULL,'Greaux',NULL,NULL,100.0,'seed','cmgsezkie000ggw74ycg57u0y','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1760826293046,1763329062812);
+INSERT INTO Plant VALUES('cmhcvf641005h7aidif7v7fxf','ANT-2025-2199',1761696000000,'Anthurium','Porphyrochitonium','','Pap Hybrid Variegated OS','Offset clone of mother ',NULL,NULL,'Clone',NULL,NULL,'EPP',NULL,0.0,'division','cmgsezkie000fgw74fii6io1e','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,NULL,'[]',NULL,1761795279793,1762929412964);
+INSERT INTO Plant VALUES('cmhggqnvj00244827johwzezi','ANT-2025-9960',1759968000000,'Anthurium','Cardiolonchium','Crystallinum','NSE Red Crystal','RC x Self',NULL,NULL,NULL,NULL,NULL,'NSE',NULL,70.0,'purchase','cmgsezkie000fgw74fii6io1e','critical',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1762012486496,1764859333836);
+INSERT INTO Plant VALUES('cmhkquz7000544827jap4vmyn','ANT-2025-8457',1761177600000,'Anthurium','Porphyrochitonium','Papillinanimum','Pap RA6','RA6 SC offset',NULL,NULL,'P1',NULL,'Scott Cohen','SC',NULL,350.0,'division','cmgwiaivs00014n5mq0oj6tq9','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,NULL,'[]',NULL,1762271348652,1763409136707);
+INSERT INTO Plant VALUES('cmhkqzaiw00574827j9uuzyf6','ANT-2025-0232',1761091200000,'Anthurium','Xialophyllum','Carlablackiae ','Carla OG4xOG2','OG4xOG2',NULL,NULL,'F1',NULL,NULL,'SC',NULL,250.0,'purchase','cmgsezkie000fgw74fii6io1e','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,1,0,NULL,NULL,NULL,NULL,'[]',NULL,1762271549961,1762928925020);
+INSERT INTO Plant VALUES('cmhkr2tf6005a4827d0z7fikf','ANT-2025-0286',1761177600000,'Anthurium','Cardiolonchium','(Black Widow x Michelle) x Dark Forgetii','Black Widow Michele x Dark Forgetii','',NULL,NULL,NULL,NULL,NULL,NULL,NULL,30.0,'purchase','cmgsezkie000fgw74fii6io1e','healthy',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL,'[]',NULL,1762271714418,1762928883072);
 CREATE UNIQUE INDEX "BreedingRecord_crossId_key" ON "BreedingRecord"("crossId");
 CREATE INDEX "BreedingRecord_femalePlantId_idx" ON "BreedingRecord"("femalePlantId");
 CREATE INDEX "BreedingRecord_malePlantId_idx" ON "BreedingRecord"("malePlantId");
@@ -1803,12 +1935,6 @@ CREATE INDEX "Trait_category_idx" ON "Trait"("category");
 CREATE INDEX "Trait_observationDate_idx" ON "Trait"("observationDate");
 CREATE INDEX "GrowthMetric_plantId_idx" ON "GrowthMetric"("plantId");
 CREATE INDEX "GrowthMetric_date_idx" ON "GrowthMetric"("date");
-CREATE UNIQUE INDEX "Plant_plantId_key" ON "Plant"("plantId");
-CREATE INDEX "Plant_plantId_idx" ON "Plant"("plantId");
-CREATE INDEX "Plant_vendorId_idx" ON "Plant"("vendorId");
-CREATE INDEX "Plant_locationId_idx" ON "Plant"("locationId");
-CREATE INDEX "Plant_section_idx" ON "Plant"("section");
-CREATE INDEX "Plant_isArchived_idx" ON "Plant"("isArchived");
 CREATE INDEX idx_flowering_female_start
   ON FloweringCycle(femaleStart DESC) WHERE femaleStart IS NOT NULL;
 CREATE INDEX idx_flowering_male_start
@@ -1820,4 +1946,35 @@ CREATE INDEX idx_vendor_name
 CREATE INDEX "PlantJournal_plantId_timestamp_idx" ON "PlantJournal"("plantId", "timestamp");
 CREATE INDEX "PlantJournal_entryType_idx" ON "PlantJournal"("entryType");
 CREATE INDEX "PlantJournal_context_idx" ON "PlantJournal"("context");
+CREATE INDEX "Harvest_breedingRecordId_idx" ON "Harvest"("breedingRecordId");
+CREATE INDEX "Harvest_harvestDate_idx" ON "Harvest"("harvestDate");
+CREATE UNIQUE INDEX "Harvest_breedingRecordId_harvestNumber_key" ON "Harvest"("breedingRecordId", "harvestNumber");
+CREATE UNIQUE INDEX "SeedBatch_batchId_key" ON "SeedBatch"("batchId");
+CREATE INDEX "SeedBatch_harvestId_idx" ON "SeedBatch"("harvestId");
+CREATE INDEX "SeedBatch_sowDate_idx" ON "SeedBatch"("sowDate");
+CREATE INDEX "SeedBatch_status_idx" ON "SeedBatch"("status");
+CREATE UNIQUE INDEX "Seedling_seedlingId_key" ON "Seedling"("seedlingId");
+CREATE UNIQUE INDEX "Seedling_graduatedToPlantId_key" ON "Seedling"("graduatedToPlantId");
+CREATE INDEX "Seedling_seedBatchId_idx" ON "Seedling"("seedBatchId");
+CREATE INDEX "Seedling_selectionStatus_idx" ON "Seedling"("selectionStatus");
+CREATE INDEX "Seedling_emergenceDate_idx" ON "Seedling"("emergenceDate");
+CREATE INDEX "Seedling_locationId_idx" ON "Seedling"("locationId");
+CREATE INDEX "BreedingRecord_crossCategory_idx" ON "BreedingRecord"("crossCategory");
+CREATE UNIQUE INDEX "Plant_plantId_key" ON "Plant"("plantId");
+CREATE UNIQUE INDEX "Plant_identifier_key" ON "Plant"("identifier");
+CREATE INDEX "Plant_plantId_idx" ON "Plant"("plantId");
+CREATE INDEX "Plant_vendorId_idx" ON "Plant"("vendorId");
+CREATE INDEX "Plant_locationId_idx" ON "Plant"("locationId");
+CREATE INDEX "Plant_section_idx" ON "Plant"("section");
+CREATE INDEX "Plant_isArchived_idx" ON "Plant"("isArchived");
+CREATE INDEX "Plant_cloneSourceId_idx" ON "Plant"("cloneSourceId");
+CREATE INDEX "Plant_breedingRecordId_idx" ON "Plant"("breedingRecordId");
+CREATE INDEX "Plant_cloneBatchId_idx" ON "Plant"("cloneBatchId");
+CREATE UNIQUE INDEX "CloneBatch_batchId_key" ON "CloneBatch"("batchId");
+CREATE UNIQUE INDEX "CloneBatch_identifier_key" ON "CloneBatch"("identifier");
+CREATE INDEX "CloneBatch_batchId_idx" ON "CloneBatch"("batchId");
+CREATE INDEX "CloneBatch_sourcePlantId_idx" ON "CloneBatch"("sourcePlantId");
+CREATE INDEX "CloneBatch_status_idx" ON "CloneBatch"("status");
+CREATE INDEX "CloneBatch_locationId_idx" ON "CloneBatch"("locationId");
+CREATE UNIQUE INDEX "SeedBatch_identifier_key" ON "SeedBatch"("identifier");
 COMMIT;
