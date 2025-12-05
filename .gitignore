@@ -47,3 +47,6 @@ plantDB/coverage/
 
 # Database backups (keep local, don't commit)
 backups/
+
+# Personal context docs (not for git)
+CLAUDE READ/
