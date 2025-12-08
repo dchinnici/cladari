@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { Providers } from './providers'
 import Link from 'next/link'
-import { Home, Trees, Droplets, MapPin, Dna } from 'lucide-react'
+import { Home, Trees, Droplets, MapPin, Layers } from 'lucide-react'
 import { ToastContainer } from '@/components/toast'
 import ServiceWorker from '@/components/ServiceWorker'
 
@@ -93,9 +93,9 @@ export default function RootLayout({
                   <MapPin className="w-5 h-5" />
                   <span className="text-[10px] mt-0.5">Locations</span>
                 </Link>
-                <Link href="/genetics" className="flex flex-col items-center justify-center text-[var(--clay)] active:text-[var(--forest)]">
-                  <Dna className="w-5 h-5" />
-                  <span className="text-[10px] mt-0.5">Genetics</span>
+                <Link href="/batches" className="flex flex-col items-center justify-center text-[var(--clay)] active:text-[var(--forest)]">
+                  <Layers className="w-5 h-5" />
+                  <span className="text-[10px] mt-0.5">Batches</span>
                 </Link>
               </div>
             </nav>

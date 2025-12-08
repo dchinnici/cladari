@@ -79,11 +79,11 @@ export async function PATCH(
       where: { id },
       data: {
         ...(body.sowDate && { sowDate: new Date(body.sowDate) }),
-        ...(body.seedCount !== undefined && { seedCount: body.seedCount }),
+        ...(body.seedCount !== undefined && { seedCount: parseInt(body.seedCount) || body.seedCount }),
         ...(body.substrate !== undefined && { substrate: body.substrate }),
-        ...(body.container !== undefined && { container: body.container }),
-        ...(body.temperature !== undefined && { temperature: body.temperature }),
-        ...(body.humidity !== undefined && { humidity: body.humidity }),
+        ...(body.container !== undefined && { container: body.container || null }),
+        ...(body.temperature !== undefined && { temperature: body.temperature ? parseFloat(body.temperature) : null }),
+        ...(body.humidity !== undefined && { humidity: body.humidity ? parseFloat(body.humidity) : null }),
         ...(body.heatMat !== undefined && { heatMat: body.heatMat }),
         ...(body.domed !== undefined && { domed: body.domed }),
         ...(body.lightLevel !== undefined && { lightLevel: body.lightLevel }),
@@ -92,7 +92,7 @@ export async function PATCH(
         ...(body.germinationRate !== undefined && { germinationRate: body.germinationRate }),
         ...(body.firstEmergence && { firstEmergence: new Date(body.firstEmergence) }),
         ...(body.lastEmergence && { lastEmergence: new Date(body.lastEmergence) }),
-        ...(body.notes !== undefined && { notes: body.notes }),
+        ...(body.notes !== undefined && { notes: body.notes || null }),
         ...(body.photos !== undefined && { photos: JSON.stringify(body.photos) })
       }
     })

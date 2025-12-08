@@ -149,7 +149,7 @@ async function generateWateringRecommendation(
   const reasoning: string[] = []
 
   // Note: Watering always includes baseline fertigation
-  reasoning.push(`💧 Watering with baseline feed (CalMag + TPS One + K-Carb)`)
+  reasoning.push(`💧 Watering with baseline feed (CalMag + TPS One)`)
 
   if (wateringLogs.length >= 2) {
     reasoning.push(`Average watering interval: ${avgFrequency} days`)
@@ -373,6 +373,14 @@ export async function generateRecommendations(plantId: string): Promise<CareReco
             id: true,
             date: true,
             action: true,
+            // Structured EC/pH fields (new)
+            inputEC: true,
+            inputPH: true,
+            outputEC: true,
+            outputPH: true,
+            isBaselineFeed: true,
+            feedComponents: true,
+            // Legacy details field
             details: true
           }
         },

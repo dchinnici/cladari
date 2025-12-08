@@ -29,6 +29,7 @@ export default function PlantDetailPage() {
   const [overviewModalOpen, setOverviewModalOpen] = useState(false)
   const [floweringModalOpen, setFloweringModalOpen] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [archiveReason, setArchiveReason] = useState<string>('died')
 
   // Flowering cycle state
   const [floweringCycles, setFloweringCycles] = useState<any[]>([])
@@ -663,23 +664,26 @@ export default function PlantDetailPage() {
     }
   }
 
-  const handleDeletePlant = async () => {
+  const handleArchivePlant = async () => {
     try {
       const response = await fetch(`/api/plants/${params.id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: archiveReason })
       })
 
       if (response.ok) {
-        showToast({ type: 'success', title: 'Plant deleted', message: 'Plant has been permanently removed' })
+        showToast({ type: 'success', title: 'Plant archived', message: `Plant moved to graveyard (${archiveReason})` })
         setDeleteConfirmOpen(false)
-        // Redirect to plants list after deletion
+        setArchiveReason('died')
+        // Redirect to plants list after archiving
         router.push('/plants')
       } else {
-        showToast({ type: 'error', title: 'Failed to delete plant' })
+        showToast({ type: 'error', title: 'Failed to archive plant' })
       }
     } catch (error) {
-      console.error('Error deleting plant:', error)
-      showToast({ type: 'error', title: 'Error deleting plant' })
+      console.error('Error archiving plant:', error)
+      showToast({ type: 'error', title: 'Error archiving plant' })
     }
   }
 
@@ -783,8 +787,8 @@ export default function PlantDetailPage() {
               </button>
               <button
                 onClick={() => setDeleteConfirmOpen(true)}
-                className="p-3 bg-[var(--alert-red)] text-white rounded hover:bg-[var(--alert-red)]/80 flex items-center justify-center transition-colors shadow-sm"
-                title="Delete Plant"
+                className="p-3 bg-amber-500 text-white rounded hover:bg-amber-600 flex items-center justify-center transition-colors shadow-sm"
+                title="Archive Plant"
               >
                 <Trash2 className="w-5 h-5" />
               </button>
@@ -1503,23 +1507,37 @@ export default function PlantDetailPage() {
                           <p className="text-sm capitalize mt-1">
                             Activity: {log.action || log.activityType}
                           </p>
-                          {log.details && (() => {
-                            try {
-                              const details = typeof log.details === 'string' ? JSON.parse(log.details) : log.details
-                              return (
-                                <div className="text-sm text-[var(--clay)] mt-2 space-y-1">
-                                  {details.notes && <p>{details.notes}</p>}
-                                  {(details.inputEC || details.inputPH) && (
-                                    <p>Input: EC {details.inputEC || '-'} / pH {details.inputPH || '-'}</p>
-                                  )}
-                                  {(details.outputEC || details.outputPH) && (
-                                    <p>Output: EC {details.outputEC || '-'} / pH {details.outputPH || '-'}</p>
-                                  )}
-                                </div>
-                              )
-                            } catch {
-                              return <p className="text-sm text-[var(--clay)] mt-2">{log.details}</p>
+                          {(() => {
+                            // Read EC/pH from direct columns (new) or fall back to details JSON (legacy)
+                            const inputEC = log.inputEC ?? null
+                            const inputPH = log.inputPH ?? null
+                            const outputEC = log.outputEC ?? null
+                            const outputPH = log.outputPH ?? null
+                            let notes = null
+
+                            if (log.details) {
+                              try {
+                                const details = typeof log.details === 'string' ? JSON.parse(log.details) : log.details
+                                notes = details.notes
+                              } catch {
+                                notes = log.details
+                              }
                             }
+
+                            const hasData = notes || inputEC || inputPH || outputEC || outputPH
+                            if (!hasData) return null
+
+                            return (
+                              <div className="text-sm text-[var(--clay)] mt-2 space-y-1">
+                                {notes && <p>{notes}</p>}
+                                {(inputEC || inputPH) && (
+                                  <p>Input: EC {inputEC?.toFixed(2) || '-'} / pH {inputPH?.toFixed(1) || '-'}</p>
+                                )}
+                                {(outputEC || outputPH) && (
+                                  <p>Output: EC {outputEC?.toFixed(2) || '-'} / pH {outputPH?.toFixed(1) || '-'}</p>
+                                )}
+                              </div>
+                            )
                           })()}
                         </div>
                         <div className="flex gap-2">
@@ -1534,10 +1552,11 @@ export default function PlantDetailPage() {
                                 pesticide: details.pesticide || '',
                                 fungicide: details.fungicide || '',
                                 dosage: details.dosage || '',
-                                inputEC: details.inputEC?.toString() || details.ecIn?.toString() || '',
-                                inputPH: details.inputPH?.toString() || details.phIn?.toString() || '',
-                                outputEC: details.outputEC?.toString() || details.ecOut?.toString() || '',
-                                outputPH: details.outputPH?.toString() || details.phOut?.toString() || '',
+                                // Read EC/pH from direct columns first, fall back to details JSON
+                                inputEC: log.inputEC?.toString() || details.inputEC?.toString() || '',
+                                inputPH: log.inputPH?.toString() || details.inputPH?.toString() || '',
+                                outputEC: log.outputEC?.toString() || details.outputEC?.toString() || '',
+                                outputPH: log.outputPH?.toString() || details.outputPH?.toString() || '',
                                 rainAmount: details.rainAmount || '',
                                 rainDuration: details.rainDuration || '',
                                 date: new Date(log.date).toISOString().split('T')[0],
@@ -1762,7 +1781,7 @@ export default function PlantDetailPage() {
                         ...careLogForm,
                         inputPH: '5.7',
                         inputEC: '1.15',
-                        notes: careLogForm.notes + (careLogForm.notes ? '\n\n' : '') + 'Baseline feed: CalMag 1ml/L, TPS One 1.5-2ml/L, K-Carb (pH Up) 0.4-0.6ml/L'
+                        notes: careLogForm.notes + (careLogForm.notes ? '\n\n' : '') + 'Baseline feed: CalMag 1ml/L, TPS One 2ml/L'
                       })
                     }
                   }}
@@ -1771,7 +1790,7 @@ export default function PlantDetailPage() {
                 <div className="flex-1">
                   <span className="font-medium text-[var(--bark)]">Include baseline feed</span>
                   <p className="text-xs text-[var(--clay)] mt-0.5">
-                    Auto-fills: pH 5.7, EC 1.15 (CalMag + TPS One + reduced K-Carb)
+                    Auto-fills: pH 5.7, EC 1.15 (CalMag + TPS One)
                   </p>
                 </div>
               </label>
@@ -2782,39 +2801,47 @@ export default function PlantDetailPage() {
       </Modal>
 
       {/* Delete Confirmation Modal */}
-      <Modal isOpen={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} title="Delete Plant">
+      <Modal isOpen={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} title="Archive Plant">
         <div className="space-y-4">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-red-800 font-medium mb-2">⚠️ Warning: This action cannot be undone!</p>
-            <p className="text-red-700 text-sm">
-              Deleting this plant will permanently remove:
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <p className="text-amber-800 font-medium mb-2">Moving to Graveyard</p>
+            <p className="text-amber-700 text-sm">
+              This will archive the plant and hide it from your active collection. All data is preserved for future ML insights and breeding records.
             </p>
-            <ul className="list-disc list-inside text-red-700 text-sm mt-2 ml-2">
-              <li>All plant information and details</li>
-              <li>All care logs and measurements</li>
-              <li>All photos and documents</li>
-              <li>All morphology data</li>
-              <li>All flowering cycle records</li>
-            </ul>
           </div>
 
-          <p className="text-[var(--bark)]">
-            Are you sure you want to permanently delete <span className="font-bold">{plant?.plantId}</span>
-            {plant?.hybridName && <span> ({plant.hybridName})</span>}?
-          </p>
+          <div>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-2">
+              Reason for archiving <span className="font-bold">{plant?.plantId}</span>
+              {plant?.hybridName && <span> ({plant.hybridName})</span>}
+            </label>
+            <select
+              value={archiveReason}
+              onChange={(e) => setArchiveReason(e.target.value)}
+              className="w-full p-3 rounded-lg border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+            >
+              <option value="died">Died</option>
+              <option value="sold">Sold</option>
+              <option value="gifted">Gifted</option>
+              <option value="culled">Culled (poor genetics)</option>
+              <option value="divided">Divided into other plants</option>
+              <option value="lost">Lost / Unknown</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
 
           <div className="flex gap-3 pt-2">
             <button
-              onClick={() => setDeleteConfirmOpen(false)}
+              onClick={() => { setDeleteConfirmOpen(false); setArchiveReason('died'); }}
               className="flex-1 px-4 py-2 border border-black/[0.08] rounded text-[var(--bark)] hover:bg-[var(--parchment)]"
             >
               Cancel
             </button>
             <button
-              onClick={handleDeletePlant}
-              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700"
+              onClick={handleArchivePlant}
+              className="flex-1 px-4 py-2 bg-amber-600 text-white rounded-xl hover:bg-amber-700"
             >
-              Delete Permanently
+              Archive Plant
             </button>
           </div>
         </div>

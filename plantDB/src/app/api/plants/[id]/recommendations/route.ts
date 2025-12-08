@@ -24,7 +24,12 @@ export async function GET(
             id: true,
             date: true,
             action: true,
-            details: true
+            details: true,
+            // EC/pH structured columns (for ML analysis)
+            inputEC: true,
+            inputPH: true,
+            outputEC: true,
+            outputPH: true
           }
         },
         currentLocation: {
@@ -65,23 +70,22 @@ export async function GET(
     // Generate base recommendations (existing system)
     const recommendations = await generateRecommendations(plantId)
 
-    // Extract EC/pH readings from care logs
+    // Extract EC/pH readings from care logs (use structured columns)
     const ecPhReadings = plant.careLogs
       .filter((log: any) => {
-        const details = log.details
-        return details && (
-          details.ecIn != null ||
-          details.ecOut != null ||
-          details.phIn != null ||
-          details.phOut != null
+        return (
+          log.inputEC != null ||
+          log.outputEC != null ||
+          log.inputPH != null ||
+          log.outputPH != null
         )
       })
       .map((log: any) => ({
         date: log.date,
-        ecIn: log.details?.ecIn ?? null,
-        ecOut: log.details?.ecOut ?? null,
-        phIn: log.details?.phIn ?? null,
-        phOut: log.details?.phOut ?? null
+        ecIn: log.inputEC ?? null,
+        ecOut: log.outputEC ?? null,
+        phIn: log.inputPH ?? null,
+        phOut: log.outputPH ?? null
       }))
 
     // Find last repot date
@@ -97,10 +101,10 @@ export async function GET(
       plant.careLogs.map((log: any) => ({
         date: new Date(log.date),
         action: log.action,
-        ecIn: log.details?.ecIn,
-        ecOut: log.details?.ecOut,
-        phIn: log.details?.phIn,
-        phOut: log.details?.phOut
+        ecIn: log.inputEC ?? null,
+        ecOut: log.outputEC ?? null,
+        phIn: log.inputPH ?? null,
+        phOut: log.outputPH ?? null
       })),
       plant.currentLocation ? {
         temperature: plant.currentLocation.temperature,

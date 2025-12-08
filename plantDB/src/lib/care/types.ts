@@ -74,6 +74,14 @@ export interface CareLogWithDetails {
   id: string
   date: Date
   action: string
+  // Structured EC/pH fields (new)
+  inputEC?: number | null
+  inputPH?: number | null
+  outputEC?: number | null
+  outputPH?: number | null
+  isBaselineFeed?: boolean
+  feedComponents?: string | null // JSON array
+  // Legacy details field (for backwards compatibility)
   details?: string | null
 }
 

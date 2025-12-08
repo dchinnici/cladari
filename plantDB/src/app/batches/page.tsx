@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Plus, Package, Scissors, FlaskConical, TreeDeciduous, Sprout, X } from 'lucide-react'
+import { Plus, Package, Scissors, FlaskConical, TreeDeciduous, Sprout, X, ChevronRight } from 'lucide-react'
+import Link from 'next/link'
 import { Modal } from '@/components/modal'
 import { showToast } from '@/components/toast'
 
@@ -232,9 +233,10 @@ export default function BatchesPage() {
       ) : (
         <div className="grid gap-4">
           {batches.map(batch => (
-            <div
+            <Link
               key={batch.id}
-              className="bg-white rounded-lg border p-4 hover:shadow-md transition-shadow"
+              href={`/batches/${batch.id}`}
+              className="block bg-white rounded-lg border p-4 hover:shadow-md hover:border-green-200 transition-all group"
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-3">
@@ -243,7 +245,7 @@ export default function BatchesPage() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-gray-900">{getBatchName(batch)}</span>
+                      <span className="font-medium text-gray-900 group-hover:text-green-700">{getBatchName(batch)}</span>
                       <span className="text-sm text-gray-400">{batch.batchId}</span>
                     </div>
                     <div className="text-sm text-gray-500 mt-1">
@@ -268,6 +270,7 @@ export default function BatchesPage() {
                   <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(batch.status)}`}>
                     {batch.status}
                   </span>
+                  <ChevronRight size={20} className="text-gray-300 group-hover:text-green-500" />
                 </div>
               </div>
               {batch._count.plants > 0 && (
@@ -275,7 +278,7 @@ export default function BatchesPage() {
                   {batch._count.plants} individualized to Plant records
                 </div>
               )}
-            </div>
+            </Link>
           ))}
         </div>
       )}

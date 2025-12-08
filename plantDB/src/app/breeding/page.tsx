@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import {
   Heart, Plus, ChevronRight, Sprout, Leaf,
   FlaskConical, TreeDeciduous, Calendar, Target,
-  ChevronDown, X, Droplets, Trash2, MoreVertical
+  ChevronDown, X, Droplets, Trash2, Pencil
 } from 'lucide-react'
 import { Modal } from '@/components/modal'
 import { showToast } from '@/components/toast'
@@ -34,6 +34,12 @@ interface SeedBatch {
   seedCount: number
   germinatedCount: number | null
   substrate: string
+  container: string | null
+  temperature: number | null
+  humidity: number | null
+  heatMat: boolean
+  domed: boolean
+  notes: string | null
   sowDate: string
   seedlings: Seedling[]
   _count: { seedlings: number }
@@ -146,6 +152,22 @@ export default function BreedingPage() {
     humidity: '90',
     heatMat: true,
     domed: true,
+    notes: ''
+  })
+
+  // Edit Seed Batch modal state
+  const [editBatchModalOpen, setEditBatchModalOpen] = useState(false)
+  const [editBatchId, setEditBatchId] = useState<string | null>(null)
+  const [editBatchForm, setEditBatchForm] = useState({
+    sowDate: '',
+    seedCount: '',
+    substrate: '',
+    container: '',
+    temperature: '',
+    humidity: '',
+    heatMat: false,
+    domed: false,
+    status: '',
     notes: ''
   })
 
@@ -267,15 +289,22 @@ export default function BreedingPage() {
   const handleDeleteCross = async (cross: BreedingRecord, e: React.MouseEvent) => {
     e.stopPropagation() // Prevent expanding the card
 
-    if (cross.summary.totalHarvests > 0 || cross.offspring.length > 0) {
+    if (cross.offspring.length > 0) {
       showToast({
         type: 'error',
-        title: 'Cannot delete cross with harvests or graduated plants'
+        title: 'Cannot delete cross with graduated plants'
       })
       return
     }
 
-    if (!confirm(`Delete ${cross.crossId}? This cannot be undone.`)) {
+    // Build confirmation message with warning about cascading deletes
+    let confirmMsg = `Delete ${cross.crossId}?`
+    if (cross.summary.totalHarvests > 0) {
+      confirmMsg += `\n\nThis will also delete:\n- ${cross.summary.totalHarvests} harvest(s)\n- ${cross.summary.totalSeeds} seed records\n- ${cross.summary.totalSeedlings} seedling records`
+    }
+    confirmMsg += '\n\nThis cannot be undone.'
+
+    if (!confirm(confirmMsg)) {
       return
     }
 
@@ -392,6 +421,93 @@ export default function BreedingPage() {
     } catch (error) {
       console.error('Error creating batch:', error)
       showToast({ type: 'error', title: 'Error creating batch' })
+    }
+  }
+
+  // Edit Seed Batch handlers
+  const openEditBatchModal = (batch: SeedBatch, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setEditBatchId(batch.id)
+    setEditBatchForm({
+      sowDate: batch.sowDate ? batch.sowDate.split('T')[0] : '',
+      seedCount: batch.seedCount?.toString() || '',
+      substrate: batch.substrate || 'sphagnum',
+      container: batch.container || '',
+      temperature: batch.temperature?.toString() || '',
+      humidity: batch.humidity?.toString() || '',
+      heatMat: batch.heatMat ?? false,
+      domed: batch.domed ?? true,
+      status: batch.status || 'SOWN',
+      notes: batch.notes || ''
+    })
+    setEditBatchModalOpen(true)
+  }
+
+  const handleUpdateBatch = async () => {
+    if (!editBatchId) return
+
+    try {
+      const response = await fetch(`/api/seed-batches/${editBatchId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sowDate: editBatchForm.sowDate || undefined,
+          seedCount: editBatchForm.seedCount ? parseInt(editBatchForm.seedCount) : undefined,
+          substrate: editBatchForm.substrate || undefined,
+          container: editBatchForm.container || undefined,
+          temperature: editBatchForm.temperature || undefined,
+          humidity: editBatchForm.humidity || undefined,
+          heatMat: editBatchForm.heatMat,
+          domed: editBatchForm.domed,
+          status: editBatchForm.status || undefined,
+          notes: editBatchForm.notes || undefined
+        })
+      })
+
+      if (response.ok) {
+        await fetchData()
+        setEditBatchModalOpen(false)
+        showToast({ type: 'success', title: 'Seed batch updated' })
+      } else {
+        const err = await response.json()
+        showToast({ type: 'error', title: err.error || 'Failed to update batch' })
+      }
+    } catch (error) {
+      console.error('Error updating batch:', error)
+      showToast({ type: 'error', title: 'Error updating batch' })
+    }
+  }
+
+  const handleDeleteBatch = async (batch: SeedBatch, e: React.MouseEvent) => {
+    e.stopPropagation()
+
+    if (batch._count.seedlings > 0) {
+      showToast({
+        type: 'error',
+        title: 'Cannot delete batch with seedlings - remove seedlings first'
+      })
+      return
+    }
+
+    if (!confirm(`Delete seed batch ${batch.batchId}?\n\nThis cannot be undone.`)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/seed-batches/${batch.id}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        await fetchData()
+        showToast({ type: 'success', title: `${batch.batchId} deleted` })
+      } else {
+        const err = await response.json()
+        showToast({ type: 'error', title: err.error || 'Failed to delete' })
+      }
+    } catch (error) {
+      console.error('Error deleting batch:', error)
+      showToast({ type: 'error', title: 'Error deleting batch' })
     }
   }
 
@@ -676,12 +792,12 @@ export default function BreedingPage() {
                         <Calendar className="w-3 h-3 inline mr-1" />
                         {new Date(cross.crossDate).toLocaleDateString()}
                       </div>
-                      {/* Delete button - only show if no harvests/offspring */}
-                      {cross.summary.totalHarvests === 0 && cross.offspring.length === 0 && (
+                      {/* Delete button - only hide if graduated plants exist */}
+                      {cross.offspring.length === 0 && (
                         <button
                           onClick={(e) => handleDeleteCross(cross, e)}
                           className="p-1.5 hover:bg-red-50 rounded-lg transition-colors group"
-                          title="Delete cross"
+                          title={cross.summary.totalHarvests > 0 ? "Delete cross (will delete harvests/seedlings too)" : "Delete cross"}
                         >
                           <Trash2 className="w-4 h-4 text-[var(--clay)] group-hover:text-red-500" />
                         </button>
@@ -776,9 +892,27 @@ export default function BreedingPage() {
                                             {batch.status.replace('_', ' ')}
                                           </span>
                                         </div>
-                                        <span className="text-xs text-[var(--clay)]">
-                                          {batch._count.seedlings} seedlings
-                                        </span>
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-xs text-[var(--clay)]">
+                                            {batch._count.seedlings} seedlings
+                                          </span>
+                                          <button
+                                            onClick={(e) => openEditBatchModal(batch, e)}
+                                            className="p-1 hover:bg-black/[0.04] rounded transition-colors"
+                                            title="Edit batch"
+                                          >
+                                            <Pencil className="w-3 h-3 text-[var(--clay)] hover:text-[var(--moss)]" />
+                                          </button>
+                                          {batch._count.seedlings === 0 && (
+                                            <button
+                                              onClick={(e) => handleDeleteBatch(batch, e)}
+                                              className="p-1 hover:bg-red-50 rounded transition-colors"
+                                              title="Delete batch"
+                                            >
+                                              <Trash2 className="w-3 h-3 text-[var(--clay)] hover:text-red-500" />
+                                            </button>
+                                          )}
+                                        </div>
                                       </div>
 
                                       <div className="text-xs text-[var(--clay)] mb-2">
@@ -1435,6 +1569,139 @@ export default function BreedingPage() {
             </button>
             <button
               onClick={() => setSeedlingModalOpen(false)}
+              className="flex-1 px-4 py-2.5 border border-black/[0.08] text-sm rounded-lg text-[var(--bark)] hover:bg-black/[0.02] transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit Seed Batch Modal */}
+      <Modal
+        isOpen={editBatchModalOpen}
+        onClose={() => setEditBatchModalOpen(false)}
+        title="Edit Seed Batch"
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm text-[var(--bark)] mb-1">Sow Date</label>
+              <input
+                type="date"
+                value={editBatchForm.sowDate}
+                onChange={(e) => setEditBatchForm({ ...editBatchForm, sowDate: e.target.value })}
+                className="w-full p-2.5 rounded-lg border border-black/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)]/20 focus:border-[var(--moss)]"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-[var(--bark)] mb-1">Seed Count</label>
+              <input
+                type="number"
+                value={editBatchForm.seedCount}
+                onChange={(e) => setEditBatchForm({ ...editBatchForm, seedCount: e.target.value })}
+                className="w-full p-2.5 rounded-lg border border-black/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)]/20 focus:border-[var(--moss)]"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm text-[var(--bark)] mb-1">Substrate</label>
+              <select
+                value={editBatchForm.substrate}
+                onChange={(e) => setEditBatchForm({ ...editBatchForm, substrate: e.target.value })}
+                className="w-full p-2.5 rounded-lg border border-black/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)]/20 focus:border-[var(--moss)]"
+              >
+                <option value="sphagnum">Sphagnum moss</option>
+                <option value="perlite">Perlite</option>
+                <option value="sphagnum-perlite">Sphagnum + Perlite</option>
+                <option value="pon">PON</option>
+                <option value="seed-mix">Seed starting mix</option>
+                <option value="paper-towel">Paper towel</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm text-[var(--bark)] mb-1">Status</label>
+              <select
+                value={editBatchForm.status}
+                onChange={(e) => setEditBatchForm({ ...editBatchForm, status: e.target.value })}
+                className="w-full p-2.5 rounded-lg border border-black/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)]/20 focus:border-[var(--moss)]"
+              >
+                <option value="SOWN">Sown</option>
+                <option value="GERMINATING">Germinating</option>
+                <option value="PRICKING_OUT">Pricking Out</option>
+                <option value="SELECTING">Selecting</option>
+                <option value="COMPLETE">Complete</option>
+                <option value="FAILED">Failed</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm text-[var(--bark)] mb-1">Container</label>
+              <input
+                type="text"
+                value={editBatchForm.container}
+                onChange={(e) => setEditBatchForm({ ...editBatchForm, container: e.target.value })}
+                placeholder="e.g., 4-inch pot"
+                className="w-full p-2.5 rounded-lg border border-black/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)]/20 focus:border-[var(--moss)]"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-[var(--bark)] mb-1">Temperature (F)</label>
+              <input
+                type="text"
+                value={editBatchForm.temperature}
+                onChange={(e) => setEditBatchForm({ ...editBatchForm, temperature: e.target.value })}
+                placeholder="e.g., 75"
+                className="w-full p-2.5 rounded-lg border border-black/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)]/20 focus:border-[var(--moss)]"
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-4">
+            <label className="flex items-center gap-2 text-sm text-[var(--bark)]">
+              <input
+                type="checkbox"
+                checked={editBatchForm.heatMat}
+                onChange={(e) => setEditBatchForm({ ...editBatchForm, heatMat: e.target.checked })}
+                className="rounded border-black/[0.08]"
+              />
+              Heat mat
+            </label>
+            <label className="flex items-center gap-2 text-sm text-[var(--bark)]">
+              <input
+                type="checkbox"
+                checked={editBatchForm.domed}
+                onChange={(e) => setEditBatchForm({ ...editBatchForm, domed: e.target.checked })}
+                className="rounded border-black/[0.08]"
+              />
+              Domed/covered
+            </label>
+          </div>
+
+          <div>
+            <label className="block text-sm text-[var(--bark)] mb-1">Notes</label>
+            <textarea
+              value={editBatchForm.notes}
+              onChange={(e) => setEditBatchForm({ ...editBatchForm, notes: e.target.value })}
+              className="w-full p-2.5 rounded-lg border border-black/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--moss)]/20 focus:border-[var(--moss)]"
+              rows={2}
+              placeholder="Additional notes..."
+            />
+          </div>
+
+          <div className="flex gap-2 pt-2">
+            <button
+              onClick={handleUpdateBatch}
+              className="flex-1 px-4 py-2.5 bg-[var(--forest)] text-white text-sm rounded-lg hover:bg-[var(--forest)]/90 transition-colors"
+            >
+              Save Changes
+            </button>
+            <button
+              onClick={() => setEditBatchModalOpen(false)}
               className="flex-1 px-4 py-2.5 border border-black/[0.08] text-sm rounded-lg text-[var(--bark)] hover:bg-black/[0.02] transition-colors"
             >
               Cancel

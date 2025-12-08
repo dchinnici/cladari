@@ -9,13 +9,9 @@ export async function POST(
     const params = await context.params
     const body = await request.json()
 
-    // Build details JSON with EC/pH data, pest discovery, and notes
+    // Build details JSON for non-EC/pH data (notes, pest discovery, substrate)
     const detailsObj: any = {}
     if (body.notes) detailsObj.notes = body.notes
-    if (body.inputEC) detailsObj.inputEC = parseFloat(body.inputEC)
-    if (body.inputPH) detailsObj.inputPH = parseFloat(body.inputPH)
-    if (body.outputEC) detailsObj.outputEC = parseFloat(body.outputEC)
-    if (body.outputPH) detailsObj.outputPH = parseFloat(body.outputPH)
     // Pest/disease discovery fields
     if (body.pestType) detailsObj.pestType = body.pestType
     if (body.severity) detailsObj.severity = body.severity
@@ -30,11 +26,23 @@ export async function POST(
         plantId: params.id,
         date: body.date ? new Date(body.date + 'T12:00:00') : new Date(),
         action: body.activityType, // Map activityType to action field
+        // EC/pH in structured columns (for ML analysis)
+        inputEC: body.inputEC ? parseFloat(body.inputEC) : null,
+        inputPH: body.inputPH ? parseFloat(body.inputPH) : null,
+        outputEC: body.outputEC ? parseFloat(body.outputEC) : null,
+        outputPH: body.outputPH ? parseFloat(body.outputPH) : null,
+        // Other details in JSON
         details: Object.keys(detailsObj).length > 0 ? JSON.stringify(detailsObj) : null,
         dosage: body.dosage ? parseFloat(String(body.dosage).replace(/[^0-9.]/g, '')) : null,
         unit: body.dosage ? String(body.dosage).replace(/[0-9.]/g, '').trim() || 'ml' : null
       }
     })
+
+    // Store EC/pH values for journal entry (from body, not detailsObj)
+    const inputEC = body.inputEC ? parseFloat(body.inputEC) : null
+    const inputPH = body.inputPH ? parseFloat(body.inputPH) : null
+    const outputEC = body.outputEC ? parseFloat(body.outputEC) : null
+    const outputPH = body.outputPH ? parseFloat(body.outputPH) : null
 
     // Auto-create journal entry for care log
     const journalEntry = []
@@ -48,17 +56,17 @@ export async function POST(
       journalEntry.push(`- ${detailsObj.notes}`)
     }
 
-    if (detailsObj.inputEC || detailsObj.inputPH) {
+    if (inputEC || inputPH) {
       const metrics = []
-      if (detailsObj.inputEC) metrics.push(`EC in: ${detailsObj.inputEC}`)
-      if (detailsObj.inputPH) metrics.push(`pH in: ${detailsObj.inputPH}`)
+      if (inputEC) metrics.push(`EC in: ${inputEC}`)
+      if (inputPH) metrics.push(`pH in: ${inputPH}`)
       journalEntry.push(`[${metrics.join(', ')}]`)
     }
 
-    if (detailsObj.outputEC || detailsObj.outputPH) {
+    if (outputEC || outputPH) {
       const metrics = []
-      if (detailsObj.outputEC) metrics.push(`EC out: ${detailsObj.outputEC}`)
-      if (detailsObj.outputPH) metrics.push(`pH out: ${detailsObj.outputPH}`)
+      if (outputEC) metrics.push(`EC out: ${outputEC}`)
+      if (outputPH) metrics.push(`pH out: ${outputPH}`)
       journalEntry.push(`[Runoff: ${metrics.join(', ')}]`)
     }
 

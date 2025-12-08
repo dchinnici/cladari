@@ -2,6 +2,56 @@
 
 All notable changes to the Cladari Plant Management System will be documented in this file.
 
+## [1.4.0] - 2025-12-08
+
+### Added
+- **Clone Batch Care Tracking** - Track care logs for batches before graduation
+  - New `cloneBatchId` field on CareLog model
+  - `/api/clone-batches/[id]/care-logs` API endpoint
+  - Batch detail page (`/batches/[id]`) with care history
+  - EC/pH tracking per batch
+
+- **Batch Detail Page** - Full CRUD for clone batches
+  - View/edit batch info (species, cultivar, counts, status, location)
+  - Add care logs with watering, feeding, treatment options
+  - EC/pH input fields for each care entry
+  - Delete batch with confirmation
+  - Links to graduated plants
+
+- **Seed Batch Edit/Delete** - Manage seed batches in breeding pipeline
+  - Edit button on each seed batch card
+  - Edit modal with sow date, seed count, substrate, status, container, temperature, humidity, notes
+  - Delete button (only shows for batches with no seedlings)
+  - Current values now pre-populate in edit modal
+
+- **Feed Products API** - `/api/feed-products` for managing fertilizer products
+
+### Changed
+- **EC/pH Data Structure** - Migrated from JSON `details` field to structured columns
+  - `inputEC`, `inputPH`, `outputEC`, `outputPH` now proper Float columns
+  - `isBaselineFeed` and `feedComponents` columns for feed tracking
+  - Backward compatible: still reads legacy JSON data
+  - Migration script: `scripts/migrate-ecph-data.ts`
+
+- **Baseline Feed Update** - Removed K-Carb from baseline feed formula
+  - Updated batch care and plant care log forms
+  - K-Carb now available as optional additive
+
+- **Mobile Navigation** - Added Batches to bottom nav bar
+  - Replaced Genetics with Batches for quicker access
+
+### Fixed
+- **Seed Batch Creation** - Fixed temperature/humidity type error (String → Float parsing)
+- **Seed Batch Update** - Fixed PATCH API to properly parse float fields
+- **Cross Delete** - Now allows deleting crosses with harvests (cascade delete)
+  - Only blocks deletion if graduated plants exist
+  - Shows cascade warning in confirmation dialog
+
+### Technical
+- Schema updates synced between SQLite and Postgres versions
+- CareLog model now supports both Plant and CloneBatch relations
+- Improved type safety in care log APIs
+
 ## [1.3.0] - 2025-12-04
 
 ### Added

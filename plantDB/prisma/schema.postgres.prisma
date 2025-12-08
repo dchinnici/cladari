@@ -238,13 +238,23 @@ model CareLog {
   date            DateTime
   action          String   // water, fertilize, repot, prune, treat
 
-  // Treatment details
+  // EC/pH Measurements (structured for ML analysis)
+  inputEC         Float?   // Input solution EC (mS/cm)
+  inputPH         Float?   // Input solution pH
+  outputEC        Float?   // Runoff EC
+  outputPH        Float?   // Runoff pH
+
+  // Feed composition - enables ML to understand chemistry
+  isBaselineFeed  Boolean  @default(false)  // Standard feed (CaMg + TPS One)
+  feedComponents  Json?    // [{productId, mlPerLiter}] for detailed tracking
+
+  // Legacy treatment link (keep for backwards compat)
   treatment       Treatment? @relation(fields: [treatmentId], references: [id])
   treatmentId     String?
   dosage          Float?
   unit            String?
 
-  details         String?
+  details         String?  // Free text notes (legacy JSON may still exist here)
   nextActionDue   DateTime?
   performedBy     String?
 
@@ -270,6 +280,50 @@ model Treatment {
   notes           String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FEED PRODUCTS - Track chemistry of fertilizers/additives for ML analysis
+// Enables accurate input chemistry prediction based on components used
+// ═══════════════════════════════════════════════════════════════════════════
+
+model FeedProduct {
+  id              String   @id @default(cuid())
+  name            String   @unique  // "TPS CalMag", "TPS One", "TPS Silica", "K-Carb"
+  brand           String?           // "TPS Nutrients"
+  category        String            // fertilizer, supplement, ph_adjuster, water_source
+
+  // Chemistry profile (per ml/L or per unit)
+  ecContribution  Float?   // EC added per ml/L (e.g., 0.15 for CalMag)
+  phEffect        Float?   // pH shift direction/magnitude (positive = raises, negative = lowers)
+  phEffectType    String?  // "buffer" (gradual) or "direct" (immediate, like K-Carb)
+
+  // NPK for fertilizers
+  nitrogenN       Float?   // N percentage
+  phosphorusP     Float?   // P percentage
+  potassiumK      Float?   // K percentage
+
+  // Secondary/micro
+  calcium         Float?
+  magnesium       Float?
+  sulfur          Float?
+  iron            Float?
+  silica          Float?   // For silica products
+
+  // Application guidance
+  defaultDose     Float?   // ml/L typical dose
+  maxDose         Float?   // ml/L max safe dose
+  applicationNotes String?
+
+  // Status
+  isActive        Boolean  @default(true)
+  isInBaseline    Boolean  @default(false)  // Part of standard baseline feed
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([category])
+  @@index([isActive])
 }
 
 model Measurement {

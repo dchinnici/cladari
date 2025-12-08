@@ -17,7 +17,45 @@ import {
 } from './types'
 
 /**
- * Parse EC/pH data from care log details field (JSON)
+ * Extract EC/pH data from care log
+ * Priority: Structured columns first, then fallback to JSON details for legacy data
+ */
+export function extractECPHData(log: CareLogWithDetails): ECPHData | null {
+  // Check if we have structured data (new format)
+  const hasStructuredData =
+    log.inputEC != null ||
+    log.inputPH != null ||
+    log.outputEC != null ||
+    log.outputPH != null
+
+  if (hasStructuredData) {
+    return {
+      inputEC: log.inputEC ?? undefined,
+      inputPH: log.inputPH ?? undefined,
+      outputEC: log.outputEC ?? undefined,
+      outputPH: log.outputPH ?? undefined,
+      notes: log.details ? parseNotesFromDetails(log.details) : undefined
+    }
+  }
+
+  // Fallback to legacy JSON parsing
+  return parseECPHData(log.details ?? null)
+}
+
+/**
+ * Parse notes from details JSON
+ */
+function parseNotesFromDetails(details: string): string | undefined {
+  try {
+    const parsed = JSON.parse(details)
+    return parsed.notes
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * Parse EC/pH data from care log details field (JSON) - Legacy support
  */
 export function parseECPHData(details: string | null): ECPHData | null {
   if (!details) return null
@@ -52,7 +90,7 @@ export function calculateAverageECPH(
 } {
   const recentLogs = careLogs
     .slice(0, limit)
-    .map(log => parseECPHData(log.details))
+    .map(log => extractECPHData(log))
     .filter(Boolean) as ECPHData[]
 
   if (recentLogs.length === 0) {
@@ -120,7 +158,7 @@ export function calculatePHDriftRate(careLogs: CareLogWithDetails[]): number | n
   const logsWithPH = careLogs
     .map(log => ({
       date: log.date,
-      data: parseECPHData(log.details)
+      data: extractECPHData(log)
     }))
     .filter(item => item.data?.outputPH)
     .slice(0, 5) // Last 5 readings for recent pH trend
@@ -357,7 +395,7 @@ export function analyzeECPHContext(
 ): ECPHContext | undefined {
   // Need at least some care logs with EC/pH data
   const logsWithData = careLogs
-    .map(log => parseECPHData(log.details))
+    .map(log => extractECPHData(log))
     .filter(Boolean)
 
   if (logsWithData.length === 0) {
@@ -374,7 +412,7 @@ export function analyzeECPHContext(
   // Use only last 3 logs to focus on current conditions
   const pairedReadings = careLogs
     .slice(0, 3)
-    .map(log => parseECPHData(log.details))
+    .map(log => extractECPHData(log))
     .filter(data => data && data.inputEC != null && data.outputEC != null) as ECPHData[]
 
   let ecVariance: number | null = null

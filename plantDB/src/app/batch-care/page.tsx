@@ -14,6 +14,7 @@ export default function BatchCarePage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedLocationFilter, setSelectedLocationFilter] = useState<string>('')
 
+  const [feedProducts, setFeedProducts] = useState<any[]>([])
   const [careForm, setCareForm] = useState({
     activityType: 'watering',
     notes: '',
@@ -24,13 +25,34 @@ export default function BatchCarePage() {
     outputPH: '',
     rainAmount: '',
     rainDuration: '',
-    date: new Date().toISOString().split('T')[0]
+    date: new Date().toISOString().split('T')[0],
+    isBaselineFeed: false,
+    // Component tracking
+    useCaMg: false,
+    caMgDose: '1',
+    useTpsOne: false,
+    tpsOneDose: '2',
+    useSilica: false,
+    silicaDose: '1'
   })
 
   useEffect(() => {
     fetchPlants()
     fetchLocations()
+    fetchFeedProducts()
   }, [])
+
+  const fetchFeedProducts = async () => {
+    try {
+      const response = await fetch('/api/feed-products')
+      const data = await response.json()
+      if (Array.isArray(data)) {
+        setFeedProducts(data)
+      }
+    } catch (error) {
+      console.error('Error fetching feed products:', error)
+    }
+  }
 
   const fetchPlants = async () => {
     try {
@@ -119,7 +141,14 @@ export default function BatchCarePage() {
           outputPH: '',
           rainAmount: '',
           rainDuration: '',
-          date: new Date().toISOString().split('T')[0]
+          date: new Date().toISOString().split('T')[0],
+          isBaselineFeed: false,
+          useCaMg: false,
+          caMgDose: '1',
+          useTpsOne: false,
+          tpsOneDose: '2',
+          useSilica: false,
+          silicaDose: '1'
         })
       } else {
         showToast({ type: 'error', title: 'Failed to add care logs', message: 'Please try again.' })
@@ -254,16 +283,119 @@ export default function BatchCarePage() {
                   careForm.activityType === 'fertilizing' ||
                   careForm.activityType === 'calmag') && (
                   <>
+                    {/* Baseline Feed Toggle */}
+                    <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={careForm.isBaselineFeed}
+                          onChange={(e) => {
+                            const isBaseline = e.target.checked
+                            setCareForm({
+                              ...careForm,
+                              isBaselineFeed: isBaseline,
+                              inputEC: isBaseline ? '1.15' : careForm.inputEC,
+                              inputPH: isBaseline ? '5.7' : careForm.inputPH,
+                              useCaMg: isBaseline,
+                              useTpsOne: isBaseline,
+                              useSilica: false
+                            })
+                          }}
+                          className="w-4 h-4 rounded text-emerald-600"
+                        />
+                        <div>
+                          <span className="font-medium text-gray-900">Baseline Feed</span>
+                          <span className="text-xs text-gray-500 ml-2">(CaMg 1ml/L + TPS One 2ml/L = pH 5.7, EC 1.15)</span>
+                        </div>
+                      </label>
+                    </div>
+
+                    {/* Feed Components */}
+                    {!careForm.isBaselineFeed && (
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium text-gray-700">Feed Components</label>
+                        <div className="space-y-2 p-3 bg-gray-50 rounded-lg border">
+                          {/* CaMg */}
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="checkbox"
+                              checked={careForm.useCaMg}
+                              onChange={(e) => setCareForm({ ...careForm, useCaMg: e.target.checked })}
+                              className="w-4 h-4 rounded"
+                            />
+                            <span className="text-sm flex-1">TPS CalMag</span>
+                            {careForm.useCaMg && (
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="number"
+                                  step="0.5"
+                                  value={careForm.caMgDose}
+                                  onChange={(e) => setCareForm({ ...careForm, caMgDose: e.target.value })}
+                                  className="w-16 p-1 text-sm rounded border border-gray-200"
+                                />
+                                <span className="text-xs text-gray-500">ml/L</span>
+                              </div>
+                            )}
+                          </div>
+                          {/* TPS One */}
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="checkbox"
+                              checked={careForm.useTpsOne}
+                              onChange={(e) => setCareForm({ ...careForm, useTpsOne: e.target.checked })}
+                              className="w-4 h-4 rounded"
+                            />
+                            <span className="text-sm flex-1">TPS One (3-3-3)</span>
+                            {careForm.useTpsOne && (
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="number"
+                                  step="0.5"
+                                  value={careForm.tpsOneDose}
+                                  onChange={(e) => setCareForm({ ...careForm, tpsOneDose: e.target.value })}
+                                  className="w-16 p-1 text-sm rounded border border-gray-200"
+                                />
+                                <span className="text-xs text-gray-500">ml/L</span>
+                              </div>
+                            )}
+                          </div>
+                          {/* Silica */}
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="checkbox"
+                              checked={careForm.useSilica}
+                              onChange={(e) => setCareForm({ ...careForm, useSilica: e.target.checked })}
+                              className="w-4 h-4 rounded"
+                            />
+                            <span className="text-sm flex-1">TPS Silica <span className="text-xs text-amber-600">(raises pH)</span></span>
+                            {careForm.useSilica && (
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="number"
+                                  step="0.5"
+                                  value={careForm.silicaDose}
+                                  onChange={(e) => setCareForm({ ...careForm, silicaDose: e.target.value })}
+                                  className="w-16 p-1 text-sm rounded border border-gray-200"
+                                />
+                                <span className="text-xs text-gray-500">ml/L</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* EC/pH Measurements */}
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Input EC</label>
                         <input
                           type="number"
-                          step="0.1"
+                          step="0.01"
                           value={careForm.inputEC}
                           onChange={(e) => setCareForm({ ...careForm, inputEC: e.target.value })}
                           className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                          placeholder="e.g., 1.2"
+                          placeholder="e.g., 1.15"
                         />
                       </div>
                       <div>
@@ -274,17 +406,17 @@ export default function BatchCarePage() {
                           value={careForm.inputPH}
                           onChange={(e) => setCareForm({ ...careForm, inputPH: e.target.value })}
                           className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                          placeholder="e.g., 6.2"
+                          placeholder="e.g., 5.7"
                         />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Output EC</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Output EC <span className="text-xs text-gray-400">(runoff)</span></label>
                         <input
                           type="number"
-                          step="0.1"
+                          step="0.01"
                           value={careForm.outputEC}
                           onChange={(e) => setCareForm({ ...careForm, outputEC: e.target.value })}
                           className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -292,7 +424,7 @@ export default function BatchCarePage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Output pH</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Output pH <span className="text-xs text-gray-400">(runoff)</span></label>
                         <input
                           type="number"
                           step="0.1"

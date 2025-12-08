@@ -9,13 +9,9 @@ export async function PATCH(
     const params = await context.params
     const body = await request.json()
 
-    // Build details JSON with EC/pH data, pest discovery, and notes
+    // Build details JSON for non-EC/pH data (notes, pest discovery)
     const detailsObj: any = {}
     if (body.notes) detailsObj.notes = body.notes
-    if (body.inputEC) detailsObj.inputEC = parseFloat(body.inputEC)
-    if (body.inputPH) detailsObj.inputPH = parseFloat(body.inputPH)
-    if (body.outputEC) detailsObj.outputEC = parseFloat(body.outputEC)
-    if (body.outputPH) detailsObj.outputPH = parseFloat(body.outputPH)
     // Pest/disease discovery fields
     if (body.pestType) detailsObj.pestType = body.pestType
     if (body.severity) detailsObj.severity = body.severity
@@ -26,6 +22,12 @@ export async function PATCH(
       data: {
         date: body.date ? new Date(body.date + 'T00:00:00.000Z') : undefined,
         action: body.activityType || undefined,
+        // EC/pH in structured columns (for ML analysis)
+        inputEC: body.inputEC !== undefined ? (body.inputEC ? parseFloat(body.inputEC) : null) : undefined,
+        inputPH: body.inputPH !== undefined ? (body.inputPH ? parseFloat(body.inputPH) : null) : undefined,
+        outputEC: body.outputEC !== undefined ? (body.outputEC ? parseFloat(body.outputEC) : null) : undefined,
+        outputPH: body.outputPH !== undefined ? (body.outputPH ? parseFloat(body.outputPH) : null) : undefined,
+        // Other details in JSON
         details: Object.keys(detailsObj).length > 0 ? JSON.stringify(detailsObj) : undefined,
         dosage: body.dosage ? parseFloat(String(body.dosage).replace(/[^0-9.]/g, '')) : undefined,
         unit: body.dosage ? String(body.dosage).replace(/[0-9.]/g, '').trim() || 'ml' : undefined
