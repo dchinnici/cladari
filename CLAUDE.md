@@ -51,6 +51,40 @@ plantDB/
 - **API routes**: kebab-case paths
 - **ID Generation**: `src/lib/breeding-ids.ts` for all ID generation
 
+## NEXT SESSION: Plant Detail Page Refactor
+
+**Priority:** HIGH - Major UX improvement
+**Plan:** See `plantDB/docs/NEXT_SESSION_PLAN.md` for full specification
+
+### Summary
+Consolidate plant detail page from 9 tabs to 5:
+
+```
+CURRENT (9 tabs):
+overview, recommendations, care, morphology, flowering, photos, breeding, logs, ai
+
+TARGET (5 tabs):
+overview (consolidated), journal (unified), photos, flowering, genetics
+```
+
+### Key Changes
+1. **Overview** - Merge: health metrics + AI assistant + quick actions + plant details
+2. **Journal** - NEW: Unified timeline (care logs + notes + morphology + measurements) with filters
+3. **Photos** - Unchanged
+4. **Flowering** - Unchanged
+5. **Genetics** - Renamed from "breeding"
+
+### Why
+- Tabs 2,3,4,8,9 are rarely used separately
+- ML health metrics should be front-and-center, not buried in "recommendations" tab
+- AI assistant should be accessible from overview, not hidden in separate tab
+- Journal approach better for pgvector embeddings later
+
+### Implementation Time
+~2-3 hours of focused work
+
+---
+
 ## Current State (Dec 2025)
 ### Working Well
 - Plant CRUD with full detail pages (7 tabs)
