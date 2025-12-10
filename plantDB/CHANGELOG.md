@@ -2,6 +2,38 @@
 
 All notable changes to the Cladari Plant Management System will be documented in this file.
 
+## [1.5.1] - 2025-12-10
+
+### Added
+- **QR Code Infrastructure** - Full plant and location tag system
+  - **Plant QR**: `/q/p/{plantId}` → Opens plant detail with quickcare modal auto-triggered
+  - **Location QR**: `/q/l/{location}` → Opens batch care with location + all plants auto-selected
+  - **Print APIs**: `/api/print/plant-tag/{id}` and `/api/print/location-tag/{name}`
+    - `?format=html` - Browser preview with print button
+    - `?format=zpl` - Raw ZPL for Zebra ZD421CN (2"x1" labels at 300 DPI)
+    - `?format=png` - QR code as PNG download
+  - **UI**: QR buttons on plant detail and locations pages
+  - **Mobile**: Tailscale IP (100.88.172.122) encoded in QR for phone scanning
+
+- **Timezone Standardization** - Fixes date off-by-one bugs
+  - New utility: `/lib/timezone.ts` with `America/New_York` default
+  - `getTodayString()` for consistent YYYY-MM-DD in local timezone
+  - Fixed: Care logged at 10pm EST no longer shows as tomorrow
+  - Updated all 14 date initializations across codebase
+  - Future: Can be made configurable via user settings
+
+### Changed
+- **AI Chat Model** - Upgraded to Claude Opus 4 with extended thinking
+  - 16K token thinking budget for deeper analysis
+  - maxDuration increased to 120s
+  - New system prompt sections: Epistemic Rigor, EC/pH Delta Analysis
+
+### Technical
+- New files: `/lib/timezone.ts`, `/lib/qr.ts`, `/lib/zpl.ts`
+- New API routes: `/api/print/plant-tag/[id]`, `/api/print/location-tag/[name]`, `/api/plants/lookup`
+- New page: `/q/[...slug]` for QR redirect handling
+- Batch care page now uses Suspense wrapper for useSearchParams (hydration fix)
+
 ## [1.5.0] - 2025-12-10
 
 ### Added

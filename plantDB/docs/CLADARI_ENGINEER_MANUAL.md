@@ -1,7 +1,7 @@
 # Cladari Plant Database - Engineering Manual
-**Version:** 1.5.0
+**Version:** 1.5.1
 **Last Updated:** December 10, 2025
-**Status:** PRODUCTION PHASE - AI Photo Analysis + Full Breeding Pipeline
+**Status:** PRODUCTION PHASE - QR Tags + AI Photo Analysis + Full Breeding Pipeline
 **Architecture:** SQLite + Next.js 15 + Prisma ORM + Claude AI
 
 ---
@@ -47,11 +47,33 @@ The Cladari Plant Database is a comprehensive Anthurium breeding management syst
 ✅ Advanced Care Features: Batch care, quick care (Cmd+K), rain tracking
 ✅ Dashboard Analytics: Care queue, collection stats, critical alerts
 ✅ BREEDING PIPELINE: Full cross tracking from pollination to graduated plants
-✅ AI PHOTO ANALYSIS: Claude Sonnet 4 vision for plant health assessment
+✅ AI PHOTO ANALYSIS: Claude Opus 4 vision + extended thinking for plant health
+✅ QR CODE SYSTEM: Plant and location tags with quickcare flow (verified working)
+✅ TIMEZONE HANDLING: America/New_York default, no more date bugs
 ```
 
 ### Recent Improvements 🚀
 ```
+Dec 10: QR CODE INFRASTRUCTURE (v1.5.1) - Plant and location tag system
+        - Plant QR: /q/p/{plantId} → plant detail with quickcare modal
+        - Location QR: /q/l/{location} → batch care with auto-selection
+        - Print APIs: /api/print/plant-tag, /api/print/location-tag
+        - Formats: HTML preview, ZPL for Zebra ZD421CN, PNG download
+        - Tailscale IP encoding for mobile scanning
+        - VERIFIED WORKING on phone over Tailscale network
+
+Dec 10: TIMEZONE STANDARDIZATION (v1.5.1) - Fixed date off-by-one bugs
+        - New utility: /lib/timezone.ts with America/New_York default
+        - getTodayString() for consistent local dates
+        - Fixed: Care at 10pm EST no longer shows as tomorrow
+        - All 14 date initializations updated across codebase
+
+Dec 10: AI MODEL UPGRADE (v1.5.1) - Claude Opus 4 with extended thinking
+        - 16K token thinking budget for deeper analysis
+        - Epistemic Rigor: observations vs hypotheses, confidence levels
+        - EC/pH Delta Analysis: input composition context, trend analysis
+        - maxDuration: 120s for complex diagnostic turns
+
 Dec 10: AI PHOTO ANALYSIS (v1.5.0) - Claude Sonnet 4 vision integration
         - AIAssistant component on plant detail pages
         - Two modes: Recent (3 photos) and Comprehensive (20 photos)
@@ -357,16 +379,22 @@ src/
 │   │   └── page.tsx              # Batch care operations
 │   ├── locations/
 │   │   └── page.tsx              # Location management
+│   ├── q/
+│   │   └── [...slug]/page.tsx    # QR redirect handler (/q/p/{id}, /q/l/{loc})
 │   └── api/
 │       ├── plants/
 │       │   ├── route.ts          # GET /api/plants, POST /api/plants
+│       │   ├── lookup/route.ts   # Plant lookup by ID (for QR)
 │       │   └── [id]/
 │       │       ├── route.ts      # GET/PUT/PATCH/DELETE
 │       │       └── care-logs/    # Care log endpoints
+│       ├── print/
+│       │   ├── plant-tag/[id]/   # Plant tag print (html/zpl/png)
+│       │   └── location-tag/[name]/ # Location tag print
 │       ├── photos/
 │       │   └── route.ts          # Photo upload/management
 │       ├── chat/
-│       │   └── route.ts          # AI chat endpoint (Claude Sonnet 4)
+│       │   └── route.ts          # AI chat endpoint (Claude Opus 4)
 │       ├── batch-care/
 │       │   └── route.ts          # Batch operations
 │       └── dashboard/
@@ -382,6 +410,10 @@ src/
 │       └── ECPHDashboard.tsx     # EC/pH analytics
 └── lib/
     ├── prisma.ts                 # Prisma client singleton
+    ├── timezone.ts               # Timezone utilities (America/New_York)
+    ├── qr.ts                     # QR code generation (Tailscale URL)
+    ├── zpl.ts                    # Zebra ZPL templates (2"x1" labels)
+    ├── breeding-ids.ts           # ID generation (ANT-, CLX-, SDB-, SDL-)
     ├── care/
     │   ├── ecPhUtils.ts          # EC/pH calculations
     │   ├── recommendations.ts    # ML care predictions
@@ -602,7 +634,8 @@ sqlite3 prisma/dev.db "SELECT date, action, details FROM CareLog WHERE plantId='
 ```javascript
 // Phase 2 (Next 2-8 weeks)
 {
-  qr_code_generation: false,       // Print labels with QR codes
+  zebra_printer_integration: false, // Connect Zebra ZD421CN for physical tags
+  batch_print: false,              // Print all tags for a location at once
   mobile_pwa: false,               // Mobile-optimized plant pages
   sensor_integration: false,       // SensorPush, smart home data
   export_darwin_core: false,       // Botanical standard export
@@ -675,9 +708,153 @@ npx prisma migrate dev --name migrate_to_postgresql
 
 ---
 
+## 📱 QR Code System Architecture
+
+PlantDB includes a QR code system for frictionless mobile data entry. Scan a tag → opens the right page with the right actions pre-selected.
+
+### URL Schema
+
+```
+/q/p/{plantId}     → /plants/{dbId}?quickcare=true
+/q/l/{locationSlug} → /batch-care?location={location}&quickcare=true
+```
+
+### QR Flow Diagram
+
+```
+Phone Camera → QR Code (Tailscale URL)
+      ↓
+/q/[...slug]/page.tsx (Redirect Handler)
+      ↓
+┌─────────────────┬──────────────────────────────────┐
+│ /q/p/{plantId}  │ /q/l/{location}                  │
+├─────────────────┼──────────────────────────────────┤
+│ Lookup plant by │ Redirect to /batch-care          │
+│ plantId (ANT-)  │ with ?location= param            │
+│ or DB id        │                                  │
+├─────────────────┼──────────────────────────────────┤
+│ Redirect to     │ useEffect detects param:         │
+│ /plants/{id}    │ - Finds location by name         │
+│ ?quickcare=true │ - Sets selectedLocationFilter    │
+│                 │ - Auto-selects all plants there  │
+│                 │ - Clears URL param               │
+├─────────────────┼──────────────────────────────────┤
+│ useEffect in    │ User logs care for entire        │
+│ plant page      │ location in one action           │
+│ opens modal     │                                  │
+└─────────────────┴──────────────────────────────────┘
+```
+
+### Key Files
+
+**QR Generation** (`src/lib/qr.ts`)
+- `QR_BASE_URL`: Defaults to `http://100.88.172.122:3000` (Tailscale)
+- Can override with `NEXT_PUBLIC_QR_BASE_URL` env var
+- `getQRUrl(type, id)` - Build URL for QR content
+- `generateQRDataUrl()` - Base64 data URL for display
+- `generateQRSvg()` - SVG string for printing/scaling
+- `generateQRMatrix()` - Raw boolean matrix for ZPL rendering
+
+**ZPL Templates** (`src/lib/zpl.ts`)
+- `generatePlantTagZPL()` - 2"x1" label with QR + text
+- `generateLocationTagZPL()` - Location tags with plant count
+- `generateQRGraphicField()` - Converts QR matrix to ZPL ^GFA
+- Optimized for Zebra ZD421CN (300 DPI thermal transfer)
+
+**Redirect Handler** (`src/app/q/[...slug]/page.tsx`)
+- Parses `/q/p/{id}` and `/q/l/{location}` patterns
+- Plant lookup via `/api/plants/lookup`
+- Shows loading spinner during redirect
+
+**Print APIs**
+- `/api/print/plant-tag/[id]/route.ts`
+- `/api/print/location-tag/[name]/route.ts`
+- Query params: `?format=html|zpl|png`
+
+### ZPL Label Layout (2" x 1" at 300 DPI)
+
+```
++---------------------------+
+| [QR]  ANT-2025-0036       |  (plantId - 40pt)
+| [QR]  Hybrid Name Here    |  (line1 - 32pt)
+| [QR]  Section             |  (line2 - 24pt)
+|       cladari.app         |  (brand - 18pt)
++---------------------------+
+600 dots wide × 300 dots tall
+QR code: 150x150 dots (0.5" square)
+```
+
+### Tailscale Configuration
+
+- Machine `f1` at `100.88.172.122` runs dev server
+- QR codes encode this IP for phone → laptop access
+- NAS `cheechnas` at `100.82.66.63` for backups
+- Production: Set `NEXT_PUBLIC_QR_BASE_URL=https://cladari.app`
+
+### Testing QR System
+
+```bash
+# Plant tag preview (browser)
+http://localhost:3000/api/print/plant-tag/ANT-2025-0036?format=html
+
+# Location tag preview
+http://localhost:3000/api/print/location-tag/BALCONY?format=html
+
+# Test redirect (simulates QR scan)
+http://localhost:3000/q/p/ANT-2025-0036
+
+# Download ZPL for printer
+curl "http://localhost:3000/api/print/plant-tag/ANT-2025-0036?format=zpl" > label.zpl
+```
+
+---
+
+## 🕐 Timezone Handling
+
+All date operations use centralized timezone utilities to prevent off-by-one bugs (care logged at 10pm EST showing as tomorrow).
+
+### Key File: `/lib/timezone.ts`
+
+```typescript
+// Default timezone (configurable in future)
+export const APP_TIMEZONE = 'America/New_York';
+
+// Use instead of: new Date().toISOString().split('T')[0]
+export function getTodayString(timezone?: string): string
+
+// Format existing date for form inputs
+export function formatDateForInput(date: Date | string): string
+
+// Parse form date at noon to avoid boundary issues
+export function parseDateAtNoon(dateString: string): Date
+
+// Relative time: "today", "yesterday", "3 days ago"
+export function getRelativeTime(date: Date | string): string
+
+// Check if date is today
+export function isToday(date: Date | string): boolean
+```
+
+### Why Noon?
+
+API routes create dates at noon (`T12:00:00`) rather than midnight to avoid timezone boundary issues:
+```typescript
+// In /api/plants/[id]/care-logs/route.ts
+date: body.date ? new Date(body.date + 'T12:00:00') : new Date()
+```
+
+### Future: User-Configurable Timezone
+
+The utility accepts an optional timezone parameter. Future settings page can allow:
+- Auto-detect from browser: `Intl.DateTimeFormat().resolvedOptions().timeZone`
+- Manual override in user preferences
+- Store in user profile or localStorage
+
+---
+
 ## 🤖 AI Photo Analysis Architecture
 
-PlantDB includes Claude Sonnet 4 vision integration for intelligent plant health analysis. The AI can analyze photos alongside care data to provide diagnostic insights.
+PlantDB includes Claude Opus 4 vision integration with extended thinking for intelligent plant health analysis. The AI can analyze photos alongside care data to provide diagnostic insights with explicit reasoning.
 
 ### Architecture Overview
 
@@ -686,7 +863,8 @@ Plant Detail Page → AIAssistant Component
          ↓ useChat hook (AI SDK)
     /api/chat (Next.js Route)
          ↓ loadImageAsBase64()
-    Claude Sonnet 4 (claude-sonnet-4-20250514)
+    Claude Opus 4 (claude-opus-4-20250514)
+         ↓ Extended Thinking (16K budget)
          ↓ Streaming Response
     ReactMarkdown Rendering
 ```
@@ -702,10 +880,17 @@ Plant Detail Page → AIAssistant Component
 - Photo count indicator showing "X of Y photos"
 
 **Chat API** (`src/app/api/chat/route.ts`)
-- Integrates with Anthropic Claude API
+- Integrates with Anthropic Claude API (Opus 4)
+- Extended thinking enabled (16K token budget)
+- maxDuration: 120s for complex diagnostic turns
 - Loads photos as base64 from filesystem
 - Injects plant context (care logs, EC/pH, location, health)
 - Streaming responses via AI SDK's `streamText()`
+
+**System Prompt Enhancements (v1.5.1)**
+- **Epistemic Rigor**: Distinguishes observations vs hypotheses, confidence levels (HIGH/MEDIUM/LOW)
+- **EC/pH Delta Analysis**: Input composition context (Si raises pH), trend vs isolated reading analysis
+- **No Confabulation**: Explicit instruction to verify data before assuming, ask before prescribing
 
 ### Photo Processing Flow
 
@@ -1079,4 +1264,4 @@ When a seedling is graduated:
 
 ---
 
-**End of Engineering Manual v1.5.0**
+**End of Engineering Manual v1.5.1**

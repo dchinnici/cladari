@@ -22,7 +22,10 @@ plantDB/
 │   │   ├── api/               # REST endpoints
 │   │   │   ├── breeding/      # Breeding record API
 │   │   │   ├── seed-batches/  # Seed batch API
-│   │   │   └── seedlings/     # Seedling API
+│   │   │   ├── seedlings/     # Seedling API
+│   │   │   ├── chat/          # AI chat endpoint (Claude Opus 4)
+│   │   │   └── print/         # QR/label print APIs (plant-tag, location-tag)
+│   │   ├── q/                 # QR redirect handler (/q/p/{id}, /q/l/{loc})
 │   │   ├── plants/            # Plant management UI
 │   │   ├── breeding/          # Breeding pipeline UI
 │   │   ├── batch-care/        # Batch operations
@@ -30,8 +33,10 @@ plantDB/
 │   ├── components/            # React components
 │   └── lib/
 │       ├── breeding-ids.ts    # ID generation utilities
+│       ├── timezone.ts        # Timezone utilities (America/New_York default)
+│       ├── qr.ts              # QR code generation (Tailscale URL encoding)
+│       ├── zpl.ts             # Zebra ZPL templates for label printing
 │       └── ...                # Care algorithms, ML functions
-├── mcp-server/                # MCP server for AI integration
 ├── public/uploads/            # Photo storage
 └── scripts/                   # Automation scripts
 ```
@@ -53,7 +58,9 @@ plantDB/
 - Photo management with cover selection
 - Batch care operations
 - Dashboard analytics
-- MCP server integration
+- **AI Photo Analysis** (v1.5.0) - Claude Opus 4 with extended thinking
+- **QR Code System** (v1.5.1) - Plant and location tags with quickcare flow
+- **Timezone handling** (v1.5.1) - America/New_York, no more date bugs
 - **Breeding pipeline** (v1.3.0) - Full cross tracking
 
 ### Breeding Module (v1.3.0 - Implemented)
@@ -87,12 +94,39 @@ Cross (CLX-YYYY-###) → Harvest → SeedBatch (SDB-YYYY-###) → Seedling (SDL-
 - Seed batch modal UI (API complete)
 - Seedling modal UI (API complete)
 - Graduation workflow UI (API complete)
-- QR code generation per plant/batch
-- QR scan → quick care log flow
+- Zebra ZD421CN printer integration (ZPL templates ready)
+- Batch print functionality (all plants in a location)
 - Postgres migration for production
 - Auth layer (Clerk/Supabase) for multi-tenant
 
-### Just Completed (Dec 5, 2025)
+### Just Completed (Dec 10, 2025 - v1.5.1)
+
+**QR Code Infrastructure (FULLY WORKING):**
+- **Plant QR**: `/q/p/{plantId}` → Opens plant detail with quickcare modal
+- **Location QR**: `/q/l/{locationSlug}` → Opens batch care with location + all plants auto-selected
+- **Print APIs**: `/api/print/plant-tag/{id}` and `/api/print/location-tag/{name}`
+  - `?format=html` - Browser preview with print button
+  - `?format=zpl` - Raw ZPL for Zebra ZD421CN (2"x1" labels at 300 DPI)
+  - `?format=png` - QR code as PNG download
+- **QR buttons** on plant detail and locations pages
+- **Tailscale URL encoding**: QR codes use `100.88.172.122:3000` for mobile scanning
+- **Verified working** on phone over Tailscale network
+
+**Timezone Standardization (FIXES DATE BUGS):**
+- New utility: `/lib/timezone.ts` with `America/New_York` default
+- `getTodayString()` returns consistent YYYY-MM-DD in local timezone
+- Fixed: Care logged at 10pm EST no longer shows as tomorrow
+- Future: Can be made configurable via user settings
+- All 14 date initializations across codebase updated
+
+**AI Chat Upgrades:**
+- Model: Claude Opus 4 with extended thinking (16K token budget)
+- New system prompt sections:
+  - **Epistemic Rigor**: Observations vs hypotheses, confidence levels (HIGH/MEDIUM/LOW)
+  - **EC/pH Delta Analysis**: Input composition context (Si raises pH), trend vs isolated reading
+- maxDuration increased to 120s for complex analysis
+
+### Previously Completed (Dec 5, 2025)
 - **CloneBatch model** added to schema (CLB-YYYY-###)
 - **API routes**: `/api/clone-batches` (CRUD complete)
 - **UI**: `/batches` page with create modal, stats, list view
@@ -212,12 +246,14 @@ This is Layer 2 (Biological Biography) of the Stream Protocol - verification thr
 - ROI dashboards ("this protocol saved $X")
 - Enterprise pricing
 
-### Key Mobile Feature: QR Quick Log
+### Key Mobile Feature: QR Quick Log (IMPLEMENTED v1.5.1)
 The mobile unlock isn't an app - it's frictionless data entry:
-- QR code on plant tag → opens plant bio page
-- Quick action buttons: water, fertilize, note, photo
+- **Plant QR**: Scan → opens plant page with quickcare modal auto-triggered
+- **Location QR**: Scan "BALCONY" → batch care page with location pre-selected + all plants in that location auto-selected
 - Walk past a bench, notice something, log it in 5 seconds
 - Makes one-off VALUABLE data entry possible in real-time
+- **Network**: Uses Tailscale IP (100.88.172.122) for phone → dev machine access
+- **Next step**: Connect Zebra ZD421CN printer for physical tag printing
 
 ### Why Not Consumer App
 - Red ocean market (Planta, Greg, etc.)
