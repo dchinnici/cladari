@@ -1,5 +1,5 @@
 # Cladari PlantDB - Operator Manual
-**Version 1.3.0** | **Updated: December 4, 2025**
+**Version 1.5.0** | **Updated: December 10, 2025**
 
 ## 🌿 Welcome to Your Plant Management System
 
@@ -13,12 +13,13 @@ This guide will help you use all the features of your Anthurium collection datab
 2. [Managing Your Plants](#-managing-your-plants)
 3. [Care Management](#-care-management)
 4. [Photo Management](#-photo-management)
-5. [EC/pH Monitoring](#-ecph-monitoring)
-6. [Batch Operations](#-batch-operations)
-7. [Breeding Pipeline](#-breeding-pipeline) *(NEW)*
-8. [Dashboard Features](#-dashboard-features)
-9. [Keyboard Shortcuts](#-keyboard-shortcuts)
-10. [Troubleshooting](#-troubleshooting)
+5. [AI Photo Analysis](#-ai-photo-analysis) *(NEW)*
+6. [EC/pH Monitoring](#-ecph-monitoring)
+7. [Batch Operations](#-batch-operations)
+8. [Breeding Pipeline](#-breeding-pipeline)
+9. [Dashboard Features](#-dashboard-features)
+10. [Keyboard Shortcuts](#-keyboard-shortcuts)
+11. [Troubleshooting](#-troubleshooting)
 
 ---
 
@@ -166,6 +167,77 @@ The cover photo appears on plant cards in the main view:
 - **Delete**: Click the trash icon to remove
 - Photos are stored in `/public/uploads/photos/`
 - Thumbnails generated automatically for performance
+
+---
+
+## 🤖 AI Photo Analysis
+
+Use Claude AI to analyze your plant photos and get intelligent health insights.
+
+### Accessing the AI Assistant
+
+1. Go to any plant's detail page
+2. Scroll down to find the **AI Assistant** chat panel
+3. The assistant has access to all your plant's photos and care history
+
+### Two Analysis Modes
+
+**Recent Mode (Default)**
+- Analyzes the **3 most recent photos**
+- Best for quick check-ins and follow-up questions
+- Lower token cost (~4.5K tokens per message)
+
+**Comprehensive Mode (Deep Analysis)**
+- Analyzes up to **20 photos** for thorough evaluation
+- Best for initial health assessment or investigating issues
+- Check the **"Deep analysis"** checkbox to enable
+- Higher token cost (~30K tokens per message)
+
+### Optimal Usage Workflow
+
+For the best balance of analysis depth and cost:
+
+1. **Start with Deep Analysis ON** for your first question
+   - Example: "Review photos and provide analysis of plant health"
+   - AI analyzes full photo history, identifies patterns
+
+2. **Uncheck Deep Analysis** for follow-up questions
+   - The AI remembers what it saw in previous turns
+   - Follow-ups only send 3 photos, reducing cost
+   - Example: "What could cause that stippling we discussed?"
+
+### What the AI Can Do
+
+- **Health Assessment**: Overall plant condition evaluation
+- **Symptom Diagnosis**: Identify pests, diseases, nutrient issues
+- **Morphological Tracking**: Trace changes across photos over time
+- **Care Correlation**: Cross-reference visual symptoms with your EC/pH data
+- **Hybrid Identification**: Question or validate labeled cultivar IDs
+- **Treatment Recommendations**: Suggest next steps based on findings
+
+### Example Questions
+
+- "Review photos and provide analysis of plant health"
+- "Can you identify any signs of pest damage?"
+- "How has the leaf color changed over the past few months?"
+- "The new leaves look different - is this normal growth?"
+- "Based on photos and care logs, what's causing the yellowing?"
+
+### Understanding Responses
+
+The AI provides formatted responses with:
+- **Headers** for different topics
+- **Bullet points** for observations
+- **Bold text** for key findings
+- References to specific photos when relevant
+
+### Tips for Best Results
+
+1. **Upload photos regularly** - More photos = better trend analysis
+2. **Use consistent lighting** - Helps AI compare across time
+3. **Photograph problem areas** - Close-ups of issues get better diagnosis
+4. **Ask specific questions** - "Is this thrips damage?" beats "what's wrong?"
+5. **Mention relevant context** - "I just changed the fertilizer..."
 
 ---
 
@@ -549,4 +621,4 @@ Remember: This system grows with your collection. Every plant tracked, every mea
 
 ---
 
-*End of Operator Manual v1.3.0*
+*End of Operator Manual v1.5.0*

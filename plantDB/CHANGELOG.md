@@ -2,6 +2,38 @@
 
 All notable changes to the Cladari Plant Management System will be documented in this file.
 
+## [1.5.0] - 2025-12-10
+
+### Added
+- **AI Photo Analysis** - Vision-powered plant health analysis using Claude Sonnet 4
+  - **AIAssistant component** - Embedded chat interface on plant detail pages
+  - **Two analysis modes**:
+    - **Recent (default)**: Analyzes 3 most recent photos for quick insights
+    - **Comprehensive**: Deep analysis of up to 20 photos for thorough evaluation
+  - **Dynamic mode switching**: Change modes mid-conversation to optimize token usage
+  - **Cross-reference with care data**: AI analyzes photos alongside EC/pH logs, watering history
+  - **Multi-turn conversations**: Full conversation memory within session
+  - **Markdown rendering**: Rich formatted responses with headers, lists, code blocks
+  - **Smart scroll behavior**: Auto-scroll during streaming, user can scroll up without disruption
+  - **Photo count indicator**: Shows "X of Y photos" being analyzed
+
+- **New API Endpoint** - `/api/chat`
+  - Integrates with Anthropic Claude API (claude-sonnet-4-20250514)
+  - Processes plant photos as base64 images
+  - Includes full plant context (care logs, EC/pH data, location, health status)
+  - Streaming responses via AI SDK
+
+### Technical
+- Added `react-markdown` dependency for rich text rendering
+- AIAssistant uses `useChat` hook from `@ai-sdk/react` with custom transport
+- Photo mode controlled via ref pattern for per-request state reading
+- Photos sorted by `dateTaken` descending before selection
+
+### Notes
+- **Token costs**: ~1.5K tokens per photo. Comprehensive mode (20 photos) = ~30K tokens per message
+- **Mitigation**: Start with comprehensive for initial analysis, switch to recent for follow-ups
+- Claude API is stateless - images must be re-sent with each message (unavoidable)
+
 ## [1.4.0] - 2025-12-08
 
 ### Added

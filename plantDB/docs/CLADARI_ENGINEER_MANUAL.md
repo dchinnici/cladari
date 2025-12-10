@@ -1,8 +1,8 @@
 # Cladari Plant Database - Engineering Manual
-**Version:** 1.3.0
-**Last Updated:** December 4, 2025
-**Status:** PRODUCTION PHASE - Full Breeding Pipeline
-**Architecture:** SQLite + Next.js 15 + Prisma ORM
+**Version:** 1.5.0
+**Last Updated:** December 10, 2025
+**Status:** PRODUCTION PHASE - AI Photo Analysis + Full Breeding Pipeline
+**Architecture:** SQLite + Next.js 15 + Prisma ORM + Claude AI
 
 ---
 
@@ -26,11 +26,12 @@ The Cladari Plant Database is a comprehensive Anthurium breeding management syst
 - Hot-reloading development environment
 - API-first design (every feature has an endpoint)
 - Photo management with EXIF extraction
+- **AI Photo Analysis** - Claude Sonnet 4 vision for plant health assessment
 - ML-ready infrastructure for future AI features
 
 ---
 
-## 📊 Current System State (December 4, 2025)
+## 📊 Current System State (December 10, 2025)
 
 ### What's Working ✅
 ```
@@ -46,10 +47,26 @@ The Cladari Plant Database is a comprehensive Anthurium breeding management syst
 ✅ Advanced Care Features: Batch care, quick care (Cmd+K), rain tracking
 ✅ Dashboard Analytics: Care queue, collection stats, critical alerts
 ✅ BREEDING PIPELINE: Full cross tracking from pollination to graduated plants
+✅ AI PHOTO ANALYSIS: Claude Sonnet 4 vision for plant health assessment
 ```
 
 ### Recent Improvements 🚀
 ```
+Dec 10: AI PHOTO ANALYSIS (v1.5.0) - Claude Sonnet 4 vision integration
+        - AIAssistant component on plant detail pages
+        - Two modes: Recent (3 photos) and Comprehensive (20 photos)
+        - Dynamic mode switching mid-conversation for token optimization
+        - Cross-references photos with care logs, EC/pH data
+        - Markdown rendering with smart scroll behavior
+        - New API: /api/chat with streaming responses
+        - Token cost: ~1.5K per photo, mitigated by mode switching
+
+Dec 8: CLONE BATCH CARE (v1.4.0) - Batch care before graduation
+        - CareLog support for CloneBatch model
+        - Batch detail page with care history
+        - EC/pH tracking per batch
+        - Seed batch edit/delete functionality
+
 Dec 4: COMPLETE BREEDING PIPELINE (v1.3.0) - Full provenance tracking
         - BreedingRecord: CLX-YYYY-### cross notation
         - Harvest: Multiple berry harvests per cross
@@ -348,6 +365,8 @@ src/
 │       │       └── care-logs/    # Care log endpoints
 │       ├── photos/
 │       │   └── route.ts          # Photo upload/management
+│       ├── chat/
+│       │   └── route.ts          # AI chat endpoint (Claude Sonnet 4)
 │       ├── batch-care/
 │       │   └── route.ts          # Batch operations
 │       └── dashboard/
@@ -356,6 +375,7 @@ src/
 │   ├── modal.tsx                 # Reusable modal component
 │   ├── toast.tsx                 # Toast notifications
 │   ├── QuickCare.tsx             # Quick care modal (Cmd+K)
+│   ├── AIAssistant.tsx           # AI photo analysis chat component
 │   └── care/
 │       ├── CareQueue.tsx         # Dashboard care queue
 │       ├── UpcomingCare.tsx      # ML-powered recommendations
@@ -381,12 +401,6 @@ docs/
 ├── TEMPORAL_MORPHOLOGY.md        # Trait changes over time
 ├── ML_INTEGRATION_ROADMAP.md     # AI/ML plans
 └── UNIFIED_JOURNAL_DESIGN.md     # Journal system architecture
-
-mcp-server/
-├── index.ts                      # MCP server implementation
-├── README.md                     # MCP setup guide
-├── package.json                  # Dependencies
-└── dist/                        # Compiled JavaScript
 ```
 
 ### Scripts
@@ -661,100 +675,104 @@ npx prisma migrate dev --name migrate_to_postgresql
 
 ---
 
-## 🤖 MCP Server Architecture
+## 🤖 AI Photo Analysis Architecture
 
-PlantDB includes a Model Context Protocol (MCP) server that enables natural language interaction through Sovria AI. This represents a new paradigm: **modular domain expert systems** that can be queried conversationally.
+PlantDB includes Claude Sonnet 4 vision integration for intelligent plant health analysis. The AI can analyze photos alongside care data to provide diagnostic insights.
 
 ### Architecture Overview
 
 ```
-User → Sovria AI (Orchestrator)
-         ↓ MCP Protocol
-    PlantDB MCP Server
-         ↓ HTTP/REST
-    PlantDB Backend (Next.js)
-         ↓ Prisma ORM
-    SQLite Database
+Plant Detail Page → AIAssistant Component
+         ↓ useChat hook (AI SDK)
+    /api/chat (Next.js Route)
+         ↓ loadImageAsBase64()
+    Claude Sonnet 4 (claude-sonnet-4-20250514)
+         ↓ Streaming Response
+    ReactMarkdown Rendering
 ```
 
-### Available MCP Tools
+### Key Components
 
-**search_plants**
-- Natural language plant search
-- Example: "Find velvety plants with red veins under $200"
-- Uses semantic matching on traits, names, locations
+**AIAssistant.tsx** (`src/components/AIAssistant.tsx`)
+- Embedded chat interface on plant detail pages
+- Two photo modes: Recent (3 photos) and Comprehensive (20 photos)
+- Dynamic mode switching mid-conversation via checkbox
+- Smart scroll behavior during streaming
+- Markdown rendering with custom components
+- Photo count indicator showing "X of Y photos"
 
-**predict_care**
-- ML-powered care schedule predictions
-- Example: "Which plants need water today?"
-- Analyzes historical patterns, environment, substrate health
+**Chat API** (`src/app/api/chat/route.ts`)
+- Integrates with Anthropic Claude API
+- Loads photos as base64 from filesystem
+- Injects plant context (care logs, EC/pH, location, health)
+- Streaming responses via AI SDK's `streamText()`
 
-**diagnose_symptoms**
-- Plant health diagnosis
-- Example: "Diagnose yellowing leaves with brown tips"
-- Distinguishes similar issues (thrips vs nutrient lockout)
+### Photo Processing Flow
 
-**get_plant_details**
-- Retrieve plant information
-- Can return single plant or entire collection
-- Includes care logs, photos, statistics
+```javascript
+// 1. Photos sorted by dateTaken (newest first)
+const sortedPhotos = photos.sort((a, b) =>
+  new Date(b.dateTaken).getTime() - new Date(a.dateTaken).getTime()
+);
 
-### MCP Server Implementation
+// 2. Slice based on mode
+const photosToProcess = photoMode === 'comprehensive'
+  ? sortedPhotos.slice(0, 20)  // Up to 20 photos
+  : sortedPhotos.slice(0, 3);  // 3 most recent
 
-Location: `/mcp-server/`
+// 3. Load as base64 and attach to message
+const imageAttachments = await Promise.all(
+  photosToProcess.map(loadImageAsBase64)
+);
+```
 
-Key files:
-- `index.ts` - Server implementation with tool handlers
-- `package.json` - Dependencies (@modelcontextprotocol/sdk, zod)
-- `README.md` - Setup and configuration guide
-- `test-server.ts` - Test suite for validation
+### Token Cost Management
+
+**Understanding costs:**
+- ~1.5K tokens per photo
+- Comprehensive mode (20 photos) = ~30K tokens per message
+- Recent mode (3 photos) = ~4.5K tokens per message
+
+**Mitigation strategy (discovered by user testing):**
+1. Start conversation with Comprehensive for initial deep analysis
+2. Uncheck "Deep analysis" checkbox mid-conversation
+3. Follow-ups use Recent mode (3 photos) at lower cost
+4. Claude retains memory of photos from earlier turns
+
+**Why images re-send on every message:**
+- Claude API is STATELESS - no server-side conversation memory
+- Images must be attached to every request
+- This is unavoidable; mode switching is the only mitigation
 
 ### Configuration
 
-Add to Sovria's MCP config:
-```json
-{
-  "mcpServers": {
-    "plantdb": {
-      "command": "node",
-      "args": ["/path/to/plantDB/mcp-server/dist/index.js"],
-      "env": {
-        "PLANTDB_API_BASE": "http://localhost:3000/api"
-      }
-    }
-  }
-}
-```
-
-### Development Workflow
-
+Requires `ANTHROPIC_API_KEY` in environment:
 ```bash
-# Build MCP server
-cd mcp-server
-npm install
-npm run build
-
-# Test the server
-npm run test
-
-# Check integration with Sovria
-# Ask: "Show me all my plants"
-# Ask: "Which plants need water?"
+# .env.local
+ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-### Modular Domain Expert Pattern
+### Usage in Plant Detail Page
 
-PlantDB demonstrates the **modular domain expert** pattern:
-- Each domain (plants, health, finance) has its own system
-- Systems expose capabilities via MCP tools
-- Sovria AI orchestrates cross-domain queries
-- No data centralization required
+The AIAssistant component receives `plantData` from the parent:
+```typescript
+<AIAssistant plantData={plant} />
+```
 
-Benefits:
-- Domain expertise maintained separately
-- Systems can evolve independently
-- Clear responsibility boundaries
-- Scalable to many domains
+Plant data includes:
+- `photos[]` - All photos with URLs and dateTaken
+- `careLogs[]` - Care history with EC/pH values
+- `currentLocation` - Growing location details
+- `healthStatus`, `section`, `hybridName`, etc.
+
+### Example AI Analysis Output
+
+The AI can:
+- Trace morphological progression chronologically across photos
+- Cross-reference visual symptoms with EC/pH data from care logs
+- Distinguish similar issues (thrips damage vs Fe/Mn lockout)
+- Question labeled hybrid identification based on morphology
+- Provide substrate health recommendations based on trends
 
 ---
 
@@ -1061,4 +1079,4 @@ When a seedling is graduated:
 
 ---
 
-**End of Engineering Manual v1.3.0**
+**End of Engineering Manual v1.5.0**

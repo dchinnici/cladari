@@ -1612,9 +1612,14 @@ export default function PlantDetailPage() {
                 plantId={plant.id}
                 plantData={{
                   id: plant.id,
+                  plantId: plant.plantId,
                   catalogId: plant.catalogId,
                   genus: plant.genus,
                   species: plant.species,
+                  hybridName: plant.hybridName,
+                  section: plant.section,
+                  healthStatus: plant.healthStatus,
+                  breederCode: plant.breederCode,
                   location: plant.location?.name,
                   careLogs: plant.careLogs,
                   lastWatered: plant.careLogs ? getLastWateringEvent(plant.careLogs) : null,
@@ -1622,7 +1627,14 @@ export default function PlantDetailPage() {
                   notes: plant.notes,
                   wateringFrequency: plant.wateringFrequency,
                   lightRequirements: plant.lightRequirements,
-                  soilType: plant.soilType
+                  soilType: plant.soilType,
+                  // Include all photos for AI vision analysis (API filters based on mode)
+                  photos: plant.photos?.map((p: any) => ({
+                    url: p.url,
+                    photoType: p.photoType,
+                    dateTaken: p.dateTaken,
+                    notes: p.notes
+                  }))
                 }}
                 embedded={true}
               />
