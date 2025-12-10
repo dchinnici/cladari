@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { MapPin, Plus, Edit, Trash2 } from 'lucide-react'
+import { MapPin, Plus, Edit, Trash2, QrCode } from 'lucide-react'
 import { Modal } from '@/components/modal'
 import { showToast } from '@/components/toast'
 
@@ -206,14 +206,23 @@ export default function LocationsPage() {
                   </div>
                   <div className="flex gap-1">
                     <button
+                      onClick={() => window.open(`/api/print/location-tag/${encodeURIComponent(location.name)}`, '_blank')}
+                      className="p-1.5 hover:bg-black/[0.04] rounded"
+                      title="Print QR Tag"
+                    >
+                      <QrCode className="w-4 h-4 text-[var(--clay)]" />
+                    </button>
+                    <button
                       onClick={() => openEditModal(location)}
                       className="p-1.5 hover:bg-black/[0.04] rounded"
+                      title="Edit Location"
                     >
                       <Edit className="w-4 h-4 text-[var(--clay)]" />
                     </button>
                     <button
                       onClick={() => handleDeleteLocation(location.id)}
                       className="p-1.5 hover:bg-[var(--alert-red)]/10 rounded"
+                      title="Delete Location"
                     >
                       <Trash2 className="w-4 h-4 text-[var(--alert-red)]" />
                     </button>

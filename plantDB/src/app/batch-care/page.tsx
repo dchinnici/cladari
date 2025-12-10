@@ -1,11 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Check, Droplets, Calendar, Save, X } from 'lucide-react'
 import { showToast } from '@/components/toast'
+import { getTodayString } from '@/lib/timezone'
 
-export default function BatchCarePage() {
+function BatchCareContent() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
   const [plants, setPlants] = useState<any[]>([])
   const [locations, setLocations] = useState<any[]>([])
   const [selectedPlants, setSelectedPlants] = useState<string[]>([])
@@ -25,7 +29,7 @@ export default function BatchCarePage() {
     outputPH: '',
     rainAmount: '',
     rainDuration: '',
-    date: new Date().toISOString().split('T')[0],
+    date: '', // Set in useEffect to avoid hydration mismatch
     isBaselineFeed: false,
     // Component tracking
     useCaMg: false,
@@ -37,10 +41,31 @@ export default function BatchCarePage() {
   })
 
   useEffect(() => {
+    // Set date on client only to avoid hydration mismatch
+    setCareForm(f => ({ ...f, date: getTodayString() }))
     fetchPlants()
     fetchLocations()
     fetchFeedProducts()
   }, [])
+
+  // Handle URL params from QR code scan (location pre-selection)
+  useEffect(() => {
+    const locationParam = searchParams.get('location')
+    if (locationParam && locations.length > 0) {
+      // Find location by name (case-insensitive)
+      const location = locations.find(
+        l => l.name.toLowerCase() === locationParam.toLowerCase()
+      )
+      if (location) {
+        setSelectedLocationFilter(location.id)
+        // Auto-select all plants in this location
+        const plantsInLocation = plants.filter(p => p.locationId === location.id)
+        setSelectedPlants(plantsInLocation.map(p => p.id))
+      }
+      // Clear the URL params
+      router.replace('/batch-care', { scroll: false })
+    }
+  }, [searchParams, locations, plants, router])
 
   const fetchFeedProducts = async () => {
     try {
@@ -141,7 +166,7 @@ export default function BatchCarePage() {
           outputPH: '',
           rainAmount: '',
           rainDuration: '',
-          date: new Date().toISOString().split('T')[0],
+          date: getTodayString(),
           isBaselineFeed: false,
           useCaMg: false,
           caMgDose: '1',
@@ -565,5 +590,17 @@ export default function BatchCarePage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function BatchCarePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-[var(--clay)]">Loading...</p>
+      </div>
+    }>
+      <BatchCareContent />
+    </Suspense>
   )
 }

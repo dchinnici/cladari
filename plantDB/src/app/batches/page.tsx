@@ -5,6 +5,7 @@ import { Plus, Package, Scissors, FlaskConical, TreeDeciduous, Sprout, X, Chevro
 import Link from 'next/link'
 import { Modal } from '@/components/modal'
 import { showToast } from '@/components/toast'
+import { getTodayString } from '@/lib/timezone'
 
 interface CloneBatch {
   id: string
@@ -74,7 +75,7 @@ export default function BatchesPage() {
     externalSource: '',
     species: '',
     cultivarName: '',
-    acquiredDate: new Date().toISOString().split('T')[0],
+    acquiredDate: getTodayString(),
     acquiredCount: '1',
     containerCount: '1',
     containerType: '',
@@ -144,7 +145,7 @@ export default function BatchesPage() {
       externalSource: '',
       species: '',
       cultivarName: '',
-      acquiredDate: new Date().toISOString().split('T')[0],
+      acquiredDate: getTodayString(),
       acquiredCount: '1',
       containerCount: '1',
       containerType: '',

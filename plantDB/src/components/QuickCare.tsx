@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Modal } from './modal'
 import { showToast } from './toast'
 import { Droplets } from 'lucide-react'
+import { getTodayString } from '@/lib/timezone'
 
 interface QuickCareProps {
   isOpen: boolean
@@ -49,7 +50,7 @@ export default function QuickCare({ isOpen, onClose, plants, onSuccess }: QuickC
       const careData = {
         plantIds: selectedPlants,
         activityType,
-        date: new Date().toISOString().split('T')[0] + 'T12:00:00',
+        date: getTodayString(),
         notes,
         ...(includeBaseline && {
           ecIn: 1.15,

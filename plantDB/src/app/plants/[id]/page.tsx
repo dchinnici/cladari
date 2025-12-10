@@ -2,19 +2,21 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Camera, Heart, Activity, FileText, FlaskConical, Dna, Calendar, DollarSign, MapPin, Edit, Save, X, Plus, Trash2, Upload, Image as ImageIcon, TrendingUp, Droplets, Star, Bot } from 'lucide-react'
+import { ArrowLeft, Camera, Heart, Activity, FileText, FlaskConical, Dna, Calendar, DollarSign, MapPin, Edit, Save, X, Plus, Trash2, Upload, Image as ImageIcon, TrendingUp, Droplets, Star, Bot, QrCode } from 'lucide-react'
 import JournalIcon from '@/components/journal/JournalIcon'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useDropzone } from 'react-dropzone'
 import { Modal } from '@/components/modal'
 import { showToast } from '@/components/toast'
 import { getLastWateringEvent, getLastFertilizingEvent } from '@/lib/careLogUtils'
 import { UpcomingCare } from '@/components/care/UpcomingCare'
 import AIAssistant from '@/components/AIAssistant'
+import { getTodayString } from '@/lib/timezone'
 
 export default function PlantDetailPage() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [plant, setPlant] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
@@ -45,7 +47,7 @@ export default function PlantDetailPage() {
     phValue: '',
     tdsValue: '',
     notes: '',
-    measurementDate: new Date().toISOString().split('T')[0]
+    measurementDate: getTodayString()
   })
 
   const [careLogForm, setCareLogForm] = useState({
@@ -62,7 +64,7 @@ export default function PlantDetailPage() {
     outputPH: '',
     rainAmount: '',
     rainDuration: '',
-    date: new Date().toISOString().split('T')[0],
+    date: getTodayString(),
     // Pest/disease discovery fields
     pestType: '',
     severity: '',
@@ -114,7 +116,7 @@ export default function PlantDetailPage() {
     photoType: 'whole_plant',
     growthStage: '',
     notes: '',
-    dateTaken: new Date().toISOString().split('T')[0]
+    dateTaken: getTodayString()
   })
 
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
@@ -140,6 +142,42 @@ export default function PlantDetailPage() {
     fetchFloweringCycles()
     fetchLocations()
   }, [params.id])
+
+  // Handle quickcare URL param (from QR code scan)
+  useEffect(() => {
+    if (searchParams.get('quickcare') === 'true' && plant && !careLogModalOpen) {
+      // Open care log modal automatically
+      setCareLogModalOpen(true)
+      setCareLogForm({
+        logId: '',
+        activityType: 'watering',
+        notes: '',
+        fertilizer: '',
+        pesticide: '',
+        fungicide: '',
+        dosage: '',
+        inputEC: '',
+        inputPH: '',
+        outputEC: '',
+        outputPH: '',
+        rainAmount: '',
+        rainDuration: '',
+        date: getTodayString(),
+        pestType: '',
+        severity: '',
+        affectedArea: '',
+        fromPotSize: '',
+        toPotSize: '',
+        fromPotType: '',
+        toPotType: '',
+        substrateType: '',
+        drainageType: '',
+        substrateMix: ''
+      })
+      // Clear the quickcare param from URL
+      router.replace(`/plants/${params.id}`, { scroll: false })
+    }
+  }, [searchParams, plant, careLogModalOpen, router, params.id])
 
   // Helper to preserve scroll position during data refresh
   const preserveScrollPosition = async (callback: () => Promise<void>) => {
@@ -262,7 +300,7 @@ export default function PlantDetailPage() {
           phValue: '',
           tdsValue: '',
           notes: '',
-          measurementDate: new Date().toISOString().split('T')[0]
+          measurementDate: getTodayString()
         })
       } else {
         showToast({ type: 'error', title: 'Failed to add measurement' })
@@ -318,7 +356,7 @@ export default function PlantDetailPage() {
           outputPH: '',
           rainAmount: '',
           rainDuration: '',
-          date: new Date().toISOString().split('T')[0],
+          date: getTodayString(),
           pestType: '',
           severity: '',
           affectedArea: '',
@@ -378,7 +416,7 @@ export default function PlantDetailPage() {
       outputPH: '',
       rainAmount: '',
       rainDuration: '',
-      date: new Date().toISOString().split('T')[0],
+      date: getTodayString(),
       pestType: '',
       severity: '',
       affectedArea: '',
@@ -488,7 +526,7 @@ export default function PlantDetailPage() {
         photoType: 'whole_plant',
         growthStage: '',
         notes: '',
-        dateTaken: new Date().toISOString().split('T')[0]
+        dateTaken: getTodayString()
       })
 
       if (failCount === 0) {
@@ -533,7 +571,7 @@ export default function PlantDetailPage() {
           photoType: 'whole_plant',
           growthStage: '',
           notes: '',
-          dateTaken: new Date().toISOString().split('T')[0]
+          dateTaken: getTodayString()
         })
         showToast({ type: 'success', title: 'Photo updated' })
       } else {
@@ -767,7 +805,7 @@ export default function PlantDetailPage() {
                     outputPH: '',
                     rainAmount: '',
                     rainDuration: '',
-                    date: new Date().toISOString().split('T')[0],
+                    date: getTodayString(),
                     pestType: '',
                     severity: '',
                     affectedArea: '',
@@ -784,6 +822,13 @@ export default function PlantDetailPage() {
                 title="Add Care Log"
               >
                 <Droplets className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => window.open(`/api/print/plant-tag/${plant.id}`, '_blank')}
+                className="p-3 bg-[var(--bark)] text-white rounded hover:bg-[var(--bark)]/80 flex items-center justify-center transition-colors shadow-sm"
+                title="Print Plant Tag"
+              >
+                <QrCode className="w-5 h-5" />
               </button>
               <button
                 onClick={() => setDeleteConfirmOpen(true)}
@@ -1205,7 +1250,7 @@ export default function PlantDetailPage() {
                   onClick={() => {
                     setFloweringForm({
                       cycleId: '',
-                      spatheEmergence: new Date().toISOString().split('T')[0],
+                      spatheEmergence: getTodayString(),
                       femaleStart: '',
                       femaleEnd: '',
                       maleStart: '',
@@ -1380,7 +1425,7 @@ export default function PlantDetailPage() {
                                 photoType: photo.photoType || 'whole_plant',
                                 growthStage: photo.growthStage || '',
                                 notes: photo.notes || '',
-                                dateTaken: photo.dateTaken ? new Date(photo.dateTaken).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+                                dateTaken: photo.dateTaken ? new Date(photo.dateTaken).toLocaleDateString('en-CA') : getTodayString()
                               })
                               setPhotoUploadModalOpen(true)
                             }}
@@ -2905,7 +2950,7 @@ export default function PlantDetailPage() {
             photoType: 'whole_plant',
             growthStage: '',
             notes: '',
-            dateTaken: new Date().toISOString().split('T')[0]
+            dateTaken: getTodayString()
           })
         }}
         title={photoForm.photoId ? "Edit Photo Details" : "Upload Photos"}
@@ -3053,7 +3098,7 @@ export default function PlantDetailPage() {
                   photoType: 'whole_plant',
                   growthStage: '',
                   notes: '',
-                  dateTaken: new Date().toISOString().split('T')[0]
+                  dateTaken: getTodayString()
                 })
               }}
               className="flex-1 px-4 py-2 border border-black/[0.08] rounded text-[var(--bark)] hover:bg-[var(--parchment)]"

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { Modal } from '@/components/modal'
 import { showToast } from '@/components/toast'
+import { getTodayString } from '@/lib/timezone'
 
 interface CloneBatch {
   id: string
@@ -105,7 +106,7 @@ export default function BatchDetailPage({ params }: { params: Promise<{ id: stri
   })
 
   const [careForm, setCareForm] = useState({
-    date: new Date().toISOString().split('T')[0],
+    date: getTodayString(),
     action: 'watering',
     inputEC: '',
     inputPH: '',
@@ -207,7 +208,7 @@ export default function BatchDetailPage({ params }: { params: Promise<{ id: stri
       if (response.ok) {
         setCareModalOpen(false)
         setCareForm({
-          date: new Date().toISOString().split('T')[0],
+          date: getTodayString(),
           action: 'watering',
           inputEC: '',
           inputPH: '',

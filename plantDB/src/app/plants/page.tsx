@@ -6,6 +6,7 @@ import { showToast } from '@/components/toast'
 import { Modal } from '@/components/modal'
 import QuickCare from '@/components/QuickCare'
 import { useEffect, useState, useRef } from 'react'
+import { getTodayString } from '@/lib/timezone'
 
 export default function PlantsPage() {
   // Helper to check if plant hasn't had ANY activity in 7+ days
@@ -60,9 +61,14 @@ export default function PlantsPage() {
     speciesComplex: '',
     breederCode: '',
     acquisitionCost: '',
-    accessionDate: new Date().toISOString().split('T')[0],
+    accessionDate: '', // Set on client side to avoid hydration mismatch
     healthStatus: 'healthy',
   })
+
+  // Set date on client to avoid hydration mismatch
+  useEffect(() => {
+    setCreateForm(f => ({ ...f, accessionDate: getTodayString() }))
+  }, [])
 
   useEffect(() => {
     // Check if we're returning from plant detail (flag indicates care may have been added)
@@ -238,7 +244,7 @@ export default function PlantsPage() {
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = `cladari-plants-${new Date().toISOString().split('T')[0]}.csv`
+        a.download = `cladari-plants-${getTodayString()}.csv`
         document.body.appendChild(a)
         a.click()
         window.URL.revokeObjectURL(url)
@@ -479,7 +485,7 @@ export default function PlantsPage() {
                   if(res.ok){
                     showToast({ type: 'success', title: 'Plant created', message: 'New plant was added successfully.' })
                     setCreateOpen(false)
-                    setCreateForm({ hybridName:'', species:'', speciesComplex:'', breederCode:'', acquisitionCost:'', accessionDate: new Date().toISOString().split('T')[0], healthStatus: 'healthy' })
+                    setCreateForm({ hybridName:'', species:'', speciesComplex:'', breederCode:'', acquisitionCost:'', accessionDate: getTodayString(), healthStatus: 'healthy' })
                     await fetchPlants()
                   } else {
                     showToast({ type: 'error', title: 'Create failed', message: 'Could not create plant. Please try again.' })

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { Modal } from '@/components/modal'
 import { showToast } from '@/components/toast'
+import { getTodayString } from '@/lib/timezone'
 
 interface Plant {
   id: string
@@ -133,7 +134,7 @@ export default function BreedingPage() {
   const [harvestModalOpen, setHarvestModalOpen] = useState(false)
   const [harvestCrossId, setHarvestCrossId] = useState<string | null>(null)
   const [harvestForm, setHarvestForm] = useState({
-    harvestDate: new Date().toISOString().split('T')[0],
+    harvestDate: getTodayString(),
     berryCount: '',
     seedCount: '',
     seedViability: 'good',
@@ -144,7 +145,7 @@ export default function BreedingPage() {
   const [batchModalOpen, setBatchModalOpen] = useState(false)
   const [batchHarvestId, setBatchHarvestId] = useState<string | null>(null)
   const [batchForm, setBatchForm] = useState({
-    sowDate: new Date().toISOString().split('T')[0],
+    sowDate: getTodayString(),
     seedCount: '',
     substrate: 'sphagnum',
     container: '4-inch pot',
@@ -176,7 +177,7 @@ export default function BreedingPage() {
   const [seedlingBatchId, setSeedlingBatchId] = useState<string | null>(null)
   const [seedlingForm, setSeedlingForm] = useState({
     count: '1',
-    emergenceDate: new Date().toISOString().split('T')[0],
+    emergenceDate: getTodayString(),
     positionLabel: '',
     notes: ''
   })
@@ -193,7 +194,7 @@ export default function BreedingPage() {
   const [crossForm, setCrossForm] = useState({
     femalePlantId: '',
     malePlantId: '',
-    crossDate: new Date().toISOString().split('T')[0],
+    crossDate: getTodayString(),
     crossType: 'CONTROLLED',
     crossCategory: '',
     pollinationMethod: 'fresh',
@@ -277,7 +278,7 @@ export default function BreedingPage() {
     setCrossForm({
       femalePlantId: '',
       malePlantId: '',
-      crossDate: new Date().toISOString().split('T')[0],
+      crossDate: getTodayString(),
       crossType: 'CONTROLLED',
       crossCategory: '',
       pollinationMethod: 'fresh',
@@ -331,7 +332,7 @@ export default function BreedingPage() {
     e.stopPropagation()
     setHarvestCrossId(crossId)
     setHarvestForm({
-      harvestDate: new Date().toISOString().split('T')[0],
+      harvestDate: getTodayString(),
       berryCount: '',
       seedCount: '',
       seedViability: 'good',
@@ -375,7 +376,7 @@ export default function BreedingPage() {
     e.stopPropagation()
     setBatchHarvestId(harvestId)
     setBatchForm({
-      sowDate: new Date().toISOString().split('T')[0],
+      sowDate: getTodayString(),
       seedCount: seedCount.toString(),
       substrate: 'sphagnum',
       container: '4-inch pot',
@@ -517,7 +518,7 @@ export default function BreedingPage() {
     setSeedlingBatchId(batchId)
     setSeedlingForm({
       count: '1',
-      emergenceDate: new Date().toISOString().split('T')[0],
+      emergenceDate: getTodayString(),
       positionLabel: '',
       notes: ''
     })

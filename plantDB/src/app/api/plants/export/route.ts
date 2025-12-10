@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { getTodayString } from '@/lib/timezone'
 
 export async function GET() {
   try {
@@ -91,7 +92,7 @@ export async function GET() {
     return new NextResponse(csvContent, {
       headers: {
         'Content-Type': 'text/csv',
-        'Content-Disposition': `attachment; filename="cladari-plants-${new Date().toISOString().split('T')[0]}.csv"`
+        'Content-Disposition': `attachment; filename="cladari-plants-${getTodayString()}.csv"`
       }
     })
   } catch (error) {
