@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { MapPin, Plus, Edit, Trash2, QrCode } from 'lucide-react'
+import { MapPin, Plus, Edit, Trash2, QrCode, Radio } from 'lucide-react'
 import { Modal } from '@/components/modal'
 import { showToast } from '@/components/toast'
 
@@ -201,7 +201,15 @@ export default function LocationsPage() {
               <div key={location.id} className="bg-white border border-black/[0.08] rounded-lg p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <h3 className="font-medium text-[var(--forest)]">{location.name}</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-medium text-[var(--forest)]">{location.name}</h3>
+                      {location.sensorPushId && (
+                        <span className="flex items-center gap-1 px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] rounded" title="SensorPush linked">
+                          <Radio className="w-3 h-3" />
+                          Live
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-[var(--clay)] capitalize">{location.type}</p>
                   </div>
                   <div className="flex gap-1">
@@ -239,13 +247,17 @@ export default function LocationsPage() {
                   {location.humidity && (
                     <div className="flex justify-between">
                       <span className="text-[var(--clay)]">RH</span>
-                      <span className="text-[var(--bark)]">{location.humidity}%</span>
+                      <span className={location.sensorPushId ? "text-emerald-600 font-medium" : "text-[var(--bark)]"}>
+                        {location.humidity.toFixed(1)}%
+                      </span>
                     </div>
                   )}
                   {location.temperature && (
                     <div className="flex justify-between">
                       <span className="text-[var(--clay)]">Temp</span>
-                      <span className="text-[var(--bark)]">{location.temperature}°C</span>
+                      <span className={location.sensorPushId ? "text-emerald-600 font-medium" : "text-[var(--bark)]"}>
+                        {location.temperature.toFixed(1)}°F
+                      </span>
                     </div>
                   )}
                   {location.dli && (
@@ -257,7 +269,9 @@ export default function LocationsPage() {
                   {location.vpd && (
                     <div className="flex justify-between">
                       <span className="text-[var(--clay)]">VPD</span>
-                      <span className="text-[var(--bark)]">{location.vpd} kPa</span>
+                      <span className={location.sensorPushId ? "text-emerald-600 font-medium" : "text-[var(--bark)]"}>
+                        {location.vpd.toFixed(2)} kPa
+                      </span>
                     </div>
                   )}
                   {location.photoperiod && (
@@ -274,6 +288,12 @@ export default function LocationsPage() {
                     </span>
                   </div>
                 </div>
+
+                {location.lastSensorSync && (
+                  <p className="text-[10px] text-emerald-600 mt-2">
+                    Synced: {new Date(location.lastSensorSync).toLocaleString()}
+                  </p>
+                )}
 
                 {location.notes && (
                   <p className="text-xs text-[var(--clay)] mt-3 pt-3 border-t border-black/[0.04]">
@@ -367,26 +387,49 @@ export default function LocationsPage() {
             </div>
           </div>
 
+          {editingLocation?.sensorPushId && (
+            <div className="flex items-center gap-2 p-2 bg-emerald-50 border border-emerald-200 rounded text-sm text-emerald-700">
+              <Radio className="w-4 h-4" />
+              <span>Temperature, Humidity, and VPD are synced from SensorPush</span>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-sm text-[var(--bark)] mb-1">Humidity %</label>
+              <label className="block text-sm text-[var(--bark)] mb-1">
+                Humidity %
+                {editingLocation?.sensorPushId && <span className="text-emerald-600 text-xs ml-1">(auto)</span>}
+              </label>
               <input
                 type="number"
                 value={locationForm.humidity}
                 onChange={(e) => setLocationForm({ ...locationForm, humidity: e.target.value })}
-                className="w-full p-2 rounded border border-black/[0.08] text-sm"
+                disabled={!!editingLocation?.sensorPushId}
+                className={`w-full p-2 rounded border text-sm ${
+                  editingLocation?.sensorPushId
+                    ? 'bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed'
+                    : 'border-black/[0.08]'
+                }`}
                 placeholder="70"
               />
             </div>
             <div>
-              <label className="block text-sm text-[var(--bark)] mb-1">Temp °C</label>
+              <label className="block text-sm text-[var(--bark)] mb-1">
+                Temp °F
+                {editingLocation?.sensorPushId && <span className="text-emerald-600 text-xs ml-1">(auto)</span>}
+              </label>
               <input
                 type="number"
                 step="0.1"
                 value={locationForm.temperature}
                 onChange={(e) => setLocationForm({ ...locationForm, temperature: e.target.value })}
-                className="w-full p-2 rounded border border-black/[0.08] text-sm"
-                placeholder="22"
+                disabled={!!editingLocation?.sensorPushId}
+                className={`w-full p-2 rounded border text-sm ${
+                  editingLocation?.sensorPushId
+                    ? 'bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed'
+                    : 'border-black/[0.08]'
+                }`}
+                placeholder="72"
               />
             </div>
           </div>
@@ -404,13 +447,21 @@ export default function LocationsPage() {
               />
             </div>
             <div>
-              <label className="block text-sm text-[var(--bark)] mb-1">VPD kPa</label>
+              <label className="block text-sm text-[var(--bark)] mb-1">
+                VPD kPa
+                {editingLocation?.sensorPushId && <span className="text-emerald-600 text-xs ml-1">(auto)</span>}
+              </label>
               <input
                 type="number"
                 step="0.1"
                 value={locationForm.vpd}
                 onChange={(e) => setLocationForm({ ...locationForm, vpd: e.target.value })}
-                className="w-full p-2 rounded border border-black/[0.08] text-sm"
+                disabled={!!editingLocation?.sensorPushId}
+                className={`w-full p-2 rounded border text-sm ${
+                  editingLocation?.sensorPushId
+                    ? 'bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed'
+                    : 'border-black/[0.08]'
+                }`}
                 placeholder="1.0"
               />
             </div>

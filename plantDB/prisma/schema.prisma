@@ -431,6 +431,10 @@ model Location {
   airflow         String?  // none, low, medium, high, automated
   fanSpeed        String?  // CFM or percentage
 
+  // SensorPush integration
+  sensorPushId    String?  // SensorPush device ID (e.g., "16938503.1326776003983611910")
+  lastSensorSync  DateTime? // Last time sensor data was synced
+
   capacity        Int?
   currentOccupancy Int     @default(0)
 

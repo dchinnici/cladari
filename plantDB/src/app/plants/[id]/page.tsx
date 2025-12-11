@@ -921,6 +921,7 @@ export default function PlantDetailPage() {
                     healthStatus: plant.healthStatus,
                     breederCode: plant.breederCode,
                     location: plant.currentLocation?.name,
+                    locationId: plant.currentLocation?.id,
                     careLogs: plant.careLogs,
                     lastWatered: plant.careLogs ? getLastWateringEvent(plant.careLogs) : null,
                     lastFertilized: plant.careLogs ? getLastFertilizingEvent(plant.careLogs) : null,
@@ -2262,6 +2263,7 @@ export default function PlantDetailPage() {
               <option value="Tetraspermium">Tetraspermium</option>
               <option value="Calomystrium">Calomystrium</option>
               <option value="Digitinervium">Digitinervium</option>
+              <option value="Leptanthurium">Leptanthurium</option>
               <option value="Porphyrochitonium">Porphyrochitonium</option>
               <option value="Xialophyllum">Xialophyllum</option>
               <option value="Semaeophyllum">Semaeophyllum</option>

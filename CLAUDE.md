@@ -25,6 +25,8 @@ plantDB/
 │   │   │   ├── seedlings/     # Seedling API
 │   │   │   ├── chat/          # AI chat endpoint (Claude Opus 4)
 │   │   │   ├── chat-logs/     # AI conversation persistence (HITL)
+│   │   │   ├── sensorpush/    # SensorPush API (sync, history)
+│   │   │   ├── weather/       # Open-Meteo weather API
 │   │   │   └── print/         # QR/label print APIs (plant-tag, location-tag)
 │   │   ├── q/                 # QR redirect handler (/q/p/{id}, /q/l/{loc})
 │   │   ├── plants/            # Plant management UI
@@ -37,6 +39,8 @@ plantDB/
 │       ├── timezone.ts        # Timezone utilities (America/New_York default)
 │       ├── qr.ts              # QR code generation (Tailscale URL encoding)
 │       ├── zpl.ts             # Zebra ZPL templates for label printing
+│       ├── sensorpush.ts      # SensorPush OAuth API client
+│       ├── weather.ts         # Open-Meteo weather API (Fort Lauderdale)
 │       └── ...                # Care algorithms, ML functions
 ├── public/uploads/            # Photo storage
 └── scripts/                   # Automation scripts
@@ -52,13 +56,20 @@ plantDB/
 - **API routes**: kebab-case paths
 - **ID Generation**: `src/lib/breeding-ids.ts` for all ID generation
 
-## Current Version: v1.6.0 (Dec 10, 2025)
+## Current Version: v1.6.1 (Dec 11, 2025)
 
 ### Recently Completed
+- **SensorPush Integration** - Live environmental monitoring (v1.6.1)
+  - Library: `/lib/sensorpush.ts` - OAuth API client with token caching
+  - APIs: `/api/sensorpush/sync`, `/api/sensorpush/history`
+  - Location UI shows "Live" badge, disables manual input for sensor-linked locations
+  - 10-minute cron job syncs all sensors
+- **Weather Integration** - Open-Meteo API for outdoor context (v1.6.1)
+  - Library: `/lib/weather.ts` - Free API, Fort Lauderdale coords
+  - API: `/api/weather` - Current + 7-day forecast
+  - AI chat now receives weather + barometric pressure context
 - **Plant Detail Refactor** - 9 tabs → 5 tabs (Overview, Journal, Photos, Flowering, Lineage)
 - **AI Chat Logging** - Save conversations to Journal with HITL confidence tracking
-- **ChatLog API** - `/api/chat-logs` CRUD endpoints
-- **New Components**: HealthMetrics, QuickActions, JournalTab, JournalEntryModal, LineageTab
 
 ### Queued Workstreams
 
@@ -79,6 +90,8 @@ plantDB/
 
 ## Current State (Dec 2025)
 ### Working Well
+- **SensorPush Integration** (v1.6.1) - Live environmental monitoring, 10-min cron sync
+- **Weather Integration** (v1.6.1) - Open-Meteo for outdoor conditions + AI context
 - **Plant Detail** (v1.6.0) - 5 tabs: Overview, Journal, Photos, Flowering, Lineage
 - **AI Chat Logging** (v1.6.0) - Save conversations with HITL confidence tracking
 - **AI Photo Analysis** (v1.5.0) - Claude Opus 4 with extended thinking

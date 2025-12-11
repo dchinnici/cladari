@@ -2,12 +2,116 @@ import { createAnthropic } from '@ai-sdk/anthropic';
 import { streamText, convertToModelMessages } from 'ai';
 import { readFile } from 'fs/promises';
 import path from 'path';
+import prisma from '@/lib/prisma';
+import { getSamples, getSensors } from '@/lib/sensorpush';
+import { getWeather, formatCurrentWeather, windDirectionToCompass } from '@/lib/weather';
 
 export const maxDuration = 120; // Opus 4 with extended thinking needs more time
 
 const anthropic = createAnthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
+
+// Balcony sensor ID (outdoor, has barometric pressure)
+const OUTDOOR_SENSOR_ID = '16938503.1326776003983611910';
+
+// Helper to fetch environmental history from SensorPush
+async function getEnvironmentalHistory(locationId: string | undefined) {
+  if (!locationId) return null;
+
+  try {
+    // Get the location's sensor mapping
+    const location = await prisma.location.findUnique({
+      where: { id: locationId },
+      select: { name: true, sensorPushId: true }
+    });
+
+    if (!location?.sensorPushId) return null;
+
+    // Fetch last 7 days of data (168 hours), limit 200 samples
+    const stopTime = new Date();
+    const startTime = new Date(stopTime.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const samplesResponse = await getSamples([location.sensorPushId], 200, startTime, stopTime);
+    const samples = samplesResponse.sensors[location.sensorPushId];
+
+    if (!samples || samples.length === 0) return null;
+
+    // Calculate stats
+    const temps = samples.map(s => s.temperature);
+    const humidities = samples.map(s => s.humidity);
+    const vpds = samples.map(s => s.vpd);
+
+    // Get daily averages for the last 7 days
+    const dailyStats: Record<string, { temps: number[], humidities: number[], vpds: number[] }> = {};
+    for (const sample of samples) {
+      const day = new Date(sample.observed).toISOString().split('T')[0];
+      if (!dailyStats[day]) {
+        dailyStats[day] = { temps: [], humidities: [], vpds: [] };
+      }
+      dailyStats[day].temps.push(sample.temperature);
+      dailyStats[day].humidities.push(sample.humidity);
+      dailyStats[day].vpds.push(sample.vpd);
+    }
+
+    const dailySummary = Object.entries(dailyStats)
+      .sort(([a], [b]) => b.localeCompare(a))
+      .slice(0, 7)
+      .map(([date, data]) => {
+        const avgTemp = data.temps.reduce((a, b) => a + b, 0) / data.temps.length;
+        const avgHum = data.humidities.reduce((a, b) => a + b, 0) / data.humidities.length;
+        const avgVpd = data.vpds.reduce((a, b) => a + b, 0) / data.vpds.length;
+        return `  ${date}: Temp ${avgTemp.toFixed(1)}°F, RH ${avgHum.toFixed(1)}%, VPD ${avgVpd.toFixed(2)} kPa`;
+      })
+      .join('\n');
+
+    return {
+      locationName: location.name,
+      sampleCount: samples.length,
+      period: `${startTime.toLocaleDateString()} - ${stopTime.toLocaleDateString()}`,
+      currentReading: samples[0], // Most recent
+      stats: {
+        tempMin: Math.min(...temps).toFixed(1),
+        tempMax: Math.max(...temps).toFixed(1),
+        tempAvg: (temps.reduce((a, b) => a + b, 0) / temps.length).toFixed(1),
+        humidityMin: Math.min(...humidities).toFixed(1),
+        humidityMax: Math.max(...humidities).toFixed(1),
+        humidityAvg: (humidities.reduce((a, b) => a + b, 0) / humidities.length).toFixed(1),
+        vpdMin: Math.min(...vpds).toFixed(2),
+        vpdMax: Math.max(...vpds).toFixed(2),
+        vpdAvg: (vpds.reduce((a, b) => a + b, 0) / vpds.length).toFixed(2)
+      },
+      dailySummary
+    };
+  } catch (error) {
+    console.error('[Chat API] Error fetching environmental history:', error);
+    return null;
+  }
+}
+
+// Helper to get outdoor conditions (barometric pressure from balcony sensor + weather)
+async function getOutdoorConditions() {
+  try {
+    // Get barometric pressure from outdoor sensor
+    const samplesResponse = await getSamples([OUTDOOR_SENSOR_ID], 1);
+    const samples = samplesResponse.sensors[OUTDOOR_SENSOR_ID];
+    const outdoorSensor = samples?.[0];
+
+    // Get weather data
+    const weather = await getWeather();
+
+    return {
+      barometricPressure: outdoorSensor?.barometric_pressure,
+      sensorTemp: outdoorSensor?.temperature,
+      sensorHumidity: outdoorSensor?.humidity,
+      weather: weather.current,
+      forecast: weather.daily.slice(0, 3), // Next 3 days
+    };
+  } catch (error) {
+    console.error('[Chat API] Error fetching outdoor conditions:', error);
+    return null;
+  }
+}
 
 // Helper to load image as base64
 async function loadImageAsBase64(imagePath: string): Promise<{ base64: string; mimeType: string } | null> {
@@ -181,6 +285,12 @@ You're speaking to a master breeder - be professional, precise, and acknowledge 
   }
 
   if (plantContext) {
+    // Fetch environmental history from SensorPush (if location has sensor)
+    const envHistory = await getEnvironmentalHistory(plantContext.locationId);
+
+    // Fetch outdoor conditions (barometric pressure + weather)
+    const outdoor = await getOutdoorConditions();
+
     // Format care logs for context
     let careLogSummary = '';
     if (plantContext.careLogs && plantContext.careLogs.length > 0) {
@@ -228,6 +338,34 @@ ${plantContext.lastFertilized ? `- Last Fertilized: ${new Date(plantContext.last
 ${plantContext.notes ? `- Notes: ${plantContext.notes}` : ''}
 
 ${careLogSummary ? `RECENT CARE LOGS (last 10):\n${careLogSummary}` : 'No care logs recorded yet.'}
+
+${envHistory ? `ENVIRONMENTAL DATA (SensorPush - ${envHistory.locationName}):
+Current Reading (${new Date(envHistory.currentReading.observed).toLocaleString()}):
+  Temperature: ${envHistory.currentReading.temperature.toFixed(1)}°F
+  Humidity: ${envHistory.currentReading.humidity.toFixed(1)}%
+  VPD: ${envHistory.currentReading.vpd.toFixed(2)} kPa
+
+7-Day Summary (${envHistory.sampleCount} readings):
+  Temp Range: ${envHistory.stats.tempMin}°F - ${envHistory.stats.tempMax}°F (avg ${envHistory.stats.tempAvg}°F)
+  RH Range: ${envHistory.stats.humidityMin}% - ${envHistory.stats.humidityMax}% (avg ${envHistory.stats.humidityAvg}%)
+  VPD Range: ${envHistory.stats.vpdMin} - ${envHistory.stats.vpdMax} kPa (avg ${envHistory.stats.vpdAvg} kPa)
+
+Daily Averages:
+${envHistory.dailySummary}
+
+Use this environmental data to contextualize growth patterns in photos and correlate with care log timestamps.` : ''}
+
+${outdoor ? `OUTDOOR CONDITIONS & WEATHER (Fort Lauderdale):
+Current Weather: ${outdoor.weather.weatherDescription}, ${outdoor.weather.temperature.toFixed(0)}°F (feels ${outdoor.weather.apparentTemperature.toFixed(0)}°F)
+Wind: ${outdoor.weather.windSpeed.toFixed(0)} mph ${windDirectionToCompass(outdoor.weather.windDirection)}${outdoor.weather.windGusts > outdoor.weather.windSpeed + 5 ? `, gusts ${outdoor.weather.windGusts.toFixed(0)} mph` : ''}
+Cloud Cover: ${outdoor.weather.cloudCover}% | UV Index: ${outdoor.weather.uvIndex.toFixed(1)}
+${outdoor.weather.rain > 0 ? `Rain: ${outdoor.weather.rain.toFixed(1)}mm\n` : ''}${outdoor.barometricPressure ? `Barometric Pressure: ${outdoor.barometricPressure.toFixed(2)} inHg (from balcony sensor)\n` : ''}
+Balcony Sensor: ${outdoor.sensorTemp?.toFixed(1)}°F, ${outdoor.sensorHumidity?.toFixed(1)}% RH
+
+3-Day Forecast:
+${outdoor.forecast.map(d => `  ${d.date}: ${d.weatherDescription}, ${d.tempMin.toFixed(0)}-${d.tempMax.toFixed(0)}°F${d.precipitationProbability > 20 ? `, ${d.precipitationProbability}% chance rain` : ''}`).join('\n')}
+
+Use weather data to interpret outdoor sensor readings (e.g., 100% humidity during rain vs fog vs dew).` : ''}
 
 ${imageContents.length > 0 ? `PHOTOS PROVIDED FOR ANALYSIS (${photoMode} mode - ${imageContents.length} of ${plantContext.photos?.length || 0} total):
 ${photoDescriptions.map((desc, i) => `  Photo ${i + 1}: ${desc}`).join('\n')}

@@ -2,6 +2,59 @@
 
 All notable changes to the Cladari Plant Management System will be documented in this file.
 
+## [1.6.1] - 2025-12-11
+
+### Added
+- **SensorPush Integration** - Live environmental monitoring from SensorPush sensors
+  - **Library**: `/lib/sensorpush.ts` - Full OAuth API client with token caching
+  - **Schema**: Added `sensorPushId` field to Location model for sensor mapping
+  - **Sync API**: `/api/sensorpush/sync` - Updates all mapped locations with latest readings
+    - GET: Sync all mapped locations
+    - POST: Map a sensor to a location
+    - DELETE: Unmap a sensor
+  - **History API**: `/api/sensorpush/history` - Fetch historical sensor data
+    - Query params: locationId, sensorId, hours, limit
+    - Returns samples with calculated stats (min/max/avg)
+  - **Location UI**: "Live" badge with Radio icon for sensor-linked locations
+    - Sensor data displayed in emerald green
+    - Fields disabled in edit modal when sensor-linked (prevents manual override)
+  - **Cron job**: Every 10 minutes syncs sensors + refreshes weather
+
+- **Weather Integration** - Open-Meteo API for outdoor conditions context
+  - **Library**: `/lib/weather.ts` - Free API, no key required
+  - **Fort Lauderdale coordinates**: 26.1276, -80.1440 (445 N Andrews Ave)
+  - **Weather API**: `/api/weather` - Current conditions + 7-day forecast
+    - GET: Returns cached data (15 min freshness)
+    - POST: Force refresh (called by cron)
+  - **WMO weather codes**: Full mapping (clear, cloudy, rain, fog, thunderstorm, etc.)
+  - **Formatted output**: "Overcast, 72°F (feels 69°F), Wind 10mph NW, UV 4.2"
+
+- **AI Context Enhancement** - Environmental + weather data for smarter analysis
+  - **Location sensor history**: 7-day stats + daily averages passed to AI
+  - **Outdoor conditions**: Barometric pressure from balcony sensor (global)
+  - **Weather context**: Current conditions + 3-day forecast
+  - **Correlation capability**: AI can now explain "100% humidity = rain vs fog vs dew"
+
+- **Section Addition**: Added Leptanthurium to plant overview section dropdown
+
+### Changed
+- **Locations page**: Shows live sensor data with last sync timestamp
+- **AI Chat**: Now receives environmental history and weather context automatically
+
+### Technical
+- New Prisma field: `Location.sensorPushId` (optional String)
+- SensorPush OAuth tokens cached in memory (1 hour TTL)
+- Weather data cached 15 minutes, refreshed every 10 by cron
+- Barometric pressure sourced globally from outdoor sensor (calibration noise between sensors)
+
+### Sensor Mappings
+| Sensor | Location(s) |
+|--------|-------------|
+| Balcony OUTDOOR | Balcony (+ global pressure source) |
+| Anthurium Shelf | Grow Center 1 (loft) |
+| Grow Tent | Grow Tent 1 |
+| Bedroom Plant Shelf | Grow Center 2 (main floor), Ambient Display |
+
 ## [1.6.0] - 2025-12-10
 
 ### Added

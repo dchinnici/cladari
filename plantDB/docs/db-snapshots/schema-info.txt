@@ -101,24 +101,6 @@ CREATE UNIQUE INDEX "Location_name_key" ON "Location"("name");
 CREATE INDEX "Location_name_idx" ON "Location"("name");
 CREATE INDEX "Species_section_idx" ON "Species"("section");
 CREATE UNIQUE INDEX "Species_genus_species_key" ON "Species"("genus", "species");
-CREATE TABLE IF NOT EXISTS "CareLog" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "plantId" TEXT NOT NULL,
-    "date" DATETIME NOT NULL,
-    "action" TEXT NOT NULL,
-    "treatmentId" TEXT,
-    "dosage" REAL,
-    "unit" TEXT,
-    "details" TEXT,
-    "nextActionDue" DATETIME,
-    "performedBy" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "CareLog_plantId_fkey" FOREIGN KEY ("plantId") REFERENCES "Plant" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "CareLog_treatmentId_fkey" FOREIGN KEY ("treatmentId") REFERENCES "Treatment" ("id") ON DELETE SET NULL ON UPDATE CASCADE
-);
-CREATE INDEX "CareLog_plantId_idx" ON "CareLog"("plantId");
-CREATE INDEX "CareLog_date_idx" ON "CareLog"("date");
-CREATE INDEX "CareLog_action_idx" ON "CareLog"("action");
 CREATE TABLE IF NOT EXISTS "FloweringCycle" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "plantId" TEXT NOT NULL,
@@ -432,3 +414,74 @@ CREATE INDEX "CloneBatch_sourcePlantId_idx" ON "CloneBatch"("sourcePlantId");
 CREATE INDEX "CloneBatch_status_idx" ON "CloneBatch"("status");
 CREATE INDEX "CloneBatch_locationId_idx" ON "CloneBatch"("locationId");
 CREATE UNIQUE INDEX "SeedBatch_identifier_key" ON "SeedBatch"("identifier");
+CREATE TABLE IF NOT EXISTS "FeedProduct" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "name" TEXT NOT NULL,
+    "brand" TEXT,
+    "category" TEXT NOT NULL,
+    "ecContribution" REAL,
+    "phEffect" REAL,
+    "phEffectType" TEXT,
+    "nitrogenN" REAL,
+    "phosphorusP" REAL,
+    "potassiumK" REAL,
+    "calcium" REAL,
+    "magnesium" REAL,
+    "sulfur" REAL,
+    "iron" REAL,
+    "silica" REAL,
+    "defaultDose" REAL,
+    "maxDose" REAL,
+    "applicationNotes" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "isInBaseline" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+);
+CREATE UNIQUE INDEX "FeedProduct_name_key" ON "FeedProduct"("name");
+CREATE INDEX "FeedProduct_category_idx" ON "FeedProduct"("category");
+CREATE INDEX "FeedProduct_isActive_idx" ON "FeedProduct"("isActive");
+CREATE TABLE IF NOT EXISTS "CareLog" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "plantId" TEXT,
+    "cloneBatchId" TEXT,
+    "date" DATETIME NOT NULL,
+    "action" TEXT NOT NULL,
+    "inputEC" REAL,
+    "inputPH" REAL,
+    "outputEC" REAL,
+    "outputPH" REAL,
+    "isBaselineFeed" BOOLEAN NOT NULL DEFAULT false,
+    "feedComponents" TEXT,
+    "treatmentId" TEXT,
+    "dosage" REAL,
+    "unit" TEXT,
+    "details" TEXT,
+    "nextActionDue" DATETIME,
+    "performedBy" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "CareLog_plantId_fkey" FOREIGN KEY ("plantId") REFERENCES "Plant" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "CareLog_cloneBatchId_fkey" FOREIGN KEY ("cloneBatchId") REFERENCES "CloneBatch" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "CareLog_treatmentId_fkey" FOREIGN KEY ("treatmentId") REFERENCES "Treatment" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+CREATE INDEX "CareLog_plantId_idx" ON "CareLog"("plantId");
+CREATE INDEX "CareLog_cloneBatchId_idx" ON "CareLog"("cloneBatchId");
+CREATE INDEX "CareLog_date_idx" ON "CareLog"("date");
+CREATE INDEX "CareLog_action_idx" ON "CareLog"("action");
+CREATE TABLE IF NOT EXISTS "ChatLog" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "plantId" TEXT NOT NULL,
+    "title" TEXT,
+    "messages" TEXT NOT NULL,
+    "confidence" TEXT NOT NULL DEFAULT 'unverified',
+    "userEdits" TEXT,
+    "savedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "conversationDate" DATETIME NOT NULL,
+    "embedding" BLOB,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "ChatLog_plantId_fkey" FOREIGN KEY ("plantId") REFERENCES "Plant" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE INDEX "ChatLog_plantId_idx" ON "ChatLog"("plantId");
+CREATE INDEX "ChatLog_savedAt_idx" ON "ChatLog"("savedAt");
+CREATE INDEX "ChatLog_confidence_idx" ON "ChatLog"("confidence");

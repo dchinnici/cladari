@@ -1,6 +1,8 @@
 BreedingRecord|1
 CareLog|1
+ChatLog|1
 CloneBatch|1
+FeedProduct|1
 FloweringCycle|1
 Genetics|1
 GrowthMetric|1
