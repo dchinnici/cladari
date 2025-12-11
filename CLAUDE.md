@@ -24,6 +24,7 @@ plantDB/
 │   │   │   ├── seed-batches/  # Seed batch API
 │   │   │   ├── seedlings/     # Seedling API
 │   │   │   ├── chat/          # AI chat endpoint (Claude Opus 4)
+│   │   │   ├── chat-logs/     # AI conversation persistence (HITL)
 │   │   │   └── print/         # QR/label print APIs (plant-tag, location-tag)
 │   │   ├── q/                 # QR redirect handler (/q/p/{id}, /q/l/{loc})
 │   │   ├── plants/            # Plant management UI
@@ -51,51 +52,43 @@ plantDB/
 - **API routes**: kebab-case paths
 - **ID Generation**: `src/lib/breeding-ids.ts` for all ID generation
 
-## NEXT SESSION: Plant Detail Page Refactor
+## Current Version: v1.6.0 (Dec 10, 2025)
 
-**Priority:** HIGH - Major UX improvement
-**Plan:** See `plantDB/docs/NEXT_SESSION_PLAN.md` for full specification
+### Recently Completed
+- **Plant Detail Refactor** - 9 tabs → 5 tabs (Overview, Journal, Photos, Flowering, Lineage)
+- **AI Chat Logging** - Save conversations to Journal with HITL confidence tracking
+- **ChatLog API** - `/api/chat-logs` CRUD endpoints
+- **New Components**: HealthMetrics, QuickActions, JournalTab, JournalEntryModal, LineageTab
 
-### Summary
-Consolidate plant detail page from 9 tabs to 5:
+### Queued Workstreams
 
-```
-CURRENT (9 tabs):
-overview, recommendations, care, morphology, flowering, photos, breeding, logs, ai
+**ML Vision Pipeline** (HIGH PRIORITY - Separate workstream)
+- See `plantDB/docs/ML_VISION_PIPELINE.md` for full spec
+- 5-stage pipeline: Segmentation → Feature Extraction → Temporal Alignment → Cross-Collection Reasoning → Knowledge Graph
+- Models: SAM2, DINOv2, Florence-2
+- Hardware: RTX 4090 on F2
+- Purpose: Rigorous morphological analysis, not "good enough" similarity search
 
-TARGET (5 tabs):
-overview (consolidated), journal (unified), photos, flowering, genetics
-```
-
-### Key Changes
-1. **Overview** - Merge: health metrics + AI assistant + quick actions + plant details
-2. **Journal** - NEW: Unified timeline (care logs + notes + morphology + measurements) with filters
-3. **Photos** - Unchanged
-4. **Flowering** - Unchanged
-5. **Genetics** - Renamed from "breeding"
-
-### Why
-- Tabs 2,3,4,8,9 are rarely used separately
-- ML health metrics should be front-and-center, not buried in "recommendations" tab
-- AI assistant should be accessible from overview, not hidden in separate tab
-- Journal approach better for pgvector embeddings later
-
-### Implementation Time
-~2-3 hours of focused work
+**Production Deployment** (When ready)
+- Postgres migration + pgvector
+- Auth layer (Clerk/Supabase)
+- cladari.ai landing page (separate project, merge later)
+- External photo storage (Supabase Storage / S3)
 
 ---
 
 ## Current State (Dec 2025)
 ### Working Well
-- Plant CRUD with full detail pages (7 tabs)
-- Care logging with EC/pH tracking
-- Photo management with cover selection
-- Batch care operations
-- Dashboard analytics
+- **Plant Detail** (v1.6.0) - 5 tabs: Overview, Journal, Photos, Flowering, Lineage
+- **AI Chat Logging** (v1.6.0) - Save conversations with HITL confidence tracking
 - **AI Photo Analysis** (v1.5.0) - Claude Opus 4 with extended thinking
 - **QR Code System** (v1.5.1) - Plant and location tags with quickcare flow
 - **Timezone handling** (v1.5.1) - America/New_York, no more date bugs
 - **Breeding pipeline** (v1.3.0) - Full cross tracking
+- Care logging with EC/pH tracking
+- Photo management with cover selection (578 photos)
+- Batch care operations
+- Dashboard analytics
 
 ### Breeding Module (v1.3.0 - Implemented)
 Full pipeline tracking from pollination to accessioned plants:
@@ -133,32 +126,37 @@ Cross (CLX-YYYY-###) → Harvest → SeedBatch (SDB-YYYY-###) → Seedling (SDL-
 - Postgres migration for production
 - Auth layer (Clerk/Supabase) for multi-tenant
 
-### Just Completed (Dec 10, 2025 - v1.5.1)
+### Just Completed (Dec 10, 2025 - v1.6.0)
 
-**QR Code Infrastructure (FULLY WORKING):**
-- **Plant QR**: `/q/p/{plantId}` → Opens plant detail with quickcare modal
-- **Location QR**: `/q/l/{locationSlug}` → Opens batch care with location + all plants auto-selected
-- **Print APIs**: `/api/print/plant-tag/{id}` and `/api/print/location-tag/{name}`
-  - `?format=html` - Browser preview with print button
-  - `?format=zpl` - Raw ZPL for Zebra ZD421CN (2"x1" labels at 300 DPI)
-  - `?format=png` - QR code as PNG download
-- **QR buttons** on plant detail and locations pages
-- **Tailscale URL encoding**: QR codes use `100.88.172.122:3000` for mobile scanning
-- **Verified working** on phone over Tailscale network
+**Plant Detail Page Refactor:**
+- Consolidated 9 tabs → 5 tabs (Overview, Journal, Photos, Flowering, Lineage)
+- **Overview**: Health Metrics + AI Assistant + Quick Actions + Plant Details
+- **Journal**: Unified timeline (care logs, notes, morphology, measurements, AI consultations)
+- **Lineage**: Renamed from "breeding" - ancestry, progeny, breeding participation
 
-**Timezone Standardization (FIXES DATE BUGS):**
-- New utility: `/lib/timezone.ts` with `America/New_York` default
-- `getTodayString()` returns consistent YYYY-MM-DD in local timezone
-- Fixed: Care logged at 10pm EST no longer shows as tomorrow
-- Future: Can be made configurable via user settings
-- All 14 date initializations across codebase updated
+**AI Chat Logging with HITL:**
+- **ChatLog model**: Stores conversations with confidence tracking
+- **Confidence levels**: unverified, verified, partially_verified, disputed
+- **Manual save**: "Save" button preserves valuable conversations to Journal
+- **API**: `/api/chat-logs` CRUD endpoints
 
-**AI Chat Upgrades:**
-- Model: Claude Opus 4 with extended thinking (16K token budget)
-- New system prompt sections:
-  - **Epistemic Rigor**: Observations vs hypotheses, confidence levels (HIGH/MEDIUM/LOW)
-  - **EC/pH Delta Analysis**: Input composition context (Si raises pH), trend vs isolated reading
-- maxDuration increased to 120s for complex analysis
+**New Components:**
+- `HealthMetrics.tsx` - ML predictions, substrate health, EC/pH trends
+- `QuickActions.tsx` - One-click Water, Feed, Note, Photo buttons
+- `JournalTab.tsx` - Unified timeline with type filters
+- `JournalEntryModal.tsx` - Single modal with type selector
+- `LineageTab.tsx` - Family tree display
+
+### Previously (v1.5.1)
+
+**QR Code Infrastructure:**
+- Plant/Location QR codes with quickcare flow
+- Print APIs (html/zpl/png formats)
+- Tailscale URL encoding for mobile
+
+**Timezone Standardization:**
+- `/lib/timezone.ts` with America/New_York default
+- Fixed date off-by-one bugs
 
 ### Previously Completed (Dec 5, 2025)
 - **CloneBatch model** added to schema (CLB-YYYY-###)
