@@ -2,6 +2,25 @@
 
 All notable changes to the Cladari Plant Management System will be documented in this file.
 
+## [1.6.2] - 2025-12-11
+
+### Added
+- **Plant Detail Page UX Redesign** - Major overhaul for cleaner, more professional layout
+  - **New header**: Cover photo with plant info overlay, consolidated quick actions
+  - **Dropdown menu**: QR code, Edit, and Archive actions in single "⋮" menu
+  - **Tab restructure**: 4 tabs (Status/History/Photos/Genetics) instead of 5
+  - **Collapsible sections**: AI Assistant and Plant Details collapsed by default
+  - **Quick-access dropdowns**: Location and Health status editable from collapsed header
+  - **Environment widget**: Live SensorPush data (temp/humidity/VPD) at top of Status tab
+
+- **Orphan Photo Recovery** - Script to relink orphaned photo files to plants
+  - Found and relinked 15 photos that were disconnected from database
+  - `scripts/relink-orphans.ts` - Template for future orphan recovery
+
+### Fixed
+- **Scroll position bug**: Plant detail page now correctly scrolls to top on load
+- **Mobile viewport zoom**: Fixed horizontal overflow causing zoom issues on mobile
+
 ## [1.6.1] - 2025-12-11
 
 ### Added

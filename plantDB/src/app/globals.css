@@ -3,6 +3,13 @@
 @tailwind utilities;
 
 @layer base {
+  /* Prevent horizontal overflow on mobile */
+  html, body {
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
+  }
+
   :root {
     /* Botanical color system - earthy, professional */
     --forest: #1a3a2f;

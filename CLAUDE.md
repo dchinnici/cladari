@@ -80,11 +80,20 @@ plantDB/
 - Hardware: RTX 4090 on F2
 - Purpose: Rigorous morphological analysis, not "good enough" similarity search
 
-**Production Deployment** (When ready)
-- Postgres migration + pgvector
+**Production Deployment + pgvector** (When ready)
+- Postgres migration + pgvector extension
 - Auth layer (Clerk/Supabase)
 - cladari.ai landing page (separate project, merge later)
 - External photo storage (Supabase Storage / S3)
+
+**pgvector Migration Workflow:**
+1. **ChatLog chunking** - Parse existing ChatLogs, split on `##` headers into semantic chunks
+2. **Embed chunks** - 768 dimensions recommended (e5-base-v2 or nomic-embed-text)
+3. **ChatLogChunk model** - Store: embedding, chunkType (damage_analysis, care_analysis, environmental, recommendation), summary
+4. **Re-engineer Journal** - Write chunks at save time, not just full consultation
+5. **Hybrid search** - pgvector (semantic) + full-text (exact terminology like "Cardiolonchium")
+
+**Current data strategy:** Rich AI consultations via Opus → knowledge crystallization for future vector retrieval. Corpus building now; retrieval infrastructure at migration. ~700 entries to backfill (trivial at current scale).
 
 ---
 

@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Camera, Activity, FileText, FlaskConical, Dna, Calendar, DollarSign, MapPin, Edit, Save, X, Plus, Trash2, Upload, Image as ImageIcon, Droplets, Star, QrCode } from 'lucide-react'
-import JournalIcon from '@/components/journal/JournalIcon'
+import { ArrowLeft, Camera, Activity, FileText, FlaskConical, Dna, Calendar, DollarSign, MapPin, Edit, Save, X, Plus, Trash2, Upload, Image as ImageIcon, Droplets, Star, QrCode, MoreVertical, History, Flower2, ChevronDown, ChevronRight, MessageSquare, Info, Thermometer, Wind } from 'lucide-react'
+import Image from 'next/image'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useDropzone } from 'react-dropzone'
 import { Modal } from '@/components/modal'
@@ -12,7 +12,6 @@ import { getLastWateringEvent, getLastFertilizingEvent } from '@/lib/careLogUtil
 import AIAssistant from '@/components/AIAssistant'
 import { getTodayString } from '@/lib/timezone'
 import { HealthMetrics } from '@/components/plant/HealthMetrics'
-import { QuickActions } from '@/components/plant/QuickActions'
 import { JournalTab, type JournalEntryType } from '@/components/plant/JournalTab'
 import { LineageTab } from '@/components/plant/LineageTab'
 
@@ -22,7 +21,7 @@ export default function PlantDetailPage() {
   const searchParams = useSearchParams()
   const [plant, setPlant] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('overview')
+  const [activeTab, setActiveTab] = useState('status')
   const [editMode, setEditMode] = useState(false)
   const [editedPlant, setEditedPlant] = useState<any>({})
 
@@ -36,6 +35,11 @@ export default function PlantDetailPage() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [archiveReason, setArchiveReason] = useState<string>('died')
   const [journalEntryType, setJournalEntryType] = useState<JournalEntryType>('care')
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  // Collapsible section states (AI and Details collapsed by default)
+  const [aiExpanded, setAiExpanded] = useState(false)
+  const [detailsExpanded, setDetailsExpanded] = useState(false)
 
   // Flowering cycle state
   const [floweringCycles, setFloweringCycles] = useState<any[]>([])
@@ -44,6 +48,16 @@ export default function PlantDetailPage() {
   // Locations state
   const [locations, setLocations] = useState<any[]>([])
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)
+
+  // Environment data from SensorPush
+  const [envData, setEnvData] = useState<{
+    temperature: number
+    humidity: number
+    vpd: number
+    observed: string
+    sensorName: string
+  } | null>(null)
+  const [envLoading, setEnvLoading] = useState(false)
 
   // Form states
   const [measurementForm, setMeasurementForm] = useState({
@@ -146,6 +160,56 @@ export default function PlantDetailPage() {
     fetchFloweringCycles()
     fetchLocations()
   }, [params.id])
+
+  // Scroll to top when plant data loads (fix scroll position issue)
+  useEffect(() => {
+    if (plant && !loading) {
+      // Use requestAnimationFrame to ensure DOM has rendered
+      requestAnimationFrame(() => {
+        window.scrollTo(0, 0)
+      })
+    }
+  }, [plant, loading])
+
+  // Fetch environment data when plant location is available
+  useEffect(() => {
+    async function fetchEnvData() {
+      if (!plant?.locationId) {
+        setEnvData(null)
+        return
+      }
+
+      setEnvLoading(true)
+      try {
+        const res = await fetch(`/api/sensorpush/history?locationId=${plant.locationId}&hours=1&limit=1`)
+        const data = await res.json()
+
+        if (data.success && data.history) {
+          // Get the first sensor's latest reading
+          const sensorIds = Object.keys(data.history)
+          if (sensorIds.length > 0) {
+            const sensor = data.history[sensorIds[0]]
+            if (sensor.samples?.length > 0) {
+              const latest = sensor.samples[0]
+              setEnvData({
+                temperature: latest.temperature,
+                humidity: latest.humidity,
+                vpd: latest.vpd,
+                observed: latest.observed,
+                sensorName: sensor.sensorName
+              })
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch env data:', error)
+      } finally {
+        setEnvLoading(false)
+      }
+    }
+
+    fetchEnvData()
+  }, [plant?.locationId])
 
   // Handle quickcare URL param (from QR code scan)
   useEffect(() => {
@@ -670,6 +734,26 @@ export default function PlantDetailPage() {
     }
   }
 
+  const handleHealthStatusChange = async (newStatus: string) => {
+    try {
+      const response = await fetch(`/api/plants/${params.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ healthStatus: newStatus })
+      })
+
+      if (response.ok) {
+        await preserveScrollPosition(fetchPlant)
+        showToast({ type: 'success', title: 'Health status updated' })
+      } else {
+        showToast({ type: 'error', title: 'Failed to update health status' })
+      }
+    } catch (error) {
+      console.error('Error updating health status:', error)
+      showToast({ type: 'error', title: 'Error updating health status' })
+    }
+  }
+
   const handleSaveFloweringCycle = async () => {
     try {
       const response = await fetch(`/api/plants/${params.id}/flowering`, {
@@ -729,14 +813,6 @@ export default function PlantDetailPage() {
     }
   }
 
-  const tabs = [
-    { id: 'overview', name: 'Overview', icon: Activity },
-    { id: 'journal', name: 'Journal', icon: FileText },
-    { id: 'photos', name: 'Photos', icon: Camera },
-    { id: 'flowering', name: 'Flowering', icon: FlaskConical },
-    { id: 'lineage', name: 'Lineage', icon: Dna },
-  ]
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -756,238 +832,340 @@ export default function PlantDetailPage() {
   return (
     <div className="min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <Link href="/plants" className="inline-flex items-center text-[var(--moss)] hover:text-[var(--forest)] mb-4">
+        {/* Compact Header Bar */}
+        <div className="flex items-center justify-between py-3 mb-4">
+          <Link href="/plants" className="inline-flex items-center text-[var(--moss)] hover:text-[var(--forest)]">
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Plants
+            <span className="text-sm">Plants</span>
           </Link>
 
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold text-[var(--forest)] mb-1">
-                <span className="font-mono">{plant.plantId}</span>
-              </h1>
-              <h2 className="text-2xl text-[var(--bark)] mb-2">
-                {plant.hybridName || plant.species || 'Unknown Species'}
-              </h2>
-              {plant.crossNotation && (
-                <p className="text-lg text-[var(--clay)] mb-1">{plant.crossNotation}</p>
-              )}
-              {plant.breederCode && (
-                <span className="px-3 py-1 bg-[var(--spadix-yellow)]/20 text-[var(--spadix-yellow)] rounded-full text-sm font-medium">
-                  {plant.breederCode}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-3">
-              {/* Journal Icon */}
-              <JournalIcon
-                plantId={plant.id}
-                plantName={plant.hybridName || plant.species || plant.plantId}
-                context={activeTab}
-              />
+          {/* Menu Button */}
+          <div className="relative">
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="p-2 text-[var(--clay)] hover:text-[var(--bark)] hover:bg-[var(--parchment)] rounded-lg transition-colors"
+            >
+              <MoreVertical className="w-5 h-5" />
+            </button>
 
-              <button
-                onClick={() => {
-                  setCareLogModalOpen(true)
-                  setCareLogForm({
-                    logId: '',
-                    activityType: 'watering',
-                    notes: '',
-                    fertilizer: '',
-                    pesticide: '',
-                    fungicide: '',
-                    dosage: '',
-                    inputEC: '',
-                    inputPH: '',
-                    outputEC: '',
-                    outputPH: '',
-                    rainAmount: '',
-                    rainDuration: '',
-                    date: getTodayString(),
-                    pestType: '',
-                    severity: '',
-                    affectedArea: '',
-                    fromPotSize: '',
-                    toPotSize: '',
-                    fromPotType: '',
-                    toPotType: '',
-                    substrateType: '',
-                    drainageType: '',
-                    substrateMix: ''
-                  })
-                }}
-                className="p-3 bg-[var(--water-blue)] text-white rounded hover:bg-[var(--water-blue)]/80 flex items-center justify-center transition-colors shadow-sm"
-                title="Add Care Log"
-              >
-                <Droplets className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => window.open(`/api/print/plant-tag/${plant.id}`, '_blank')}
-                className="p-3 bg-[var(--bark)] text-white rounded hover:bg-[var(--bark)]/80 flex items-center justify-center transition-colors shadow-sm"
-                title="Print Plant Tag"
-              >
-                <QrCode className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => setDeleteConfirmOpen(true)}
-                className="p-3 bg-amber-500 text-white rounded hover:bg-amber-600 flex items-center justify-center transition-colors shadow-sm"
-                title="Archive Plant"
-              >
-                <Trash2 className="w-5 h-5" />
-              </button>
-            </div>
+            {menuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+                <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-black/[0.08] rounded-lg shadow-lg z-50 py-1">
+                  <button
+                    onClick={() => {
+                      window.open(`/api/print/plant-tag/${plant.id}`, '_blank')
+                      setMenuOpen(false)
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-[var(--bark)] hover:bg-[var(--parchment)] flex items-center gap-3"
+                  >
+                    <QrCode className="w-4 h-4" />
+                    Print QR Tag
+                  </button>
+                  <button
+                    onClick={() => {
+                      setOverviewModalOpen(true)
+                      setMenuOpen(false)
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-[var(--bark)] hover:bg-[var(--parchment)] flex items-center gap-3"
+                  >
+                    <Edit className="w-4 h-4" />
+                    Edit Details
+                  </button>
+                  <hr className="my-1 border-black/[0.08]" />
+                  <button
+                    onClick={() => {
+                      setDeleteConfirmOpen(true)
+                      setMenuOpen(false)
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-amber-600 hover:bg-amber-50 flex items-center gap-3"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Archive Plant
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="bg-white border border-black/[0.08] rounded-lg mb-6 p-2">
-          <div className="flex flex-wrap gap-1">
-            {tabs.map(tab => {
-              const Icon = tab.icon
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`px-3 py-2 rounded text-sm flex items-center gap-2 transition-colors ${
-                    activeTab === tab.id
-                      ? 'bg-[var(--forest)] text-white'
-                      : 'text-[var(--bark)] hover:bg-[var(--parchment)]'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  {tab.name}
-                </button>
-              )
-            })}
+        {/* Plant Identity Card */}
+        <div className="bg-white border border-black/[0.08] rounded-xl p-4 sm:p-6 mb-6">
+          <div className="flex gap-4 sm:gap-6">
+            {/* Cover Photo */}
+            <div className="flex-shrink-0">
+              {(() => {
+                const coverPhoto = plant.photos?.find((p: any) => p.id === plant.coverPhotoId) || plant.photos?.[0]
+                return coverPhoto ? (
+                  <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-lg overflow-hidden bg-[var(--parchment)]">
+                    <Image
+                      src={coverPhoto.url}
+                      alt={plant.hybridName || plant.species || 'Plant photo'}
+                      width={112}
+                      height={112}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-lg bg-[var(--parchment)] flex items-center justify-center">
+                    <Camera className="w-8 h-8 text-[var(--clay)]" />
+                  </div>
+                )
+              })()}
+            </div>
+
+            {/* Plant Info */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-mono text-[var(--clay)] mb-0.5">{plant.plantId}</p>
+                  <h1 className="text-xl sm:text-2xl font-semibold text-[var(--forest)] truncate">
+                    {plant.hybridName || plant.species || 'Unknown Species'}
+                  </h1>
+                  {plant.crossNotation && (
+                    <p className="text-sm text-[var(--clay)] mt-0.5 truncate">{plant.crossNotation}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Meta Row */}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-sm">
+                {plant.currentLocation && (
+                  <span className="inline-flex items-center gap-1.5 text-[var(--bark)]">
+                    <MapPin className="w-3.5 h-3.5 text-[var(--clay)]" />
+                    {plant.currentLocation.name}
+                  </span>
+                )}
+                {plant.breederCode && (
+                  <span className="px-2 py-0.5 bg-[var(--spadix-yellow)]/15 text-[var(--spadix-yellow)] rounded text-xs font-medium">
+                    {plant.breederCode}
+                  </span>
+                )}
+                {plant.section && (
+                  <span className="text-[var(--clay)]">{plant.section}</span>
+                )}
+              </div>
+            </div>
           </div>
+
+          {/* Quick Actions - Integrated into card */}
+          <div className="grid grid-cols-4 gap-2 mt-4 pt-4 border-t border-black/[0.06]">
+            <button
+              onClick={() => {
+                setCareLogForm({
+                  ...careLogForm,
+                  logId: '',
+                  activityType: 'watering',
+                  date: getTodayString()
+                })
+                setCareLogModalOpen(true)
+              }}
+              className="flex flex-col items-center gap-1 py-2 px-1 rounded-lg text-[var(--water-blue)] hover:bg-[var(--water-blue)]/10 transition-colors"
+            >
+              <Droplets className="w-5 h-5" />
+              <span className="text-xs font-medium">Water</span>
+            </button>
+            <button
+              onClick={() => {
+                setCareLogForm({
+                  ...careLogForm,
+                  logId: '',
+                  activityType: 'fertilizing',
+                  date: getTodayString()
+                })
+                setCareLogModalOpen(true)
+              }}
+              className="flex flex-col items-center gap-1 py-2 px-1 rounded-lg text-[var(--moss)] hover:bg-[var(--moss)]/10 transition-colors"
+            >
+              <FlaskConical className="w-5 h-5" />
+              <span className="text-xs font-medium">Feed</span>
+            </button>
+            <button
+              onClick={() => {
+                setJournalEntryType('note')
+                setActiveTab('history')
+              }}
+              className="flex flex-col items-center gap-1 py-2 px-1 rounded-lg text-[var(--bark)] hover:bg-[var(--bark)]/10 transition-colors"
+            >
+              <FileText className="w-5 h-5" />
+              <span className="text-xs font-medium">Note</span>
+            </button>
+            <button
+              onClick={() => setPhotoUploadModalOpen(true)}
+              className="flex flex-col items-center gap-1 py-2 px-1 rounded-lg text-[var(--spadix-yellow)] hover:bg-[var(--spadix-yellow)]/10 transition-colors"
+            >
+              <Camera className="w-5 h-5" />
+              <span className="text-xs font-medium">Photo</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="flex gap-1 mb-4 overflow-x-auto pb-1">
+          {[
+            { id: 'status', name: 'Status', icon: Activity },
+            { id: 'history', name: 'History', icon: History },
+            { id: 'photos', name: 'Photos', icon: Camera },
+            { id: 'genetics', name: 'Genetics', icon: Dna },
+          ].map(tab => {
+            const Icon = tab.icon
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors ${
+                  activeTab === tab.id
+                    ? 'bg-[var(--forest)] text-white'
+                    : 'text-[var(--bark)] hover:bg-white hover:shadow-sm'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                {tab.name}
+              </button>
+            )
+          })}
         </div>
 
         {/* Tab Content */}
         <div className="bg-white border border-black/[0.08] rounded-lg p-6">
-          {/* OVERVIEW TAB - Consolidated health metrics, AI, quick actions, plant details */}
-          {activeTab === 'overview' && (
+          {/* STATUS TAB - Health metrics + AI assistant */}
+          {activeTab === 'status' && (
             <div className="space-y-6">
+              {/* Current Environment - Only show if location has sensor */}
+              {(envData || envLoading) && (
+                <section className="bg-gradient-to-r from-[var(--water-blue)]/10 to-[var(--sage)]/10 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold text-[var(--bark)] flex items-center gap-2">
+                      <Wind className="w-4 h-4 text-[var(--water-blue)]" />
+                      Current Environment
+                    </h3>
+                    {envData && (
+                      <span className="text-xs text-[var(--clay)]">
+                        {new Date(envData.observed).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    )}
+                  </div>
+                  {envLoading ? (
+                    <div className="text-sm text-[var(--clay)]">Loading...</div>
+                  ) : envData ? (
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-1 mb-1">
+                          <Thermometer className="w-4 h-4 text-[var(--alert-red)]" />
+                          <span className="text-2xl font-bold text-[var(--bark)]">{envData.temperature.toFixed(1)}°</span>
+                        </div>
+                        <span className="text-xs text-[var(--clay)]">Temp</span>
+                      </div>
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-1 mb-1">
+                          <Droplets className="w-4 h-4 text-[var(--water-blue)]" />
+                          <span className="text-2xl font-bold text-[var(--bark)]">{envData.humidity.toFixed(0)}%</span>
+                        </div>
+                        <span className="text-xs text-[var(--clay)]">Humidity</span>
+                      </div>
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-1 mb-1">
+                          <span className="text-2xl font-bold text-[var(--bark)]">{envData.vpd.toFixed(2)}</span>
+                        </div>
+                        <span className="text-xs text-[var(--clay)]">VPD (kPa)</span>
+                      </div>
+                    </div>
+                  ) : null}
+                </section>
+              )}
+
               {/* Health Metrics Section */}
               <section>
                 <h3 className="text-lg font-semibold text-[var(--bark)] mb-3">Health & Care</h3>
                 <HealthMetrics plantId={params.id as string} />
               </section>
 
-              {/* Quick Actions */}
-              <section>
-                <h3 className="text-lg font-semibold text-[var(--bark)] mb-3">Quick Actions</h3>
-                <QuickActions
-                  onWater={() => {
-                    setCareLogForm({
-                      ...careLogForm,
-                      logId: '',
-                      activityType: 'watering',
-                      date: getTodayString()
-                    })
-                    setCareLogModalOpen(true)
-                  }}
-                  onFeed={() => {
-                    setCareLogForm({
-                      ...careLogForm,
-                      logId: '',
-                      activityType: 'fertilizing',
-                      date: getTodayString()
-                    })
-                    setCareLogModalOpen(true)
-                  }}
-                  onNote={() => {
-                    setJournalEntryType('note')
-                    setActiveTab('journal')
-                  }}
-                  onPhoto={() => setPhotoUploadModalOpen(true)}
-                />
+              {/* AI Assistant - Collapsible */}
+              <section className="border border-black/[0.08] rounded-lg overflow-hidden">
+                <button
+                  onClick={() => setAiExpanded(!aiExpanded)}
+                  className="w-full flex items-center justify-between p-4 bg-[var(--parchment)] hover:bg-[var(--parchment)]/80 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="w-5 h-5 text-[var(--forest)]" />
+                    <h3 className="text-lg font-semibold text-[var(--bark)]">AI Assistant</h3>
+                  </div>
+                  {aiExpanded ? (
+                    <ChevronDown className="w-5 h-5 text-[var(--clay)]" />
+                  ) : (
+                    <ChevronRight className="w-5 h-5 text-[var(--clay)]" />
+                  )}
+                </button>
+                {aiExpanded && (
+                  <div className="p-4 bg-white">
+                    <AIAssistant
+                      plantId={plant.id}
+                      plantData={{
+                        id: plant.id,
+                        plantId: plant.plantId,
+                        catalogId: plant.catalogId,
+                        genus: plant.genus,
+                        species: plant.species,
+                        hybridName: plant.hybridName,
+                        section: plant.section,
+                        healthStatus: plant.healthStatus,
+                        breederCode: plant.breederCode,
+                        location: plant.currentLocation?.name,
+                        locationId: plant.currentLocation?.id,
+                        careLogs: plant.careLogs,
+                        lastWatered: plant.careLogs ? getLastWateringEvent(plant.careLogs) : null,
+                        lastFertilized: plant.careLogs ? getLastFertilizingEvent(plant.careLogs) : null,
+                        notes: plant.notes,
+                        photos: plant.photos?.map((p: any) => ({
+                          url: p.url,
+                          photoType: p.photoType,
+                          dateTaken: p.dateTaken,
+                          notes: p.notes
+                        }))
+                      }}
+                      embedded={true}
+                      onSaveConversation={async (messages) => {
+                        const res = await fetch('/api/chat-logs', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            plantId: plant.id,
+                            messages,
+                            conversationDate: new Date().toISOString(),
+                          }),
+                        })
+                        if (!res.ok) throw new Error('Failed to save')
+                        showToast({ type: 'success', title: 'Conversation saved to journal' })
+                      }}
+                    />
+                  </div>
+                )}
               </section>
 
-              {/* AI Assistant - Embedded */}
-              <section>
-                <h3 className="text-lg font-semibold text-[var(--bark)] mb-3">AI Assistant</h3>
-                <AIAssistant
-                  plantId={plant.id}
-                  plantData={{
-                    id: plant.id,
-                    plantId: plant.plantId,
-                    catalogId: plant.catalogId,
-                    genus: plant.genus,
-                    species: plant.species,
-                    hybridName: plant.hybridName,
-                    section: plant.section,
-                    healthStatus: plant.healthStatus,
-                    breederCode: plant.breederCode,
-                    location: plant.currentLocation?.name,
-                    locationId: plant.currentLocation?.id,
-                    careLogs: plant.careLogs,
-                    lastWatered: plant.careLogs ? getLastWateringEvent(plant.careLogs) : null,
-                    lastFertilized: plant.careLogs ? getLastFertilizingEvent(plant.careLogs) : null,
-                    notes: plant.notes,
-                    photos: plant.photos?.map((p: any) => ({
-                      url: p.url,
-                      photoType: p.photoType,
-                      dateTaken: p.dateTaken,
-                      notes: p.notes
-                    }))
-                  }}
-                  embedded={true}
-                  onSaveConversation={async (messages) => {
-                    const res = await fetch('/api/chat-logs', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        plantId: plant.id,
-                        messages,
-                        conversationDate: new Date().toISOString(),
-                      }),
-                    })
-                    if (!res.ok) throw new Error('Failed to save')
-                    showToast({ type: 'success', title: 'Conversation saved to journal' })
-                  }}
-                />
-              </section>
-
-              {/* Plant Details Section */}
-              <section>
-                <div className="flex justify-between items-center mb-3">
-                  <h3 className="text-lg font-semibold text-[var(--bark)]">Plant Details</h3>
-                  <button
-                    onClick={() => {
-                      setOverviewForm({
-                        name: plant.hybridName || '',
-                        species: plant.species || '',
-                        crossNotation: plant.crossNotation || '',
-                        section: plant.section || '',
-                        acquisitionCost: plant.acquisitionCost?.toString() || '',
-                        acquisitionDate: plant.accessionDate ? new Date(plant.accessionDate).toISOString().split('T')[0] : '',
-                        healthStatus: plant.healthStatus || '',
-                        propagationType: plant.propagationType || '',
-                        generation: plant.generation || '',
-                        breeder: plant.breeder || '',
-                        breederCode: plant.breederCode || ''
-                      })
-                      setOverviewModalOpen(true)
-                    }}
-                    className="px-3 py-1.5 text-sm bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)] flex items-center gap-1.5"
-                  >
-                    <Edit className="w-3.5 h-3.5" />
-                    Edit
-                  </button>
-                </div>
-
-                <div className="bg-[var(--parchment)] rounded-lg p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-[var(--clay)]" />
-                        <span className="text-sm font-medium">Location:</span>
+              {/* Plant Details - Collapsible */}
+              <section className="border border-black/[0.08] rounded-lg overflow-hidden">
+                <div
+                  className="flex items-center justify-between p-4 bg-[var(--parchment)]"
+                >
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <button
+                      onClick={() => setDetailsExpanded(!detailsExpanded)}
+                      className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                    >
+                      <Info className="w-5 h-5 text-[var(--forest)]" />
+                      <h3 className="text-lg font-semibold text-[var(--bark)]">Plant Details</h3>
+                    </button>
+                    {!detailsExpanded && (
+                      <div className="flex items-center gap-2 ml-2 flex-wrap">
+                        {/* Quick Location Dropdown */}
                         <select
                           value={plant.locationId || ''}
-                          onChange={(e) => handleLocationChange(e.target.value)}
-                          className="text-sm px-2 py-1 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)] bg-white"
+                          onChange={(e) => {
+                            e.stopPropagation()
+                            handleLocationChange(e.target.value)
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-xs px-2 py-1 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)] bg-white text-[var(--bark)] max-w-[120px]"
                         >
                           <option value="">No location</option>
                           {locations.map((location: any) => (
@@ -996,97 +1174,182 @@ export default function PlantDetailPage() {
                             </option>
                           ))}
                         </select>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <DollarSign className="w-4 h-4 text-[var(--clay)]" />
-                        <span className="font-medium">Cost:</span>
-                        <span>${plant.acquisitionCost || 'N/A'}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="w-4 h-4 text-[var(--clay)]" />
-                        <span className="font-medium">Acquired:</span>
-                        <span>{plant.accessionDate ? new Date(plant.accessionDate).toLocaleDateString() : 'N/A'}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="font-medium">Section:</span>
-                        <span>{plant.section || 'N/A'}</span>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="font-medium">Health:</span>
-                        <span className={`px-2 py-0.5 rounded-full text-xs ${
-                          plant.healthStatus === 'healthy'
-                            ? 'bg-green-100 text-[var(--moss)]'
-                            : plant.healthStatus === 'struggling'
-                            ? 'bg-[var(--spadix-yellow)]/20 text-[var(--spadix-yellow)]'
-                            : 'bg-gray-100 text-[var(--bark)]'
-                        }`}>
-                          {plant.healthStatus || 'Unknown'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="font-medium">Vendor:</span>
-                        <span>{plant.vendor?.name || 'N/A'}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="font-medium">Breeder:</span>
-                        <span>{plant.breeder || 'N/A'}</span>
-                      </div>
-                      <label className="flex items-center gap-2 cursor-pointer text-sm">
-                        <input
-                          type="checkbox"
-                          checked={plant.isEliteGenetics || false}
-                          onChange={async (e) => {
-                            const newValue = e.target.checked
-                            try {
-                              const response = await fetch(`/api/plants/${params.id}`, {
-                                method: 'PATCH',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ isEliteGenetics: newValue })
-                              })
-                              if (response.ok) {
-                                await preserveScrollPosition(fetchPlant)
-                                showToast({ type: 'success', title: newValue ? 'Marked as elite' : 'Unmarked as elite' })
-                              }
-                            } catch (error) {
-                              showToast({ type: 'error', title: 'Failed to update' })
-                            }
+                        {/* Quick Health Dropdown */}
+                        <select
+                          value={plant.healthStatus || ''}
+                          onChange={(e) => {
+                            e.stopPropagation()
+                            handleHealthStatusChange(e.target.value)
                           }}
-                          className="w-3.5 h-3.5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                        />
-                        <span className="font-medium text-[var(--forest)]">Elite Genetics</span>
-                      </label>
-                    </div>
+                          onClick={(e) => e.stopPropagation()}
+                          className={`text-xs px-2 py-1 rounded border focus:outline-none focus:border-[var(--moss)] ${
+                            plant.healthStatus === 'healthy'
+                              ? 'bg-green-50 border-green-200 text-[var(--moss)]'
+                              : plant.healthStatus === 'struggling'
+                              ? 'bg-yellow-50 border-yellow-200 text-[var(--spadix-yellow)]'
+                              : plant.healthStatus === 'critical'
+                              ? 'bg-red-50 border-red-200 text-[var(--alert-red)]'
+                              : 'bg-white border-black/[0.08] text-[var(--bark)]'
+                          }`}
+                        >
+                          <option value="">Unknown</option>
+                          <option value="healthy">Healthy</option>
+                          <option value="recovering">Recovering</option>
+                          <option value="struggling">Struggling</option>
+                          <option value="critical">Critical</option>
+                        </select>
+                      </div>
+                    )}
                   </div>
-
-                  {/* Care Notes */}
-                  {editedPlant.notes && (
-                    <div className="mt-4 pt-4 border-t border-black/[0.08]">
-                      <p className="text-sm font-medium text-[var(--bark)] mb-1">Notes</p>
-                      <p className="text-sm text-[var(--clay)]">{editedPlant.notes}</p>
-                    </div>
-                  )}
-
-                  {/* Genetic Info */}
-                  {plant.genetics && (
-                    <div className="mt-4 pt-4 border-t border-black/[0.08]">
-                      <p className="text-sm font-medium text-[var(--bark)] mb-1">Genetic Info</p>
-                      <p className="text-sm text-[var(--clay)]">
-                        Ploidy: {plant.genetics.ploidy || 'Unknown'} |
-                        RA: {plant.genetics.raNumber || 'N/A'} |
-                        OG: {plant.genetics.ogNumber || 'N/A'}
-                      </p>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {detailsExpanded && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setOverviewForm({
+                            name: plant.hybridName || '',
+                            species: plant.species || '',
+                            crossNotation: plant.crossNotation || '',
+                            section: plant.section || '',
+                            acquisitionCost: plant.acquisitionCost?.toString() || '',
+                            acquisitionDate: plant.accessionDate ? new Date(plant.accessionDate).toISOString().split('T')[0] : '',
+                            healthStatus: plant.healthStatus || '',
+                            propagationType: plant.propagationType || '',
+                            generation: plant.generation || '',
+                            breeder: plant.breeder || '',
+                            breederCode: plant.breederCode || ''
+                          })
+                          setOverviewModalOpen(true)
+                        }}
+                        className="px-2 py-1 text-xs bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)] flex items-center gap-1"
+                      >
+                        <Edit className="w-3 h-3" />
+                        Edit
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setDetailsExpanded(!detailsExpanded)}
+                      className="p-1 hover:bg-black/5 rounded transition-colors"
+                    >
+                      {detailsExpanded ? (
+                        <ChevronDown className="w-5 h-5 text-[var(--clay)]" />
+                      ) : (
+                        <ChevronRight className="w-5 h-5 text-[var(--clay)]" />
+                      )}
+                    </button>
+                  </div>
                 </div>
+                {detailsExpanded && (
+                  <div className="p-4 bg-white">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-4 h-4 text-[var(--clay)]" />
+                          <span className="text-sm font-medium">Location:</span>
+                          <select
+                            value={plant.locationId || ''}
+                            onChange={(e) => handleLocationChange(e.target.value)}
+                            className="text-sm px-2 py-1 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)] bg-white"
+                          >
+                            <option value="">No location</option>
+                            {locations.map((location: any) => (
+                              <option key={location.id} value={location.id}>
+                                {location.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <DollarSign className="w-4 h-4 text-[var(--clay)]" />
+                          <span className="font-medium">Cost:</span>
+                          <span>${plant.acquisitionCost || 'N/A'}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Calendar className="w-4 h-4 text-[var(--clay)]" />
+                          <span className="font-medium">Acquired:</span>
+                          <span>{plant.accessionDate ? new Date(plant.accessionDate).toLocaleDateString() : 'N/A'}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="font-medium">Section:</span>
+                          <span>{plant.section || 'N/A'}</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="font-medium">Health:</span>
+                          <span className={`px-2 py-0.5 rounded-full text-xs ${
+                            plant.healthStatus === 'healthy'
+                              ? 'bg-green-100 text-[var(--moss)]'
+                              : plant.healthStatus === 'struggling'
+                              ? 'bg-[var(--spadix-yellow)]/20 text-[var(--spadix-yellow)]'
+                              : 'bg-gray-100 text-[var(--bark)]'
+                          }`}>
+                            {plant.healthStatus || 'Unknown'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="font-medium">Vendor:</span>
+                          <span>{plant.vendor?.name || 'N/A'}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="font-medium">Breeder:</span>
+                          <span>{plant.breeder || 'N/A'}</span>
+                        </div>
+                        <label className="flex items-center gap-2 cursor-pointer text-sm">
+                          <input
+                            type="checkbox"
+                            checked={plant.isEliteGenetics || false}
+                            onChange={async (e) => {
+                              const newValue = e.target.checked
+                              try {
+                                const response = await fetch(`/api/plants/${params.id}`, {
+                                  method: 'PATCH',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ isEliteGenetics: newValue })
+                                })
+                                if (response.ok) {
+                                  await preserveScrollPosition(fetchPlant)
+                                  showToast({ type: 'success', title: newValue ? 'Marked as elite' : 'Unmarked as elite' })
+                                }
+                              } catch (error) {
+                                showToast({ type: 'error', title: 'Failed to update' })
+                              }
+                            }}
+                            className="w-3.5 h-3.5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                          />
+                          <span className="font-medium text-[var(--forest)]">Elite Genetics</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Care Notes */}
+                    {editedPlant.notes && (
+                      <div className="mt-4 pt-4 border-t border-black/[0.08]">
+                        <p className="text-sm font-medium text-[var(--bark)] mb-1">Notes</p>
+                        <p className="text-sm text-[var(--clay)]">{editedPlant.notes}</p>
+                      </div>
+                    )}
+
+                    {/* Genetic Info */}
+                    {plant.genetics && (
+                      <div className="mt-4 pt-4 border-t border-black/[0.08]">
+                        <p className="text-sm font-medium text-[var(--bark)] mb-1">Genetic Info</p>
+                        <p className="text-sm text-[var(--clay)]">
+                          Ploidy: {plant.genetics.ploidy || 'Unknown'} |
+                          RA: {plant.genetics.raNumber || 'N/A'} |
+                          OG: {plant.genetics.ogNumber || 'N/A'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </section>
             </div>
           )}
 
           {/* JOURNAL TAB - Unified timeline */}
-          {activeTab === 'journal' && (
+          {activeTab === 'history' && (
             <JournalTab
               careLogs={plant.careLogs || []}
               traits={plant.traits || []}
@@ -1161,128 +1424,6 @@ export default function PlantDetailPage() {
                 }
               }}
             />
-          )}
-
-          {activeTab === 'flowering' && (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold">Flowering Cycles</h3>
-                <button
-                  onClick={() => {
-                    setFloweringForm({
-                      cycleId: '',
-                      spatheEmergence: getTodayString(),
-                      femaleStart: '',
-                      femaleEnd: '',
-                      maleStart: '',
-                      maleEnd: '',
-                      spatheClose: '',
-                      pollenCollected: false,
-                      pollenQuality: '',
-                      pollenStored: false,
-                      pollenStorageDate: '',
-                      notes: ''
-                    })
-                    setFloweringModalOpen(true)
-                  }}
-                  className="px-4 py-2 bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)] flex items-center gap-2">
-                  <Plus className="w-4 h-4" />
-                  Log Flowering Event
-                </button>
-              </div>
-
-              {floweringCycles && floweringCycles.length > 0 ? (
-                <div className="space-y-4">
-                  {floweringCycles.map((cycle: any) => (
-                    <div key={cycle.id} className="bg-[var(--parchment)] rounded-lg p-4">
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <p className="font-medium text-lg">
-                            {cycle.spatheEmergence ? new Date(cycle.spatheEmergence).toLocaleDateString() : 'Unknown Date'}
-                          </p>
-                          <p className="text-sm text-[var(--clay)]">Cycle ID: {cycle.id.slice(0, 8)}</p>
-                        </div>
-                        <button
-                          onClick={() => {
-                            setFloweringForm({
-                              cycleId: cycle.id,
-                              spatheEmergence: cycle.spatheEmergence ? new Date(cycle.spatheEmergence).toISOString().split('T')[0] : '',
-                              femaleStart: cycle.femaleStart ? new Date(cycle.femaleStart).toISOString().split('T')[0] : '',
-                              femaleEnd: cycle.femaleEnd ? new Date(cycle.femaleEnd).toISOString().split('T')[0] : '',
-                              maleStart: cycle.maleStart ? new Date(cycle.maleStart).toISOString().split('T')[0] : '',
-                              maleEnd: cycle.maleEnd ? new Date(cycle.maleEnd).toISOString().split('T')[0] : '',
-                              spatheClose: cycle.spatheClose ? new Date(cycle.spatheClose).toISOString().split('T')[0] : '',
-                              pollenCollected: cycle.pollenCollected || false,
-                              pollenQuality: cycle.pollenQuality || '',
-                              pollenStored: cycle.pollenStored || false,
-                              pollenStorageDate: cycle.pollenStorageDate ? new Date(cycle.pollenStorageDate).toISOString().split('T')[0] : '',
-                              notes: cycle.notes || ''
-                            })
-                            setFloweringModalOpen(true)
-                          }}
-                          className="px-3 py-1 text-sm bg-[var(--parchment)] hover:bg-[var(--sage)]/30 rounded"
-                        >
-                          Edit
-                        </button>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div>
-                          <p className="font-medium text-[var(--bark)]">Female Phase:</p>
-                          {cycle.femaleStart && (
-                            <p className="text-green-600">
-                              Start: {new Date(cycle.femaleStart).toLocaleDateString()}
-                              {cycle.femaleEnd && ` - End: ${new Date(cycle.femaleEnd).toLocaleDateString()}`}
-                            </p>
-                          )}
-                          {!cycle.femaleStart && <p className="text-[var(--clay)]">Not recorded</p>}
-                        </div>
-
-                        <div>
-                          <p className="font-medium text-[var(--bark)]">Male Phase:</p>
-                          {cycle.maleStart && (
-                            <p className="text-blue-600">
-                              Start: {new Date(cycle.maleStart).toLocaleDateString()}
-                              {cycle.maleEnd && ` - End: ${new Date(cycle.maleEnd).toLocaleDateString()}`}
-                            </p>
-                          )}
-                          {!cycle.maleStart && <p className="text-[var(--clay)]">Not recorded</p>}
-                        </div>
-
-                        {cycle.pollenCollected && (
-                          <div>
-                            <p className="font-medium text-[var(--bark)]">Pollen:</p>
-                            <p className="text-purple-600">
-                              Collected - Quality: {cycle.pollenQuality || 'N/A'}
-                              {cycle.pollenStored && ' (Stored)'}
-                            </p>
-                          </div>
-                        )}
-
-                        {cycle.spatheClose && (
-                          <div>
-                            <p className="font-medium text-[var(--bark)]">Cycle Closed:</p>
-                            <p>{new Date(cycle.spatheClose).toLocaleDateString()}</p>
-                          </div>
-                        )}
-                      </div>
-
-                      {cycle.notes && (
-                        <div className="mt-3 pt-3 border-t border-black/[0.04]">
-                          <p className="text-sm text-[var(--clay)]">{cycle.notes}</p>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <FlaskConical className="w-12 h-12 text-[var(--clay)] mx-auto mb-3" />
-                  <p className="text-[var(--clay)]">No flowering cycles recorded yet</p>
-                  <p className="text-sm text-[var(--clay)] mt-2">Start tracking fertility windows to optimize breeding</p>
-                </div>
-              )}
-            </div>
           )}
 
           {activeTab === 'photos' && (
@@ -1401,9 +1542,126 @@ export default function PlantDetailPage() {
             </div>
           )}
 
-          {/* LINEAGE TAB - Ancestry, progeny, breeding participation */}
-          {activeTab === 'lineage' && (
-            <LineageTab plant={plant} />
+          {/* GENETICS TAB - Lineage + Flowering */}
+          {activeTab === 'genetics' && (
+            <div className="space-y-8">
+              {/* Lineage Section */}
+              <section>
+                <h3 className="text-lg font-semibold text-[var(--bark)] mb-4">Lineage</h3>
+                <LineageTab plant={plant} />
+              </section>
+
+              {/* Flowering Section */}
+              <section>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold text-[var(--bark)]">Flowering Cycles</h3>
+                  <button
+                    onClick={() => {
+                      setFloweringForm({
+                        cycleId: '',
+                        spatheEmergence: getTodayString(),
+                        femaleStart: '',
+                        femaleEnd: '',
+                        maleStart: '',
+                        maleEnd: '',
+                        spatheClose: '',
+                        pollenCollected: false,
+                        pollenQuality: '',
+                        pollenStored: false,
+                        pollenStorageDate: '',
+                        notes: ''
+                      })
+                      setFloweringModalOpen(true)
+                    }}
+                    className="px-3 py-1.5 text-sm bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)] flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Log Cycle
+                  </button>
+                </div>
+
+                {floweringCycles && floweringCycles.length > 0 ? (
+                  <div className="space-y-3">
+                    {floweringCycles.map((cycle: any) => (
+                      <div key={cycle.id} className="bg-[var(--parchment)] rounded-lg p-4">
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <p className="font-medium">
+                              {cycle.spatheEmergence ? new Date(cycle.spatheEmergence).toLocaleDateString() : 'Unknown Date'}
+                            </p>
+                            <p className="text-xs text-[var(--clay)]">ID: {cycle.id.slice(0, 8)}</p>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setFloweringForm({
+                                cycleId: cycle.id,
+                                spatheEmergence: cycle.spatheEmergence ? new Date(cycle.spatheEmergence).toISOString().split('T')[0] : '',
+                                femaleStart: cycle.femaleStart ? new Date(cycle.femaleStart).toISOString().split('T')[0] : '',
+                                femaleEnd: cycle.femaleEnd ? new Date(cycle.femaleEnd).toISOString().split('T')[0] : '',
+                                maleStart: cycle.maleStart ? new Date(cycle.maleStart).toISOString().split('T')[0] : '',
+                                maleEnd: cycle.maleEnd ? new Date(cycle.maleEnd).toISOString().split('T')[0] : '',
+                                spatheClose: cycle.spatheClose ? new Date(cycle.spatheClose).toISOString().split('T')[0] : '',
+                                pollenCollected: cycle.pollenCollected || false,
+                                pollenQuality: cycle.pollenQuality || '',
+                                pollenStored: cycle.pollenStored || false,
+                                pollenStorageDate: cycle.pollenStorageDate ? new Date(cycle.pollenStorageDate).toISOString().split('T')[0] : '',
+                                notes: cycle.notes || ''
+                              })
+                              setFloweringModalOpen(true)
+                            }}
+                            className="px-2 py-1 text-xs bg-white hover:bg-[var(--sage)]/20 rounded border border-black/[0.08]"
+                          >
+                            Edit
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <p className="text-xs text-[var(--clay)] mb-0.5">Female Phase</p>
+                            {cycle.femaleStart ? (
+                              <p className="text-green-700">
+                                {new Date(cycle.femaleStart).toLocaleDateString()}
+                                {cycle.femaleEnd && ` → ${new Date(cycle.femaleEnd).toLocaleDateString()}`}
+                              </p>
+                            ) : (
+                              <p className="text-[var(--clay)]">—</p>
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-xs text-[var(--clay)] mb-0.5">Male Phase</p>
+                            {cycle.maleStart ? (
+                              <p className="text-blue-700">
+                                {new Date(cycle.maleStart).toLocaleDateString()}
+                                {cycle.maleEnd && ` → ${new Date(cycle.maleEnd).toLocaleDateString()}`}
+                              </p>
+                            ) : (
+                              <p className="text-[var(--clay)]">—</p>
+                            )}
+                          </div>
+                        </div>
+
+                        {(cycle.pollenCollected || cycle.notes) && (
+                          <div className="mt-2 pt-2 border-t border-black/[0.06] text-sm">
+                            {cycle.pollenCollected && (
+                              <span className="inline-flex items-center gap-1 text-purple-700 mr-3">
+                                <Flower2 className="w-3 h-3" />
+                                Pollen: {cycle.pollenQuality || 'collected'}{cycle.pollenStored && ' (stored)'}
+                              </span>
+                            )}
+                            {cycle.notes && <span className="text-[var(--clay)]">{cycle.notes}</span>}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-[var(--clay)]">
+                    <Flower2 className="w-10 h-10 mx-auto mb-2 opacity-40" />
+                    <p className="text-sm">No flowering cycles recorded</p>
+                  </div>
+                )}
+              </section>
+            </div>
           )}
         </div>
       </div>
