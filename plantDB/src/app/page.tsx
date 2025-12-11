@@ -119,6 +119,21 @@ export default function Home() {
                   <ChevronRight className="w-4 h-4 text-[var(--clay)]" />
                 </Link>
               )}
+              {stats?.substrateHealth && stats.substrateHealth.totalRisks > 0 && (
+                <Link
+                  href="/plants?filter=substrate_risk"
+                  className="flex items-center justify-between p-3 bg-amber-50 border border-amber-200 rounded"
+                >
+                  <div className="flex items-center gap-3">
+                    <Activity className="w-5 h-5 text-amber-600" />
+                    <div>
+                      <p className="font-medium text-amber-700">{stats.substrateHealth.totalRisks} substrate health risks</p>
+                      <p className="text-xs text-[var(--clay)]">Declining EC/pH trajectory</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-[var(--clay)]" />
+                </Link>
+              )}
             </div>
           </div>
         )}

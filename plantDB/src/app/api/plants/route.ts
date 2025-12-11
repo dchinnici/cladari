@@ -84,9 +84,38 @@ function generatePlantId() {
   return `ANT-${year}-${rand}`
 }
 
+import { z } from 'zod'
+
+// Validation Schema
+const createPlantSchema = z.object({
+  plantId: z.string().optional(),
+  accessionDate: z.string().or(z.date()).optional(),
+  section: z.string().optional().nullable(),
+  species: z.string().optional().nullable(),
+  hybridName: z.string().optional().nullable(),
+  crossNotation: z.string().optional().nullable(),
+  generation: z.string().optional().nullable(),
+  breeder: z.string().optional().nullable(),
+  breederCode: z.string().optional().nullable(),
+  propagationType: z.string().optional().nullable(),
+  healthStatus: z.enum(['healthy', 'struggling', 'recovering', 'critical', 'diseased']).default('healthy'),
+  acquisitionCost: z.union([z.string(), z.number()]).transform(val => (val === '' ? null : Number(val))).optional().nullable(),
+  marketValue: z.union([z.string(), z.number()]).transform(val => (val === '' ? null : Number(val))).optional().nullable(),
+  notes: z.string().optional().nullable(),
+  tags: z.array(z.string()).optional().default([]),
+  isEliteGenetics: z.boolean().optional().default(false),
+})
+
 export async function POST(request: Request) {
   try {
-    const body = await request.json()
+    const json = await request.json()
+    const parseResult = createPlantSchema.safeParse(json)
+
+    if (!parseResult.success) {
+      return NextResponse.json({ error: 'Invalid input', details: parseResult.error.format() }, { status: 400 })
+    }
+
+    const body = parseResult.data
 
     // Generate or accept provided plantId
     let plantId: string = (body.plantId || '').trim()
@@ -107,7 +136,7 @@ export async function POST(request: Request) {
     const created = await prisma.plant.create({
       data: {
         plantId,
-        accessionDate: body.accessionDate ? new Date(body.accessionDate + 'T00:00:00.000Z') : new Date(),
+        accessionDate: body.accessionDate ? new Date(body.accessionDate) : new Date(),
         genus: 'Anthurium',
         section: body.section || null,
         species: body.species || null,
@@ -116,12 +145,13 @@ export async function POST(request: Request) {
         generation: body.generation || null,
         breeder: body.breeder || null,
         breederCode: body.breederCode || null,
-        acquisitionCost: body.acquisitionCost ? parseFloat(String(body.acquisitionCost)) : null,
+        acquisitionCost: body.acquisitionCost || null,
         propagationType: body.propagationType || null,
-        healthStatus: body.healthStatus || 'healthy',
-        marketValue: body.marketValue ? parseFloat(String(body.marketValue)) : null,
+        healthStatus: body.healthStatus,
+        marketValue: body.marketValue || null,
         notes: body.notes || null,
-        tags: JSON.stringify(body.tags ?? []),
+        tags: JSON.stringify(body.tags),
+        isEliteGenetics: body.isEliteGenetics,
       }
     })
 

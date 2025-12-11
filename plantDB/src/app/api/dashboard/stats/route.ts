@@ -1,413 +1,330 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
-import { isWateringEvent, isFertilizingEvent, getDaysSinceLastWatering, getDaysSinceLastFertilizing, calculateWateringFrequency, calculateFertilizingFrequency } from '@/lib/careLogUtils'
-import { DEFAULT_INTERVALS } from '@/lib/care/types'
+import { predictHealthTrajectory, ECPHReading } from '@/lib/ml/healthTrajectory'
 
 export async function GET() {
   try {
-    // Basic counts
-    const [totalPlants, healthyPlants, totalCrosses, totalVendors] = await Promise.all([
-      prisma.plant.count(),
-      prisma.plant.count({ where: { healthStatus: 'healthy' } }),
+    // === CORE COUNTS ===
+    const [
+      totalPlants,
+      healthyPlants,
+      totalCrosses,
+      totalCloneBatches,
+      totalSeedBatches,
+      totalSeedlings
+    ] = await Promise.all([
+      prisma.plant.count({ where: { isArchived: { not: true } } }),
+      prisma.plant.count({ where: { healthStatus: 'healthy', isArchived: { not: true } } }),
       prisma.breedingRecord.count(),
-      prisma.vendor.count(),
+      prisma.cloneBatch.count(),
+      prisma.seedBatch.count(),
+      prisma.seedling.count()
     ])
 
-    // Financial stats
-    const financialStats = await prisma.plant.aggregate({
-      _sum: { acquisitionCost: true },
-      _avg: { acquisitionCost: true },
-      _max: { acquisitionCost: true },
+    // === BREEDING PIPELINE STATS ===
+    // Seed batches by status
+    const seedBatchesByStatus = await prisma.seedBatch.groupBy({
+      by: ['status'],
+      _count: true
     })
 
-    // Species distribution
-    const speciesData = await prisma.plant.groupBy({
+    // Seedlings by selection status
+    const seedlingsByStatus = await prisma.seedling.groupBy({
+      by: ['selectionStatus'],
+      _count: true
+    })
+
+    // Recent crosses (last 30 days)
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+    const recentCrosses = await prisma.breedingRecord.count({
+      where: { crossDate: { gte: thirtyDaysAgo } }
+    })
+
+    // Crosses with active germination
+    const activeSeedBatches = await prisma.seedBatch.count({
+      where: { status: { in: ['SOWN', 'GERMINATING'] } }
+    })
+
+    // Total seeds sown (sum of seedCount from all batches)
+    const seedsStats = await prisma.seedBatch.aggregate({
+      _sum: { seedCount: true, germinatedCount: true }
+    })
+
+    // Recent graduations (seedlings that became plants)
+    const graduatedSeedlings = await prisma.seedling.count({
+      where: { selectionStatus: 'GRADUATED' }
+    })
+
+    // === CLONE BATCH STATS ===
+    // Clone batches by status
+    const cloneBatchesByStatus = await prisma.cloneBatch.groupBy({
+      by: ['status'],
+      _count: true
+    })
+
+    // Clone batches by type
+    const cloneBatchesByType = await prisma.cloneBatch.groupBy({
+      by: ['propagationType'],
+      _count: true
+    })
+
+    // Total clones in progress
+    const totalClonesInProgress = await prisma.cloneBatch.aggregate({
+      _sum: { acquiredCount: true, currentCount: true },
+      where: { status: { notIn: ['COMPLETE', 'FAILED'] } }
+    })
+
+    // Recent batch activity
+    const recentBatches = await prisma.cloneBatch.findMany({
+      take: 5,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        sourcePlant: {
+          select: { plantId: true, hybridName: true, species: true }
+        }
+      }
+    })
+
+    // === PLANT HEALTH DISTRIBUTION ===
+    const healthDistribution = await prisma.plant.groupBy({
+      by: ['healthStatus'],
+      _count: true,
+      where: { isArchived: { not: true } }
+    })
+
+    // === SPECIES/SECTION DISTRIBUTION ===
+    const sectionDistribution = await prisma.plant.groupBy({
       by: ['section'],
       _count: true,
       where: {
-        section: { not: null }
+        section: { not: null },
+        isArchived: { not: true }
       }
     })
 
-    const speciesDistribution = speciesData.map(item => ({
-      name: item.section || 'Unknown',
-      value: item._count
-    }))
+    // === RECENT ACTIVITY (mixed from all sources) ===
+    const activities: Array<{ description: string, date: string, type: string, timestamp: Date }> = []
 
-    // Top vendors
-    const vendorData = await prisma.plant.groupBy({
-      by: ['vendorId'],
-      _count: true,
-      where: {
-        vendorId: { not: null }
-      },
-      orderBy: {
-        _count: {
-          vendorId: 'desc'
-        }
-      },
-      take: 5
-    })
-
-    const vendorIds = vendorData.map(v => v.vendorId).filter(Boolean)
-    const vendors = await prisma.vendor.findMany({
-      where: { id: { in: vendorIds as string[] } }
-    })
-
-    const topVendors = vendorData.map(item => {
-      const vendor = vendors.find(v => v.id === item.vendorId)
-      return {
-        name: vendor?.name || 'Unknown',
-        count: item._count
+    // Recent crosses
+    const recentCrossRecords = await prisma.breedingRecord.findMany({
+      take: 5,
+      orderBy: { crossDate: 'desc' },
+      include: {
+        femalePlant: { select: { hybridName: true, species: true } },
+        malePlant: { select: { hybridName: true, species: true } }
       }
     })
-
-    // Elite genetics count
-    const eliteGeneticsData = await prisma.plant.groupBy({
-      by: ['breederCode'],
-      _count: true,
-      where: {
-        breederCode: {
-          in: ['RA', 'OG', 'NSE', 'TZ']
-        }
-      }
+    recentCrossRecords.forEach(cross => {
+      const female = cross.femalePlant.hybridName || cross.femalePlant.species || '?'
+      const male = cross.malePlant.hybridName || cross.malePlant.species || '?'
+      activities.push({
+        description: `Cross ${cross.crossId}: ${female} × ${male}`,
+        date: cross.crossDate.toLocaleDateString(),
+        type: 'Breeding',
+        timestamp: cross.crossDate
+      })
     })
 
-    const eliteGenetics = eliteGeneticsData.map(item => ({
-      code: item.breederCode,
-      count: item._count
-    }))
+    // Recent seed batches
+    const recentSeedBatches = await prisma.seedBatch.findMany({
+      take: 5,
+      orderBy: { sowDate: 'desc' },
+      select: {
+        batchId: true,
+        seedCount: true,
+        sowDate: true,
+        status: true
+      }
+    })
+    recentSeedBatches.forEach(batch => {
+      activities.push({
+        description: `Sowed ${batch.batchId} (${batch.seedCount} seeds)`,
+        date: batch.sowDate.toLocaleDateString(),
+        type: 'Seeds',
+        timestamp: batch.sowDate
+      })
+    })
 
-    // Recent activity - comprehensive view of all changes
-    const activities: Array<{description: string, date: string, type: string, timestamp: Date}> = []
+    // Recent clone batches
+    recentBatches.forEach(batch => {
+      const sourceName = batch.sourcePlant?.hybridName || batch.sourcePlant?.species || 'External'
+      activities.push({
+        description: `${batch.propagationType} batch ${batch.batchId} from ${sourceName}`,
+        date: batch.createdAt.toLocaleDateString(),
+        type: 'Clones',
+        timestamp: batch.createdAt
+      })
+    })
 
     // Recent plants added
     const recentPlants = await prisma.plant.findMany({
-      take: 20,
+      take: 5,
       orderBy: { createdAt: 'desc' },
       select: {
-        id: true,
         plantId: true,
         hybridName: true,
         species: true,
-        createdAt: true,
-        updatedAt: true,
+        createdAt: true
       }
     })
-
     recentPlants.forEach(plant => {
       activities.push({
         description: `Added ${plant.hybridName || plant.species || plant.plantId}`,
         date: plant.createdAt.toLocaleDateString(),
-        type: 'Added',
+        type: 'Plant',
         timestamp: plant.createdAt
       })
-
-      // If plant was updated after creation, add an update activity
-      if (plant.updatedAt.getTime() - plant.createdAt.getTime() > 1000) {
-        activities.push({
-          description: `Updated ${plant.hybridName || plant.species || plant.plantId}`,
-          date: plant.updatedAt.toLocaleDateString(),
-          type: 'Updated',
-          timestamp: plant.updatedAt
-        })
-      }
     })
 
-    // Recent care logs
-    const recentCareLogs = await prisma.careLog.findMany({
-      take: 20,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        plant: {
-          select: {
-            plantId: true,
-            hybridName: true,
-            species: true
-          }
-        }
-      }
-    })
-
-    recentCareLogs.forEach(log => {
-      const plantName = log.plant.hybridName || log.plant.species || log.plant.plantId
-      activities.push({
-        description: `${log.action} - ${plantName}`,
-        date: log.createdAt.toLocaleDateString(),
-        type: 'Care Log',
-        timestamp: log.createdAt
-      })
-    })
-
-    // Recent measurements
-    const recentMeasurements = await prisma.measurement.findMany({
-      take: 20,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        plant: {
-          select: {
-            plantId: true,
-            hybridName: true,
-            species: true
-          }
-        }
-      }
-    })
-
-    recentMeasurements.forEach(measurement => {
-      const plantName = measurement.plant.hybridName || measurement.plant.species || measurement.plant.plantId
-      activities.push({
-        description: `Measured ${plantName}`,
-        date: measurement.createdAt.toLocaleDateString(),
-        type: 'Measurement',
-        timestamp: measurement.createdAt
-      })
-    })
-
-    // Recent flowering cycles
-    const recentFlowering = await prisma.floweringCycle.findMany({
-      take: 20,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        plant: {
-          select: {
-            plantId: true,
-            hybridName: true,
-            species: true
-          }
-        }
-      }
-    })
-
-    recentFlowering.forEach(cycle => {
-      const plantName = cycle.plant.hybridName || cycle.plant.species || cycle.plant.plantId
-      activities.push({
-        description: `Flowering tracked - ${plantName}`,
-        date: cycle.createdAt.toLocaleDateString(),
-        type: 'Flowering',
-        timestamp: cycle.createdAt
-      })
-    })
-
-    // Sort all activities by timestamp and take top 15
+    // Sort and take top 10
     const recentActivity = activities
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-      .slice(0, 15)
-      .map(({ timestamp, ...rest }) => rest) // Remove timestamp from final output
+      .slice(0, 10)
+      .map(({ timestamp, ...rest }) => rest)
 
-    // Active vendors (vendors with plants added in last 90 days)
-    const ninetyDaysAgo = new Date()
-    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
-
-    const activeVendorCount = await prisma.vendor.count({
-      where: {
-        plants: {
-          some: {
-            createdAt: {
-              gte: ninetyDaysAgo
-            }
-          }
-        }
-      }
+    // === KEEPERS/HOLDBACKS COUNT ===
+    const keeperCount = await prisma.seedling.count({
+      where: { selectionStatus: 'KEEPER' }
+    })
+    const holdbackCount = await prisma.seedling.count({
+      where: { selectionStatus: 'HOLDBACK' }
     })
 
-    // Active crosses (with F1 plants raised)
-    const activeCrosses = await prisma.breedingRecord.count({
-      where: {
-        f1PlantsRaised: {
-          gt: 0
-        }
-      }
-    })
+    // === SUBSTRATE HEALTH ANALYSIS ===
+    // Find plants with recent EC/pH measurements (last 60 days) to assess trends
+    const sixtyDaysAgo = new Date()
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60)
 
-    // POWER FEATURES: Plants needing attention
-    const plantsWithCare = await prisma.plant.findMany({
-      include: {
+    const plantsWithMeasurements = await prisma.plant.findMany({
+      where: {
         careLogs: {
-          orderBy: { date: 'desc' },
-          take: 10
-        }
-      }
-    })
-
-    const plantsNeedingWater = plantsWithCare.filter(plant => {
-      const daysSince = getDaysSinceLastWatering(plant.careLogs)
-      const avgFrequency = calculateWateringFrequency(plant.careLogs) || DEFAULT_INTERVALS.water
-
-      // Plant needs water if:
-      // 1. Never been watered OR
-      // 2. Days since last watering >= average watering frequency
-      return daysSince === null || daysSince >= avgFrequency
-    }).map(p => ({
-      id: p.id,
-      plantId: p.plantId,
-      name: p.hybridName || p.species,
-      daysSinceWater: getDaysSinceLastWatering(p.careLogs) || 999
-    })).slice(0, 10)
-
-    const plantsNeedingFertilizer = plantsWithCare.filter(plant => {
-      const daysSince = getDaysSinceLastFertilizing(plant.careLogs)
-      const avgFrequency = calculateFertilizingFrequency(plant.careLogs) || DEFAULT_INTERVALS.fertilize
-
-      // Plant needs fertilizer if:
-      // 1. Never been fertilized OR
-      // 2. Days since last fertilizing >= average fertilizing frequency
-      return daysSince === null || daysSince >= avgFrequency
-    }).map(p => ({
-      id: p.id,
-      plantId: p.plantId,
-      name: p.hybridName || p.species,
-      daysSinceFertilizer: getDaysSinceLastFertilizing(p.careLogs) || 999
-    })).slice(0, 10)
-
-    // Health distribution
-    const healthDistribution = await prisma.plant.groupBy({
-      by: ['healthStatus'],
-      _count: true
-    })
-
-    const healthStats = healthDistribution.map(item => ({
-      status: item.healthStatus,
-      count: item._count
-    }))
-
-    // Plants with no care activity in 14+ days (stale plants)
-    const fourteenDaysAgo = new Date()
-    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14)
-
-    // Count plants where last care log is older than 14 days OR no care logs at all
-    const stalePlantCount = plantsWithCare.filter(plant => {
-      if (plant.careLogs.length === 0) {
-        // No care logs = stale if plant created more than 14 days ago
-        return new Date(plant.createdAt) < fourteenDaysAgo
-      }
-      // Check most recent care log date
-      const lastCareLog = plant.careLogs[0] // Already sorted desc
-      return new Date(lastCareLog.date) < fourteenDaysAgo
-    }).length
-
-    // Care frequency insights (avg days between watering across collection)
-    const avgWateringFrequency = plantsWithCare
-      .map(p => calculateWateringFrequency(p.careLogs))
-      .filter(f => f !== null)
-      .reduce((sum, freq) => sum + (freq || 0), 0) / plantsWithCare.length || 7
-
-    // Market value insights
-    const elitePlantCount = await prisma.plant.count({ where: { isEliteGenetics: true } })
-    const motherPlantCount = await prisma.plant.count({ where: { isMother: true } })
-    const forSaleCount = await prisma.plant.count({ where: { isForSale: true } })
-
-    // EC/pH Insights
-    const recentECPHLogs = await prisma.careLog.findMany({
-      where: {
-        details: { not: null },
-        OR: [
-          { details: { contains: 'inputEC' } },
-          { details: { contains: 'inputPH' } }
-        ]
+          some: {
+            date: { gte: sixtyDaysAgo },
+            OR: [
+              { outputEC: { not: null } },
+              { outputPH: { not: null } }
+            ]
+          }
+        },
+        isArchived: false
       },
-      orderBy: { date: 'desc' },
-      take: 50,
-      include: {
-        plant: {
-          select: { id: true, plantId: true, hybridName: true, species: true }
+      select: {
+        id: true,
+        plantId: true,
+        lastRepotDate: true,
+        careLogs: {
+          where: {
+            OR: [
+              { outputEC: { not: null } },
+              { outputPH: { not: null } }
+            ]
+          },
+          orderBy: { date: 'desc' },
+          take: 5,
+          select: {
+            date: true,
+            inputEC: true,
+            outputEC: true,
+            inputPH: true,
+            outputPH: true
+          }
         }
       }
     })
 
-    let ecValues: number[] = []
-    let phValues: number[] = []
-    let concerningEC: any[] = []
-    let concerningPH: any[] = []
+    // Analyze trajectories
+    let substrateRiskCount = 0
+    let substrateCriticalCount = 0
 
-    recentECPHLogs.forEach(log => {
-      try {
-        const details = typeof log.details === 'string' ? JSON.parse(log.details) : log.details
+    // Process each plant's health trajectory
+    plantsWithMeasurements.forEach(plant => {
+      // Map Prisma logs to ECPHReading interface
+      const readings: ECPHReading[] = plant.careLogs.map(log => ({
+        date: log.date,
+        ecIn: log.inputEC,
+        ecOut: log.outputEC,
+        phIn: log.inputPH,
+        phOut: log.outputPH
+      }))
 
-        if (details?.inputEC) {
-          const ec = parseFloat(details.inputEC)
-          ecValues.push(ec)
-          if (ec > 2.0) {
-            concerningEC.push({
-              plantId: log.plant.plantId,
-              name: log.plant.hybridName || log.plant.species,
-              value: ec,
-              type: 'input'
-            })
-          }
-        }
+      const analysis = predictHealthTrajectory(readings, plant.lastRepotDate)
 
-        if (details?.outputEC) {
-          const ec = parseFloat(details.outputEC)
-          if (ec > 2.5) {
-            concerningEC.push({
-              plantId: log.plant.plantId,
-              name: log.plant.hybridName || log.plant.species,
-              value: ec,
-              type: 'output'
-            })
-          }
-        }
-
-        if (details?.inputPH) {
-          const ph = parseFloat(details.inputPH)
-          phValues.push(ph)
-          if (ph < 5.5 || ph > 7.0) {
-            concerningPH.push({
-              plantId: log.plant.plantId,
-              name: log.plant.hybridName || log.plant.species,
-              value: ph
-            })
-          }
-        }
-      } catch (e) {
-        // Skip invalid JSON
+      if (analysis.trajectory === 'declining') {
+        substrateRiskCount++
+      } else if (analysis.trajectory === 'critical') {
+        substrateCriticalCount++
       }
     })
-
-    const avgEC = ecValues.length > 0 ? ecValues.reduce((a, b) => a + b, 0) / ecValues.length : null
-    const avgPH = phValues.length > 0 ? phValues.reduce((a, b) => a + b, 0) / phValues.length : null
 
     return NextResponse.json({
-      // Basic stats
+      // Core counts
       totalPlants,
+
       healthyPlants,
-      totalInvestment: financialStats._sum.acquisitionCost || 0,
-      avgCost: financialStats._avg.acquisitionCost || 0,
-      maxCost: financialStats._max.acquisitionCost || 0,
-      totalCrosses,
-      activeCrosses,
-      totalVendors,
-      activeVendors: activeVendorCount,
 
-      // Distribution data
-      speciesDistribution,
-      healthDistribution: healthStats,
-      topVendors,
-      eliteGenetics,
+      // Breeding stats
+      breeding: {
+        totalCrosses,
+        recentCrosses,
+        totalSeedBatches,
+        activeSeedBatches,
+        totalSeeds: seedsStats._sum.seedCount || 0,
+        germinatedSeeds: seedsStats._sum.germinatedCount || 0,
+        totalSeedlings,
+        graduatedSeedlings,
+        keeperCount,
+        holdbackCount,
+        seedBatchesByStatus: seedBatchesByStatus.map(s => ({
+          status: s.status,
+          count: s._count
+        })),
+        seedlingsByStatus: seedlingsByStatus.map(s => ({
+          status: s.selectionStatus,
+          count: s._count
+        }))
+      },
 
-      // Activity
-      recentActivity,
+      // Clone batch stats
+      batches: {
+        totalCloneBatches,
+        clonesInProgress: totalClonesInProgress._sum.currentCount || totalClonesInProgress._sum.acquiredCount || 0,
+        byStatus: cloneBatchesByStatus.map(s => ({
+          status: s.status,
+          count: s._count
+        })),
+        byType: cloneBatchesByType.map(s => ({
+          type: s.propagationType,
+          count: s._count
+        })),
+        recentBatches: recentBatches.map(b => ({
+          batchId: b.batchId,
+          type: b.propagationType,
+          status: b.status,
+          count: b.currentCount || b.acquiredCount,
+          source: b.sourcePlant?.hybridName || b.sourcePlant?.species || b.externalSource || 'Unknown'
+        }))
+      },
 
-      // POWER FEATURES - Today's Tasks
-      plantsNeedingWater,
-      plantsNeedingFertilizer,
-      stalePlants: stalePlantCount,
+      // Plant distribution
+      healthDistribution: healthDistribution.map(h => ({
+        status: h.healthStatus || 'unknown',
+        count: h._count
+      })),
+      substrateHealth: {
+        analyzed: plantsWithMeasurements.length,
+        declining: substrateRiskCount,
+        critical: substrateCriticalCount,
+        totalRisks: substrateRiskCount + substrateCriticalCount
+      },
+      sectionDistribution: sectionDistribution.map(s => ({
+        name: s.section || 'Unknown',
+        value: s._count
+      })),
 
-      // Insights
-      avgWateringFrequency: Math.round(avgWateringFrequency),
-      elitePlantCount,
-      motherPlantCount,
-      forSaleCount,
-
-      // EC/pH Insights
-      ecPhInsights: {
-        avgEC: avgEC ? parseFloat(avgEC.toFixed(2)) : null,
-        avgPH: avgPH ? parseFloat(avgPH.toFixed(2)) : null,
-        concerningEC: concerningEC.slice(0, 5), // Top 5
-        concerningPH: concerningPH.slice(0, 5), // Top 5
-        totalReadings: recentECPHLogs.length
-      }
+      // Activity feed
+      recentActivity
     })
   } catch (error) {
     console.error('Error fetching dashboard stats:', error)

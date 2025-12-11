@@ -1,112 +1,243 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
-import { Leaf, Droplets, AlertTriangle, Activity, TrendingUp } from 'lucide-react'
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis } from 'recharts'
-import QuickCare from '@/components/QuickCare'
-import { showToast } from '@/components/toast'
+import Link from 'next/link'
+import {
+  Leaf, Heart, Sprout, FlaskConical, Scissors,
+  TreeDeciduous, Activity, ChevronRight
+} from 'lucide-react'
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 
 export default function Dashboard() {
-  const [quickCareOpen, setQuickCareOpen] = useState(false)
-  const [plants, setPlants] = useState<any[]>([])
-
-  const { data: stats, isLoading, refetch } = useQuery({
+  const { data: stats, isLoading, error } = useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: async () => {
       const res = await fetch('/api/dashboard/stats')
+      if (!res.ok) throw new Error('Failed to fetch stats')
       return res.json()
-    }
-  })
-
-  const { data: plantsData } = useQuery({
-    queryKey: ['plants'],
-    queryFn: async () => {
-      const res = await fetch('/api/plants')
-      const data = await res.json()
-      setPlants(Array.isArray(data) ? data : [])
-      return data
     }
   })
 
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-[var(--clay)]">Loading analytics...</p>
+        <p className="text-[var(--clay)]">Loading dashboard...</p>
       </div>
     )
   }
 
-  const COLORS = ['#4a6741', '#87a878', '#d4a03c', '#c27b6e', '#9c8b7a']
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-red-500">Error loading dashboard</p>
+      </div>
+    )
+  }
+
+  const COLORS = ['#4a6741', '#87a878', '#d4a03c', '#c27b6e', '#9c8b7a', '#6b8e6b']
+
+  // Helper for status colors
+  const getStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+      // Seed batch statuses
+      'SOWN': 'bg-amber-100 text-amber-700',
+      'GERMINATING': 'bg-lime-100 text-lime-700',
+      'PRICKING_OUT': 'bg-emerald-100 text-emerald-700',
+      'SELECTING': 'bg-sky-100 text-sky-700',
+      'COMPLETE': 'bg-violet-100 text-violet-700',
+      'FAILED': 'bg-red-100 text-red-600',
+      // Seedling statuses
+      'GROWING': 'bg-sky-100 text-sky-700',
+      'KEEPER': 'bg-emerald-100 text-emerald-700',
+      'HOLDBACK': 'bg-amber-100 text-amber-700',
+      'CULLED': 'bg-gray-100 text-gray-500',
+      'DIED': 'bg-red-100 text-red-600',
+      'GRADUATED': 'bg-violet-100 text-violet-700',
+      // Clone batch statuses
+      'ROOTING': 'bg-amber-100 text-amber-700',
+      'ESTABLISHED': 'bg-emerald-100 text-emerald-700',
+      'READY': 'bg-sky-100 text-sky-700',
+      // Health statuses
+      'healthy': 'bg-emerald-100 text-emerald-700',
+      'recovering': 'bg-lime-100 text-lime-700',
+      'struggling': 'bg-amber-100 text-amber-700',
+      'critical': 'bg-red-100 text-red-600',
+    }
+    return colors[status] || 'bg-gray-100 text-gray-600'
+  }
+
+  const getActivityColor = (type: string) => {
+    const colors: Record<string, string> = {
+      'Breeding': 'bg-rose-100 text-rose-700',
+      'Seeds': 'bg-amber-100 text-amber-700',
+      'Clones': 'bg-emerald-100 text-emerald-700',
+      'Plant': 'bg-sky-100 text-sky-700',
+    }
+    return colors[type] || 'bg-gray-100 text-gray-600'
+  }
 
   return (
-    <div className="min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="min-h-screen bg-[var(--bg-primary)]">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-[var(--forest)]">Analytics</h1>
-          <p className="text-sm text-[var(--clay)]">Collection insights and trends</p>
+          <h1 className="text-2xl font-semibold text-[var(--forest)]">Dashboard</h1>
+          <p className="text-sm text-[var(--clay)]">Overview of your breeding program</p>
         </div>
 
-        {/* Key metrics row */}
+        {/* Top Stats Row */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white border border-black/[0.08] rounded-lg p-4">
+          <Link href="/plants" className="bg-white border border-black/[0.08] rounded-xl p-4 hover:shadow-md transition-shadow">
             <div className="flex items-center gap-2 mb-2">
               <Leaf className="w-4 h-4 text-[var(--moss)]" />
-              <span className="text-xs text-[var(--clay)]">Total Plants</span>
+              <span className="text-xs text-[var(--clay)] uppercase tracking-wide">Plants</span>
             </div>
             <p className="text-3xl font-semibold text-[var(--forest)]">{stats?.totalPlants || 0}</p>
             <p className="text-xs text-[var(--clay)]">{stats?.healthyPlants || 0} healthy</p>
+          </Link>
+
+          <Link href="/breeding" className="bg-white border border-black/[0.08] rounded-xl p-4 hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-2 mb-2">
+              <Heart className="w-4 h-4 text-rose-500" />
+              <span className="text-xs text-[var(--clay)] uppercase tracking-wide">Crosses</span>
+            </div>
+            <p className="text-3xl font-semibold text-[var(--forest)]">{stats?.breeding?.totalCrosses || 0}</p>
+            <p className="text-xs text-[var(--clay)]">{stats?.breeding?.recentCrosses || 0} this month</p>
+          </Link>
+
+          <Link href="/batches" className="bg-white border border-black/[0.08] rounded-xl p-4 hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-2 mb-2">
+              <Scissors className="w-4 h-4 text-emerald-500" />
+              <span className="text-xs text-[var(--clay)] uppercase tracking-wide">Clone Batches</span>
+            </div>
+            <p className="text-3xl font-semibold text-[var(--forest)]">{stats?.batches?.totalCloneBatches || 0}</p>
+            <p className="text-xs text-[var(--clay)]">{stats?.batches?.clonesInProgress || 0} clones in progress</p>
+          </Link>
+
+          <Link href="/breeding" className="bg-white border border-black/[0.08] rounded-xl p-4 hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-2 mb-2">
+              <Sprout className="w-4 h-4 text-lime-500" />
+              <span className="text-xs text-[var(--clay)] uppercase tracking-wide">Seedlings</span>
+            </div>
+            <p className="text-3xl font-semibold text-[var(--forest)]">{stats?.breeding?.totalSeedlings || 0}</p>
+            <p className="text-xs text-[var(--clay)]">
+              {stats?.breeding?.keeperCount || 0} keepers, {stats?.breeding?.holdbackCount || 0} holdbacks
+            </p>
+          </Link>
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Breeding Pipeline */}
+          <div className="bg-white border border-black/[0.08] rounded-xl p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-medium text-[var(--bark)] flex items-center gap-2">
+                <FlaskConical className="w-4 h-4 text-amber-500" />
+                Breeding Pipeline
+              </h2>
+              <Link href="/breeding" className="text-xs text-[var(--moss)] hover:underline flex items-center gap-1">
+                View all <ChevronRight className="w-3 h-3" />
+              </Link>
+            </div>
+
+            {/* Pipeline stats */}
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <div className="bg-[var(--bg-primary)] rounded-lg p-3 text-center">
+                <p className="text-2xl font-semibold text-[var(--forest)]">{stats?.breeding?.totalSeeds || 0}</p>
+                <p className="text-xs text-[var(--clay)]">Seeds sown</p>
+              </div>
+              <div className="bg-[var(--bg-primary)] rounded-lg p-3 text-center">
+                <p className="text-2xl font-semibold text-[var(--forest)]">{stats?.breeding?.activeSeedBatches || 0}</p>
+                <p className="text-xs text-[var(--clay)]">Germinating</p>
+              </div>
+              <div className="bg-[var(--bg-primary)] rounded-lg p-3 text-center">
+                <p className="text-2xl font-semibold text-emerald-600">{stats?.breeding?.graduatedSeedlings || 0}</p>
+                <p className="text-xs text-[var(--clay)]">Graduated</p>
+              </div>
+            </div>
+
+            {/* Seedling status breakdown */}
+            {stats?.breeding?.seedlingsByStatus && stats.breeding.seedlingsByStatus.length > 0 && (
+              <div>
+                <p className="text-xs text-[var(--clay)] mb-2">Seedlings by Status</p>
+                <div className="flex flex-wrap gap-2">
+                  {stats.breeding.seedlingsByStatus.map((s: any) => (
+                    <span key={s.status} className={`text-xs px-2 py-1 rounded-full ${getStatusColor(s.status)}`}>
+                      {s.status}: {s.count}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="bg-white border border-black/[0.08] rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Droplets className="w-4 h-4 text-[var(--water-blue)]" />
-              <span className="text-xs text-[var(--clay)]">Avg Watering</span>
+          {/* Clone Batches */}
+          <div className="bg-white border border-black/[0.08] rounded-xl p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-medium text-[var(--bark)] flex items-center gap-2">
+                <Scissors className="w-4 h-4 text-emerald-500" />
+                Clone Batches
+              </h2>
+              <Link href="/batches" className="text-xs text-[var(--moss)] hover:underline flex items-center gap-1">
+                View all <ChevronRight className="w-3 h-3" />
+              </Link>
             </div>
-            <p className="text-3xl font-semibold text-[var(--forest)]">{stats?.avgWateringFrequency || '-'}d</p>
-            <p className="text-xs text-[var(--clay)]">between waterings</p>
-          </div>
 
-          <div className="bg-white border border-black/[0.08] rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <AlertTriangle className="w-4 h-4 text-[var(--spadix-yellow)]" />
-              <span className="text-xs text-[var(--clay)]">Needs Attention</span>
-            </div>
-            <p className="text-3xl font-semibold text-[var(--forest)]">{stats?.stalePlants || 0}</p>
-            <p className="text-xs text-[var(--clay)]">stale 14+ days</p>
-          </div>
+            {/* Batch type breakdown */}
+            {stats?.batches?.byType && stats.batches.byType.length > 0 ? (
+              <div className="mb-4">
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {stats.batches.byType.map((t: any) => (
+                    <span key={t.type} className="text-xs px-2 py-1 rounded-full bg-[var(--bg-primary)] text-[var(--bark)]">
+                      {t.type}: {t.count}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-[var(--clay)] mb-4">No clone batches yet</p>
+            )}
 
-          <div className="bg-white border border-black/[0.08] rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <TrendingUp className="w-4 h-4 text-[var(--moss)]" />
-              <span className="text-xs text-[var(--clay)]">Breeding Lines</span>
-            </div>
-            <p className="text-3xl font-semibold text-[var(--forest)]">{stats?.totalCrosses || 0}</p>
-            <p className="text-xs text-[var(--clay)]">{stats?.activeCrosses || 0} active</p>
+            {/* Recent batches */}
+            {stats?.batches?.recentBatches && stats.batches.recentBatches.length > 0 && (
+              <div>
+                <p className="text-xs text-[var(--clay)] mb-2">Recent Batches</p>
+                <div className="space-y-2">
+                  {stats.batches.recentBatches.slice(0, 3).map((b: any) => (
+                    <div key={b.batchId} className="flex items-center justify-between text-sm">
+                      <span className="font-mono text-xs text-[var(--bark)]">{b.batchId}</span>
+                      <span className="text-xs text-[var(--clay)]">{b.source}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${getStatusColor(b.status)}`}>
+                        {b.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Charts row */}
+        {/* Second Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Species Distribution */}
-          <div className="bg-white border border-black/[0.08] rounded-lg p-4">
-            <h2 className="text-sm font-medium text-[var(--bark)] mb-4">Species Distribution</h2>
-            {stats?.speciesDistribution && stats.speciesDistribution.length > 0 ? (
-              <ResponsiveContainer width="100%" height={250}>
+          {/* Section Distribution */}
+          <div className="bg-white border border-black/[0.08] rounded-xl p-4">
+            <h2 className="text-sm font-medium text-[var(--bark)] mb-4">Collection by Section</h2>
+            {stats?.sectionDistribution && stats.sectionDistribution.length > 0 ? (
+              <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
                   <Pie
-                    data={stats.speciesDistribution}
+                    data={stats.sectionDistribution}
                     cx="50%"
                     cy="50%"
-                    innerRadius={50}
-                    outerRadius={80}
+                    innerRadius={40}
+                    outerRadius={70}
                     paddingAngle={2}
                     dataKey="value"
                     label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                     labelLine={false}
                   >
-                    {stats.speciesDistribution.map((entry: any, index: number) => (
+                    {stats.sectionDistribution.map((entry: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
@@ -114,93 +245,50 @@ export default function Dashboard() {
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-[250px] flex items-center justify-center text-[var(--clay)]">
-                No data available
+              <div className="h-[200px] flex items-center justify-center text-[var(--clay)]">
+                No section data
               </div>
             )}
           </div>
 
-          {/* Health Status */}
-          <div className="bg-white border border-black/[0.08] rounded-lg p-4">
-            <h2 className="text-sm font-medium text-[var(--bark)] mb-4">Health Status</h2>
+          {/* Health Distribution */}
+          <div className="bg-white border border-black/[0.08] rounded-xl p-4">
+            <h2 className="text-sm font-medium text-[var(--bark)] mb-4">Plant Health</h2>
             <div className="space-y-3">
-              {[
-                { label: 'Healthy', count: stats?.healthyPlants || 0, color: 'bg-[var(--moss)]' },
-                { label: 'Recovering', count: stats?.recoveringPlants || 0, color: 'bg-[var(--sage)]' },
-                { label: 'Struggling', count: stats?.strugglingPlants || 0, color: 'bg-[var(--spadix-yellow)]' },
-                { label: 'Critical', count: stats?.criticalPlants || 0, color: 'bg-[var(--alert-red)]' },
-              ].map((status) => (
-                <div key={status.label} className="flex items-center gap-3">
-                  <div className={`w-3 h-3 rounded-full ${status.color}`} />
-                  <span className="text-sm text-[var(--bark)] flex-1">{status.label}</span>
-                  <span className="text-sm font-medium text-[var(--forest)]">{status.count}</span>
-                  <div className="w-24 h-2 bg-[var(--parchment)] rounded-full overflow-hidden">
-                    <div
-                      className={`h-full ${status.color}`}
-                      style={{ width: `${(status.count / (stats?.totalPlants || 1)) * 100}%` }}
-                    />
+              {stats?.healthDistribution && stats.healthDistribution.length > 0 ? (
+                stats.healthDistribution.map((h: any) => (
+                  <div key={h.status} className="flex items-center gap-3">
+                    <span className={`w-3 h-3 rounded-full ${
+                      h.status === 'healthy' ? 'bg-emerald-500' :
+                      h.status === 'recovering' ? 'bg-lime-500' :
+                      h.status === 'struggling' ? 'bg-amber-500' :
+                      h.status === 'critical' ? 'bg-red-500' : 'bg-gray-400'
+                    }`} />
+                    <span className="text-sm text-[var(--bark)] flex-1 capitalize">{h.status}</span>
+                    <span className="text-sm font-medium text-[var(--forest)]">{h.count}</span>
+                    <div className="w-20 h-2 bg-[var(--parchment)] rounded-full overflow-hidden">
+                      <div
+                        className={`h-full ${
+                          h.status === 'healthy' ? 'bg-emerald-500' :
+                          h.status === 'recovering' ? 'bg-lime-500' :
+                          h.status === 'struggling' ? 'bg-amber-500' :
+                          h.status === 'critical' ? 'bg-red-500' : 'bg-gray-400'
+                        }`}
+                        style={{ width: `${(h.count / (stats?.totalPlants || 1)) * 100}%` }}
+                      />
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-sm text-[var(--clay)]">No health data</p>
+              )}
             </div>
           </div>
         </div>
 
-        {/* EC/pH Section */}
-        {stats?.ecPhInsights && (stats.ecPhInsights.avgEC || stats.ecPhInsights.avgPH) && (
-          <div className="bg-white border border-black/[0.08] rounded-lg p-4 mb-6">
-            <h2 className="text-sm font-medium text-[var(--bark)] mb-4">EC/pH Insights</h2>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {stats.ecPhInsights.avgEC && (
-                <div>
-                  <p className="text-xs text-[var(--clay)]">Average EC</p>
-                  <p className="text-2xl font-semibold text-[var(--forest)]">{stats.ecPhInsights.avgEC}</p>
-                </div>
-              )}
-              {stats.ecPhInsights.avgPH && (
-                <div>
-                  <p className="text-xs text-[var(--clay)]">Average pH</p>
-                  <p className="text-2xl font-semibold text-[var(--forest)]">{stats.ecPhInsights.avgPH}</p>
-                </div>
-              )}
-              {stats.ecPhInsights.concerningEC?.length > 0 && (
-                <div>
-                  <p className="text-xs text-[var(--clay)]">High EC Plants</p>
-                  <p className="text-2xl font-semibold text-[var(--spadix-yellow)]">{stats.ecPhInsights.concerningEC.length}</p>
-                </div>
-              )}
-              {stats.ecPhInsights.concerningPH?.length > 0 && (
-                <div>
-                  <p className="text-xs text-[var(--clay)]">pH Issues</p>
-                  <p className="text-2xl font-semibold text-[var(--spadix-yellow)]">{stats.ecPhInsights.concerningPH.length}</p>
-                </div>
-              )}
-            </div>
-            <p className="text-xs text-[var(--clay)] mt-3">
-              Based on {stats.ecPhInsights.totalReadings} readings
-            </p>
-          </div>
-        )}
-
-        {/* Elite Genetics */}
-        {stats?.eliteGenetics && stats.eliteGenetics.length > 0 && (
-          <div className="bg-white border border-black/[0.08] rounded-lg p-4 mb-6">
-            <h2 className="text-sm font-medium text-[var(--bark)] mb-4">Elite Genetics (RA Lineages)</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {stats.eliteGenetics.map((genetic: any) => (
-                <div key={genetic.code} className="bg-[var(--parchment)] rounded-lg p-3">
-                  <p className="text-lg font-bold text-[var(--forest)]">{genetic.code}</p>
-                  <p className="text-2xl font-semibold text-[var(--bark)]">{genetic.count}</p>
-                  <p className="text-xs text-[var(--clay)]">plants</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Recent Activity */}
         {stats?.recentActivity && stats.recentActivity.length > 0 && (
-          <div className="bg-white border border-black/[0.08] rounded-lg overflow-hidden">
+          <div className="bg-white border border-black/[0.08] rounded-xl overflow-hidden">
             <div className="px-4 py-3 border-b border-black/[0.04]">
               <h2 className="text-sm font-medium text-[var(--bark)] flex items-center gap-2">
                 <Activity className="w-4 h-4" />
@@ -214,7 +302,7 @@ export default function Dashboard() {
                     <p className="text-sm text-[var(--bark)]">{activity.description}</p>
                     <p className="text-xs text-[var(--clay)]">{activity.date}</p>
                   </div>
-                  <span className="text-xs px-2 py-1 bg-[var(--parchment)] text-[var(--clay)] rounded">
+                  <span className={`text-xs px-2 py-1 rounded-full ${getActivityColor(activity.type)}`}>
                     {activity.type}
                   </span>
                 </div>
@@ -223,17 +311,6 @@ export default function Dashboard() {
           </div>
         )}
       </div>
-
-      {/* Quick Care Modal */}
-      <QuickCare
-        isOpen={quickCareOpen}
-        onClose={() => setQuickCareOpen(false)}
-        plants={plants}
-        onSuccess={() => {
-          refetch()
-          showToast({ type: 'success', title: 'Care logged' })
-        }}
-      />
     </div>
   )
 }
