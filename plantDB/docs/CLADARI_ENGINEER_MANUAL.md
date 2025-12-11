@@ -1,7 +1,7 @@
 # Cladari Plant Database - Engineering Manual
-**Version:** 1.5.1
+**Version:** 1.6.0
 **Last Updated:** December 10, 2025
-**Status:** PRODUCTION PHASE - QR Tags + AI Photo Analysis + Full Breeding Pipeline
+**Status:** PRODUCTION PHASE - Plant Detail Refactor + AI Chat Logging + Full Breeding Pipeline
 **Architecture:** SQLite + Next.js 15 + Prisma ORM + Claude AI
 
 ---
@@ -50,10 +50,21 @@ The Cladari Plant Database is a comprehensive Anthurium breeding management syst
 ✅ AI PHOTO ANALYSIS: Claude Opus 4 vision + extended thinking for plant health
 ✅ QR CODE SYSTEM: Plant and location tags with quickcare flow (verified working)
 ✅ TIMEZONE HANDLING: America/New_York default, no more date bugs
+✅ PLANT DETAIL REFACTOR: 9 tabs → 5 tabs (Overview, Journal, Photos, Flowering, Lineage)
+✅ AI CHAT LOGGING: Save conversations with HITL confidence tracking
 ```
 
 ### Recent Improvements 🚀
 ```
+Dec 10: PLANT DETAIL REFACTOR + AI CHAT LOGGING (v1.6.0)
+        - Consolidated 9 tabs → 5 tabs: Overview, Journal, Photos, Flowering, Lineage
+        - Overview now includes: Health Metrics, AI Assistant, Quick Actions, Plant Details
+        - NEW Journal tab: Unified timeline (care, notes, morphology, measurements, AI)
+        - AI Chat Logging with HITL: Save conversations with confidence tracking
+        - ChatLog model: unverified/verified/partially_verified/disputed flags
+        - New API: /api/chat-logs (CRUD operations)
+        - New components: HealthMetrics, QuickActions, JournalTab, JournalEntryModal, LineageTab
+
 Dec 10: QR CODE INFRASTRUCTURE (v1.5.1) - Plant and location tag system
         - Plant QR: /q/p/{plantId} → plant detail with quickcare modal
         - Location QR: /q/l/{location} → batch care with auto-selection
@@ -1134,6 +1145,30 @@ npx prisma generate
 - Recent activity
 - EC/pH alerts
 
+### Chat Log Endpoints (AI Conversations)
+
+**GET /api/chat-logs?plantId=xxx**
+- Returns all saved AI conversations for a plant
+- Parses JSON messages and userEdits
+- Ordered by conversationDate descending
+
+**POST /api/chat-logs**
+- Saves new AI conversation
+- Body: `{ plantId, messages: [{role, content, timestamp}], conversationDate? }`
+- Auto-generates title from first user message
+- Sets confidence to "unverified" by default
+
+**GET /api/chat-logs/{id}**
+- Returns single chat log with plant info
+- Includes parsed messages and userEdits
+
+**PATCH /api/chat-logs/{id}**
+- Updates title, confidence, messages, or userEdits
+- Validates confidence: unverified, verified, partially_verified, disputed
+
+**DELETE /api/chat-logs/{id}**
+- Deletes chat log permanently
+
 ---
 
 ## 🎯 Quick Reference
@@ -1264,4 +1299,4 @@ When a seedling is graduated:
 
 ---
 
-**End of Engineering Manual v1.5.1**
+**End of Engineering Manual v1.6.0**

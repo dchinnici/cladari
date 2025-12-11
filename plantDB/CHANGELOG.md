@@ -2,6 +2,50 @@
 
 All notable changes to the Cladari Plant Management System will be documented in this file.
 
+## [1.6.0] - 2025-12-10
+
+### Added
+- **Plant Detail Page Refactor** - Consolidated 9 tabs into 5 focused tabs
+  - **Overview**: Now includes Health Metrics (ML predictions), AI Assistant (embedded), Quick Actions, Plant Details
+  - **Journal**: NEW unified timeline combining care logs, notes, morphology, measurements, and AI consultations
+  - **Photos**: Unchanged
+  - **Flowering**: Unchanged
+  - **Lineage**: Renamed from "breeding" - shows ancestry, progeny, breeding participation
+
+- **AI Chat Logging with HITL** - Save valuable AI consultations to plant journal
+  - **ChatLog model**: Stores full conversation with confidence tracking
+  - **Manual save**: "Save" button in AI Assistant to preserve conversations
+  - **Confidence levels**: unverified, verified, partially_verified, disputed
+  - **User edits tracking**: Record corrections to AI responses
+  - **Journal integration**: AI consultations appear in Journal tab with purple styling
+  - **Expandable view**: Click to expand/collapse full conversation
+
+- **New Components**
+  - `HealthMetrics.tsx` - ML predictions, substrate health, alerts, EC/pH trends
+  - `QuickActions.tsx` - One-click Water, Feed, Note, Photo buttons
+  - `JournalTab.tsx` - Unified timeline with filters by entry type
+  - `JournalEntryModal.tsx` - Single modal with type selector for all entry types
+  - `LineageTab.tsx` - Ancestry, progeny, breeding participation display
+
+- **New API Endpoints**
+  - `GET /api/chat-logs?plantId=xxx` - Fetch all chat logs for a plant
+  - `POST /api/chat-logs` - Save new AI conversation
+  - `GET /api/chat-logs/{id}` - Fetch single chat log
+  - `PATCH /api/chat-logs/{id}` - Update title, confidence, messages, userEdits
+  - `DELETE /api/chat-logs/{id}` - Delete chat log
+
+### Changed
+- **Tab reduction**: 9 tabs → 5 tabs for better UX
+- **AI Assistant location**: Moved from separate tab to Overview for easy access
+- **Recommendations merged**: Health metrics now front-and-center in Overview
+- **Care/Logs merged**: Unified into Journal tab with timeline view
+
+### Technical
+- New Prisma model: `ChatLog` with confidence tracking and embedding field (future pgvector)
+- Plant API now includes `chatLogs` relation
+- Journal tab supports filtering by: care, note, morphology, measurement, ai
+- AIAssistant component now accepts `onSaveConversation` callback
+
 ## [1.5.1] - 2025-12-10
 
 ### Added
