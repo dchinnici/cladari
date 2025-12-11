@@ -27,6 +27,9 @@ export async function GET(
         },
         photos: {
           orderBy: { dateTaken: 'desc' }
+        },
+        chatLogs: {
+          orderBy: { conversationDate: 'desc' }
         }
       }
     })

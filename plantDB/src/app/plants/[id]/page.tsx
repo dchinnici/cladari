@@ -2,16 +2,19 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Camera, Heart, Activity, FileText, FlaskConical, Dna, Calendar, DollarSign, MapPin, Edit, Save, X, Plus, Trash2, Upload, Image as ImageIcon, TrendingUp, Droplets, Star, Bot, QrCode } from 'lucide-react'
+import { ArrowLeft, Camera, Activity, FileText, FlaskConical, Dna, Calendar, DollarSign, MapPin, Edit, Save, X, Plus, Trash2, Upload, Image as ImageIcon, Droplets, Star, QrCode } from 'lucide-react'
 import JournalIcon from '@/components/journal/JournalIcon'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useDropzone } from 'react-dropzone'
 import { Modal } from '@/components/modal'
 import { showToast } from '@/components/toast'
 import { getLastWateringEvent, getLastFertilizingEvent } from '@/lib/careLogUtils'
-import { UpcomingCare } from '@/components/care/UpcomingCare'
 import AIAssistant from '@/components/AIAssistant'
 import { getTodayString } from '@/lib/timezone'
+import { HealthMetrics } from '@/components/plant/HealthMetrics'
+import { QuickActions } from '@/components/plant/QuickActions'
+import { JournalTab, type JournalEntryType } from '@/components/plant/JournalTab'
+import { LineageTab } from '@/components/plant/LineageTab'
 
 export default function PlantDetailPage() {
   const params = useParams()
@@ -32,6 +35,7 @@ export default function PlantDetailPage() {
   const [floweringModalOpen, setFloweringModalOpen] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [archiveReason, setArchiveReason] = useState<string>('died')
+  const [journalEntryType, setJournalEntryType] = useState<JournalEntryType>('care')
 
   // Flowering cycle state
   const [floweringCycles, setFloweringCycles] = useState<any[]>([])
@@ -726,15 +730,11 @@ export default function PlantDetailPage() {
   }
 
   const tabs = [
-    { id: 'overview', name: 'Overview', icon: FileText },
-    { id: 'recommendations', name: 'Care Schedule', icon: TrendingUp },
-    { id: 'care', name: 'Care & Notes', icon: Heart },
-    { id: 'morphology', name: 'Morphology', icon: Dna },
-    { id: 'flowering', name: 'Flowering', icon: FlaskConical },
+    { id: 'overview', name: 'Overview', icon: Activity },
+    { id: 'journal', name: 'Journal', icon: FileText },
     { id: 'photos', name: 'Photos', icon: Camera },
-    { id: 'breeding', name: 'Breeding', icon: Activity },
-    { id: 'logs', name: 'Care Logs', icon: Calendar },
-    { id: 'ai', name: 'AI Assistant', icon: Bot },
+    { id: 'flowering', name: 'Flowering', icon: FlaskConical },
+    { id: 'lineage', name: 'Lineage', icon: Dna },
   ]
 
   if (loading) {
@@ -866,380 +866,300 @@ export default function PlantDetailPage() {
 
         {/* Tab Content */}
         <div className="bg-white border border-black/[0.08] rounded-lg p-6">
+          {/* OVERVIEW TAB - Consolidated health metrics, AI, quick actions, plant details */}
           {activeTab === 'overview' && (
             <div className="space-y-6">
-              {/* Last Water/Feed Banner */}
-              {plant.careLogs && plant.careLogs.length > 0 && (() => {
-                // Using centralized business logic from careLogUtils
-                const lastWater = getLastWateringEvent(plant.careLogs)
-                const lastFeed = getLastFertilizingEvent(plant.careLogs)
+              {/* Health Metrics Section */}
+              <section>
+                <h3 className="text-lg font-semibold text-[var(--bark)] mb-3">Health & Care</h3>
+                <HealthMetrics plantId={params.id as string} />
+              </section>
 
-                const formatDaysAgo = (date: Date) => {
-                  const days = Math.floor((Date.now() - new Date(date).getTime()) / (1000 * 60 * 60 * 24))
-                  if (days === 0) return 'Today'
-                  if (days === 1) return 'Yesterday'
-                  return `${days} days ago`
-                }
-
-                return (lastWater || lastFeed) && (
-                  <div className="bg-[var(--water-blue)]/10 rounded-lg border border-[var(--water-blue)]/20 p-4 border border-blue-200">
-                    <div className="flex items-center gap-4">
-                      <Droplets className="w-8 h-8 text-blue-500" />
-                      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {lastWater && (
-                          <div>
-                            <p className="text-sm font-medium text-[var(--bark)]">Last Watered</p>
-                            <p className="text-xs text-[var(--clay)] italic mb-1">
-                              (includes baseline feed)
-                            </p>
-                            <p className="text-lg font-bold text-[var(--water-blue)]">
-                              {formatDaysAgo(lastWater.date)}
-                            </p>
-                            <p className="text-xs text-[var(--clay)]">
-                              {new Date(lastWater.date).toLocaleDateString()}
-                            </p>
-                          </div>
-                        )}
-                        {lastFeed && (
-                          <div>
-                            <p className="text-sm font-medium text-[var(--bark)]">Last Incremental Feed</p>
-                            <p className="text-lg font-bold text-[var(--moss)]">
-                              {formatDaysAgo(lastFeed.date)}
-                            </p>
-                            <p className="text-xs text-[var(--clay)] italic">
-                              Special/deviation feeds only
-                            </p>
-                            <p className="text-xs text-[var(--clay)]">
-                              {new Date(lastFeed.date).toLocaleDateString()}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )
-              })()}
-
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold">Plant Overview</h3>
-                <button
-                  onClick={() => {
-                    setOverviewForm({
-                      name: plant.hybridName || '',
-                      species: plant.species || '',
-                      crossNotation: plant.crossNotation || '',
-                      section: plant.section || '',
-                      acquisitionCost: plant.acquisitionCost?.toString() || '',
-                      acquisitionDate: plant.accessionDate ? new Date(plant.accessionDate).toISOString().split('T')[0] : '',
-                      healthStatus: plant.healthStatus || '',
-                      propagationType: plant.propagationType || '',
-                      generation: plant.generation || '',
-                      breeder: plant.breeder || '',
-                      breederCode: plant.breederCode || ''
+              {/* Quick Actions */}
+              <section>
+                <h3 className="text-lg font-semibold text-[var(--bark)] mb-3">Quick Actions</h3>
+                <QuickActions
+                  onWater={() => {
+                    setCareLogForm({
+                      ...careLogForm,
+                      logId: '',
+                      activityType: 'watering',
+                      date: getTodayString()
                     })
-                    setOverviewModalOpen(true)
+                    setCareLogModalOpen(true)
                   }}
-                  className="px-4 py-2 bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)] flex items-center gap-2">
-                  <Edit className="w-4 h-4" />
-                  Edit Overview
-                </button>
-              </div>
+                  onFeed={() => {
+                    setCareLogForm({
+                      ...careLogForm,
+                      logId: '',
+                      activityType: 'fertilizing',
+                      date: getTodayString()
+                    })
+                    setCareLogModalOpen(true)
+                  }}
+                  onNote={() => {
+                    setJournalEntryType('note')
+                    setActiveTab('journal')
+                  }}
+                  onPhoto={() => setPhotoUploadModalOpen(true)}
+                />
+              </section>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="w-5 h-5 text-[var(--clay)]" />
-                    <span className="font-medium">Cost:</span>
-                    <span>${plant.acquisitionCost || 'N/A'}</span>
-                  </div>
+              {/* AI Assistant - Embedded */}
+              <section>
+                <h3 className="text-lg font-semibold text-[var(--bark)] mb-3">AI Assistant</h3>
+                <AIAssistant
+                  plantId={plant.id}
+                  plantData={{
+                    id: plant.id,
+                    plantId: plant.plantId,
+                    catalogId: plant.catalogId,
+                    genus: plant.genus,
+                    species: plant.species,
+                    hybridName: plant.hybridName,
+                    section: plant.section,
+                    healthStatus: plant.healthStatus,
+                    breederCode: plant.breederCode,
+                    location: plant.currentLocation?.name,
+                    careLogs: plant.careLogs,
+                    lastWatered: plant.careLogs ? getLastWateringEvent(plant.careLogs) : null,
+                    lastFertilized: plant.careLogs ? getLastFertilizingEvent(plant.careLogs) : null,
+                    notes: plant.notes,
+                    photos: plant.photos?.map((p: any) => ({
+                      url: p.url,
+                      photoType: p.photoType,
+                      dateTaken: p.dateTaken,
+                      notes: p.notes
+                    }))
+                  }}
+                  embedded={true}
+                  onSaveConversation={async (messages) => {
+                    const res = await fetch('/api/chat-logs', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        plantId: plant.id,
+                        messages,
+                        conversationDate: new Date().toISOString(),
+                      }),
+                    })
+                    if (!res.ok) throw new Error('Failed to save')
+                    showToast({ type: 'success', title: 'Conversation saved to journal' })
+                  }}
+                />
+              </section>
 
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-[var(--clay)]" />
-                    <span className="font-medium">Acquired:</span>
-                    <span>{plant.accessionDate ? new Date(plant.accessionDate).toLocaleDateString() : 'N/A'}</span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-5 h-5 text-[var(--clay)]" />
-                    <span className="font-medium">Location:</span>
-                    <select
-                      value={plant.locationId || ''}
-                      onChange={(e) => handleLocationChange(e.target.value)}
-                      className="px-3 py-1 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)] bg-white"
-                    >
-                      <option value="">No location</option>
-                      {locations.map((location: any) => (
-                        <option key={location.id} value={location.id}>
-                          {location.name} ({location._count?.plants || 0} plants)
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">Section:</span>
-                    <span>{plant.section || 'N/A'}</span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">Propagation:</span>
-                    <span className="capitalize">{plant.propagationType?.replace('_', ' ') || 'N/A'}</span>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">Health Status:</span>
-                    <span className={`px-2 py-1 rounded-full text-sm ${
-                      plant.healthStatus === 'healthy'
-                        ? 'bg-green-100 text-[var(--moss)]'
-                        : plant.healthStatus === 'struggling'
-                        ? 'bg-[var(--spadix-yellow)]/20 text-[var(--spadix-yellow)]'
-                        : 'bg-gray-100 text-[var(--bark)]'
-                    }`}>
-                      {plant.healthStatus || 'Unknown'}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">Vendor:</span>
-                    <span>{plant.vendor?.name || 'N/A'}</span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">Generation:</span>
-                    <span>{plant.generation || 'N/A'}</span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">Breeder:</span>
-                    <span>{plant.breeder || 'N/A'}</span>
-                  </div>
-
-                  <div className="flex items-center gap-2 pt-2 border-t border-black/[0.04] mt-2">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={plant.isEliteGenetics || false}
-                        onChange={async (e) => {
-                          const newValue = e.target.checked
-                          try {
-                            const response = await fetch(`/api/plants/${params.id}`, {
-                              method: 'PATCH',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ isEliteGenetics: newValue })
-                            })
-                            if (response.ok) {
-                              const updatedPlant = await response.json()
-                              await preserveScrollPosition(fetchPlant)
-                              showToast({ type: 'success', title: updatedPlant.isEliteGenetics ? 'Marked as elite genetics' : 'Unmarked as elite genetics' })
-                            }
-                          } catch (error) {
-                            console.error('Error updating elite genetics:', error)
-                            showToast({ type: 'error', title: 'Failed to update' })
-                          }
-                        }}
-                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                      />
-                      <span className="font-medium text-[var(--forest)]">Elite Genetics</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              {plant.genetics && (
-                <div className="mt-6">
-                  <h4 className="font-bold mb-2">Genetic Information</h4>
-                  <div className="bg-[var(--parchment)] rounded-lg p-4">
-                    <p>Ploidy: {plant.genetics.ploidy || 'Unknown'}</p>
-                    <p>RA Number: {plant.genetics.raNumber || 'N/A'}</p>
-                    <p>OG Number: {plant.genetics.ogNumber || 'N/A'}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'recommendations' && (
-            <div className="space-y-6">
-              <div className="mb-6">
-                <h3 className="text-2xl font-bold mb-2">Care Schedule & Recommendations</h3>
-                <p className="text-[var(--clay)]">AI-powered care recommendations based on your historical data, environmental factors, and EC/pH analysis.</p>
-              </div>
-
-              <UpcomingCare
-                plantId={params.id as string}
-                onActionComplete={fetchPlant}
-              />
-            </div>
-          )}
-
-          {activeTab === 'care' && (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold">Care Requirements & Notes</h3>
-                {!editMode ? (
+              {/* Plant Details Section */}
+              <section>
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-lg font-semibold text-[var(--bark)]">Plant Details</h3>
                   <button
-                    onClick={() => setEditMode(true)}
-                    className="px-4 py-2 bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)] flex items-center gap-2"
+                    onClick={() => {
+                      setOverviewForm({
+                        name: plant.hybridName || '',
+                        species: plant.species || '',
+                        crossNotation: plant.crossNotation || '',
+                        section: plant.section || '',
+                        acquisitionCost: plant.acquisitionCost?.toString() || '',
+                        acquisitionDate: plant.accessionDate ? new Date(plant.accessionDate).toISOString().split('T')[0] : '',
+                        healthStatus: plant.healthStatus || '',
+                        propagationType: plant.propagationType || '',
+                        generation: plant.generation || '',
+                        breeder: plant.breeder || '',
+                        breederCode: plant.breederCode || ''
+                      })
+                      setOverviewModalOpen(true)
+                    }}
+                    className="px-3 py-1.5 text-sm bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)] flex items-center gap-1.5"
                   >
-                    <Edit className="w-4 h-4" />
+                    <Edit className="w-3.5 h-3.5" />
                     Edit
                   </button>
-                ) : (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleSave}
-                      className="px-4 py-2 bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)] flex items-center gap-2"
-                    >
-                      <Save className="w-4 h-4" />
-                      Save
-                    </button>
-                    <button
-                      onClick={() => {
-                        setEditMode(false)
-                        setEditedPlant(plant)
-                      }}
-                      className="px-4 py-2 border border-black/[0.08] rounded text-[var(--bark)] hover:bg-[var(--parchment)] flex items-center gap-2"
-                    >
-                      <X className="w-4 h-4" />
-                      Cancel
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-[var(--bark)] mb-2">General Notes</label>
-                  <textarea
-                    value={editedPlant.notes || ''}
-                    onChange={e => setEditedPlant({ ...editedPlant, notes: e.target.value })}
-                    disabled={!editMode}
-                    className="w-full p-3 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)] min-h-32 disabled:bg-[var(--parchment)]"
-                    placeholder="Add notes about this plant..."
-                  />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-[var(--bark)] mb-2">Soil Mix</label>
-                    <input
-                      type="text"
-                      value={editedPlant.soilMix || ''}
-                      onChange={e => setEditedPlant({ ...editedPlant, soilMix: e.target.value })}
-                      disabled={!editMode}
-                      className="w-full p-3 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)] disabled:bg-[var(--parchment)]"
-                      placeholder="e.g., 40% bark, 30% perlite..."
-                    />
+                <div className="bg-[var(--parchment)] rounded-lg p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-[var(--clay)]" />
+                        <span className="text-sm font-medium">Location:</span>
+                        <select
+                          value={plant.locationId || ''}
+                          onChange={(e) => handleLocationChange(e.target.value)}
+                          className="text-sm px-2 py-1 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)] bg-white"
+                        >
+                          <option value="">No location</option>
+                          {locations.map((location: any) => (
+                            <option key={location.id} value={location.id}>
+                              {location.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <DollarSign className="w-4 h-4 text-[var(--clay)]" />
+                        <span className="font-medium">Cost:</span>
+                        <span>${plant.acquisitionCost || 'N/A'}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Calendar className="w-4 h-4 text-[var(--clay)]" />
+                        <span className="font-medium">Acquired:</span>
+                        <span>{plant.accessionDate ? new Date(plant.accessionDate).toLocaleDateString() : 'N/A'}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="font-medium">Section:</span>
+                        <span>{plant.section || 'N/A'}</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="font-medium">Health:</span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs ${
+                          plant.healthStatus === 'healthy'
+                            ? 'bg-green-100 text-[var(--moss)]'
+                            : plant.healthStatus === 'struggling'
+                            ? 'bg-[var(--spadix-yellow)]/20 text-[var(--spadix-yellow)]'
+                            : 'bg-gray-100 text-[var(--bark)]'
+                        }`}>
+                          {plant.healthStatus || 'Unknown'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="font-medium">Vendor:</span>
+                        <span>{plant.vendor?.name || 'N/A'}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="font-medium">Breeder:</span>
+                        <span>{plant.breeder || 'N/A'}</span>
+                      </div>
+                      <label className="flex items-center gap-2 cursor-pointer text-sm">
+                        <input
+                          type="checkbox"
+                          checked={plant.isEliteGenetics || false}
+                          onChange={async (e) => {
+                            const newValue = e.target.checked
+                            try {
+                              const response = await fetch(`/api/plants/${params.id}`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ isEliteGenetics: newValue })
+                              })
+                              if (response.ok) {
+                                await preserveScrollPosition(fetchPlant)
+                                showToast({ type: 'success', title: newValue ? 'Marked as elite' : 'Unmarked as elite' })
+                              }
+                            } catch (error) {
+                              showToast({ type: 'error', title: 'Failed to update' })
+                            }
+                          }}
+                          className="w-3.5 h-3.5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                        />
+                        <span className="font-medium text-[var(--forest)]">Elite Genetics</span>
+                      </label>
+                    </div>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-[var(--bark)] mb-2">Light Requirements</label>
-                    <input
-                      type="text"
-                      value={editedPlant.lightRequirements || ''}
-                      onChange={e => setEditedPlant({ ...editedPlant, lightRequirements: e.target.value })}
-                      disabled={!editMode}
-                      className="w-full p-3 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)] disabled:bg-[var(--parchment)]"
-                      placeholder="e.g., Bright indirect light"
-                    />
-                  </div>
+                  {/* Care Notes */}
+                  {editedPlant.notes && (
+                    <div className="mt-4 pt-4 border-t border-black/[0.08]">
+                      <p className="text-sm font-medium text-[var(--bark)] mb-1">Notes</p>
+                      <p className="text-sm text-[var(--clay)]">{editedPlant.notes}</p>
+                    </div>
+                  )}
 
-                  <div>
-                    <label className="block text-sm font-medium text-[var(--bark)] mb-2">Watering Frequency</label>
-                    <input
-                      type="text"
-                      value={editedPlant.wateringFrequency || ''}
-                      onChange={e => setEditedPlant({ ...editedPlant, wateringFrequency: e.target.value })}
-                      disabled={!editMode}
-                      className="w-full p-3 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)] disabled:bg-[var(--parchment)]"
-                      placeholder="e.g., Every 5-7 days"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-[var(--bark)] mb-2">Fertilization Schedule</label>
-                    <input
-                      type="text"
-                      value={editedPlant.fertilizationSchedule || ''}
-                      onChange={e => setEditedPlant({ ...editedPlant, fertilizationSchedule: e.target.value })}
-                      disabled={!editMode}
-                      className="w-full p-3 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)] disabled:bg-[var(--parchment)]"
-                      placeholder="e.g., Monthly with 20-20-20"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-[var(--bark)] mb-2">Temperature Range</label>
-                    <input
-                      type="text"
-                      value={editedPlant.temperatureRange || ''}
-                      onChange={e => setEditedPlant({ ...editedPlant, temperatureRange: e.target.value })}
-                      disabled={!editMode}
-                      className="w-full p-3 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)] disabled:bg-[var(--parchment)]"
-                      placeholder="e.g., 65-80°F"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-[var(--bark)] mb-2">Humidity Preference</label>
-                    <input
-                      type="text"
-                      value={editedPlant.humidityPreference || ''}
-                      onChange={e => setEditedPlant({ ...editedPlant, humidityPreference: e.target.value })}
-                      disabled={!editMode}
-                      className="w-full p-3 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)] disabled:bg-[var(--parchment)]"
-                      placeholder="e.g., 60-80%"
-                    />
-                  </div>
+                  {/* Genetic Info */}
+                  {plant.genetics && (
+                    <div className="mt-4 pt-4 border-t border-black/[0.08]">
+                      <p className="text-sm font-medium text-[var(--bark)] mb-1">Genetic Info</p>
+                      <p className="text-sm text-[var(--clay)]">
+                        Ploidy: {plant.genetics.ploidy || 'Unknown'} |
+                        RA: {plant.genetics.raNumber || 'N/A'} |
+                        OG: {plant.genetics.ogNumber || 'N/A'}
+                      </p>
+                    </div>
+                  )}
                 </div>
-              </div>
+              </section>
             </div>
           )}
 
-          {activeTab === 'morphology' && (
-            <div className="space-y-6">
-              <h3 className="text-xl font-bold mb-4">Morphological Traits</h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-medium mb-3">Leaf Characteristics</h4>
-                  <div className="space-y-2 text-sm">
-                    <p>Shape: {plant.traits?.find((t: any) => t.category === 'leaf' && t.traitName === 'shape')?.value || 'Not recorded'}</p>
-                    <p>Texture: {plant.traits?.find((t: any) => t.category === 'leaf' && t.traitName === 'texture')?.value || 'Not recorded'}</p>
-                    <p>Color: {plant.traits?.find((t: any) => t.category === 'leaf' && t.traitName === 'color')?.value || 'Not recorded'}</p>
-                    <p>Size: {plant.traits?.find((t: any) => t.category === 'leaf' && t.traitName === 'size')?.value || 'Not recorded'}</p>
-                    <p>Petiole Color: {plant.traits?.find((t: any) => t.category === 'leaf' && t.traitName === 'petioleColor')?.value || 'Not recorded'}</p>
-                    <p>New Leaf Color: {plant.traits?.find((t: any) => t.category === 'leaf' && t.traitName === 'newLeafColor')?.value || 'Not recorded'}</p>
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="font-medium mb-3">Flower Characteristics</h4>
-                  <div className="space-y-2 text-sm">
-                    <p>Spadix Color: {plant.traits?.find((t: any) => t.category === 'spadix' && t.traitName === 'color')?.value || 'Not recorded'}</p>
-                    <p>Spathe Color: {plant.traits?.find((t: any) => t.category === 'spathe' && t.traitName === 'color')?.value || 'Not recorded'}</p>
-                    <p>Spathe Shape: {plant.traits?.find((t: any) => t.category === 'spathe' && t.traitName === 'shape')?.value || 'Not recorded'}</p>
-                  </div>
-                  <h4 className="font-medium mb-3 mt-4">Growth Pattern</h4>
-                  <div className="space-y-2 text-sm">
-                    <p>Growth Rate: {plant.traits?.find((t: any) => t.category === 'growth' && t.traitName === 'rate')?.value || 'Not recorded'}</p>
-                    <p>Mature Size: {plant.traits?.find((t: any) => t.category === 'growth' && t.traitName === 'matureSize')?.value || 'Not recorded'}</p>
-                    <p>Cataphyll Color: {plant.traits?.find((t: any) => t.category === 'growth' && t.traitName === 'cataphyllColor')?.value || 'Not recorded'}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6">
-                <button
-                  onClick={() => setMorphologyModalOpen(true)}
-                  className="px-4 py-2 bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)] flex items-center gap-2">
-                  <Edit className="w-4 h-4" />
-                  Edit Morphology
-                </button>
-              </div>
-            </div>
+          {/* JOURNAL TAB - Unified timeline */}
+          {activeTab === 'journal' && (
+            <JournalTab
+              careLogs={plant.careLogs || []}
+              traits={plant.traits || []}
+              measurements={plant.measurements || []}
+              chatLogs={plant.chatLogs || []}
+              notes={editedPlant.notes}
+              onEditCareLog={(log) => {
+                const details = log.details ? (typeof log.details === 'string' ? JSON.parse(log.details) : log.details) : {}
+                setCareLogForm({
+                  logId: log.id,
+                  activityType: log.action || log.activityType || 'watering',
+                  notes: details.notes || '',
+                  fertilizer: details.fertilizer || '',
+                  pesticide: details.pesticide || '',
+                  fungicide: details.fungicide || '',
+                  dosage: details.dosage || '',
+                  inputEC: log.inputEC?.toString() || details.inputEC?.toString() || '',
+                  inputPH: log.inputPH?.toString() || details.inputPH?.toString() || '',
+                  outputEC: log.outputEC?.toString() || details.outputEC?.toString() || '',
+                  outputPH: log.outputPH?.toString() || details.outputPH?.toString() || '',
+                  rainAmount: details.rainAmount || '',
+                  rainDuration: details.rainDuration || '',
+                  date: new Date(log.date).toISOString().split('T')[0],
+                  pestType: details.pestType || '',
+                  severity: details.severity || '',
+                  affectedArea: details.affectedArea || '',
+                  fromPotSize: details.fromPotSize || '',
+                  toPotSize: details.toPotSize || '',
+                  fromPotType: details.fromPotType || '',
+                  toPotType: details.toPotType || '',
+                  substrateType: details.substrateType || '',
+                  drainageType: details.drainageType || '',
+                  substrateMix: details.substrateMix || ''
+                })
+                setCareLogModalOpen(true)
+              }}
+              onDeleteCareLog={(logId) => setCareLogToDelete(logId)}
+              onAddEntry={(type) => {
+                if (type === 'care') {
+                  setCareLogForm({
+                    ...careLogForm,
+                    logId: '',
+                    activityType: 'watering',
+                    date: getTodayString()
+                  })
+                  setCareLogModalOpen(true)
+                } else if (type === 'morphology') {
+                  setMorphologyModalOpen(true)
+                } else if (type === 'measurement') {
+                  setMeasurementModalOpen(true)
+                } else if (type === 'note') {
+                  // For notes, open care log modal with 'other' type for now
+                  // Future: Create a dedicated notes modal
+                  setCareLogForm({
+                    ...careLogForm,
+                    logId: '',
+                    activityType: 'other',
+                    date: getTodayString()
+                  })
+                  setCareLogModalOpen(true)
+                }
+              }}
+              onDeleteChatLog={async (logId) => {
+                if (!confirm('Delete this AI consultation?')) return
+                try {
+                  const res = await fetch(`/api/chat-logs/${logId}`, { method: 'DELETE' })
+                  if (!res.ok) throw new Error('Failed to delete')
+                  showToast({ type: 'success', title: 'Consultation deleted' })
+                  fetchPlant()
+                } catch {
+                  showToast({ type: 'error', title: 'Failed to delete consultation' })
+                }
+              }}
+            />
           )}
 
           {activeTab === 'flowering' && (
@@ -1480,210 +1400,9 @@ export default function PlantDetailPage() {
             </div>
           )}
 
-          {activeTab === 'breeding' && (
-            <div className="space-y-6">
-              <h3 className="text-xl font-bold mb-4">Breeding History</h3>
-
-              {(plant.femaleBreedings?.length > 0 || plant.maleBreedings?.length > 0) ? (
-                <div className="space-y-4">
-                  {plant.femaleBreedings?.length > 0 && (
-                    <div>
-                      <h4 className="font-medium mb-2">As Female Parent</h4>
-                      <div className="space-y-2">
-                        {plant.femaleBreedings.map((breeding: any) => (
-                          <div key={breeding.id} className="bg-[var(--alert-red)]/10 rounded-lg p-3">
-                            <p className="font-medium">Cross #{breeding.crossId}</p>
-                            <p className="text-sm">Male: {breeding.malePlant?.plantId}</p>
-                            <p className="text-sm">Date: {new Date(breeding.crossDate).toLocaleDateString()}</p>
-                            {breeding.f1PlantsRaised && (
-                              <p className="text-sm">F1 Plants: {breeding.f1PlantsRaised}</p>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {plant.maleBreedings?.length > 0 && (
-                    <div>
-                      <h4 className="font-medium mb-2">As Male Parent</h4>
-                      <div className="space-y-2">
-                        {plant.maleBreedings.map((breeding: any) => (
-                          <div key={breeding.id} className="bg-[var(--water-blue)]/10 rounded-lg p-3">
-                            <p className="font-medium">Cross #{breeding.crossId}</p>
-                            <p className="text-sm">Female: {breeding.femalePlant?.plantId}</p>
-                            <p className="text-sm">Date: {new Date(breeding.crossDate).toLocaleDateString()}</p>
-                            {breeding.f1PlantsRaised && (
-                              <p className="text-sm">F1 Plants: {breeding.f1PlantsRaised}</p>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <p className="text-[var(--clay)] text-center py-8">No breeding records yet</p>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'logs' && (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold">Care Logs</h3>
-                <button
-                  onClick={() => setCareLogModalOpen(true)}
-                  className="px-4 py-2 bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)] flex items-center gap-2">
-                  <Plus className="w-4 h-4" />
-                  Add Log Entry
-                </button>
-              </div>
-
-              {plant.careLogs && plant.careLogs.length > 0 ? (
-                <div className="space-y-3">
-                  {plant.careLogs.map((log: any) => (
-                    <div key={log.id} className="bg-[var(--parchment)] rounded-lg p-4">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <p className="font-medium">
-                            {new Date(log.date).toLocaleDateString()}
-                          </p>
-                          <p className="text-sm capitalize mt-1">
-                            Activity: {log.action || log.activityType}
-                          </p>
-                          {(() => {
-                            // Read EC/pH from direct columns (new) or fall back to details JSON (legacy)
-                            const inputEC = log.inputEC ?? null
-                            const inputPH = log.inputPH ?? null
-                            const outputEC = log.outputEC ?? null
-                            const outputPH = log.outputPH ?? null
-                            let notes = null
-
-                            if (log.details) {
-                              try {
-                                const details = typeof log.details === 'string' ? JSON.parse(log.details) : log.details
-                                notes = details.notes
-                              } catch {
-                                notes = log.details
-                              }
-                            }
-
-                            const hasData = notes || inputEC || inputPH || outputEC || outputPH
-                            if (!hasData) return null
-
-                            return (
-                              <div className="text-sm text-[var(--clay)] mt-2 space-y-1">
-                                {notes && <p>{notes}</p>}
-                                {(inputEC || inputPH) && (
-                                  <p>Input: EC {inputEC?.toFixed(2) || '-'} / pH {inputPH?.toFixed(1) || '-'}</p>
-                                )}
-                                {(outputEC || outputPH) && (
-                                  <p>Output: EC {outputEC?.toFixed(2) || '-'} / pH {outputPH?.toFixed(1) || '-'}</p>
-                                )}
-                              </div>
-                            )
-                          })()}
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => {
-                              const details = log.details ? (typeof log.details === 'string' ? JSON.parse(log.details) : log.details) : {}
-                              setCareLogForm({
-                                logId: log.id,
-                                activityType: log.action || log.activityType || 'watering',
-                                notes: details.notes || '',
-                                fertilizer: details.fertilizer || '',
-                                pesticide: details.pesticide || '',
-                                fungicide: details.fungicide || '',
-                                dosage: details.dosage || '',
-                                // Read EC/pH from direct columns first, fall back to details JSON
-                                inputEC: log.inputEC?.toString() || details.inputEC?.toString() || '',
-                                inputPH: log.inputPH?.toString() || details.inputPH?.toString() || '',
-                                outputEC: log.outputEC?.toString() || details.outputEC?.toString() || '',
-                                outputPH: log.outputPH?.toString() || details.outputPH?.toString() || '',
-                                rainAmount: details.rainAmount || '',
-                                rainDuration: details.rainDuration || '',
-                                date: new Date(log.date).toISOString().split('T')[0],
-                                // Pest/disease discovery fields
-                                pestType: details.pestType || '',
-                                severity: details.severity || '',
-                                affectedArea: details.affectedArea || '',
-                                // Repotting fields
-                                fromPotSize: details.fromPotSize || '',
-                                toPotSize: details.toPotSize || '',
-                                fromPotType: details.fromPotType || '',
-                                toPotType: details.toPotType || '',
-                                substrateType: details.substrateType || '',
-                                drainageType: details.drainageType || '',
-                                substrateMix: details.substrateMix || ''
-                              })
-                              setCareLogModalOpen(true)
-                            }}
-                            className="px-3 py-1 text-sm bg-[var(--parchment)] hover:bg-[var(--sage)]/30 rounded flex items-center gap-1"
-                          >
-                            <Edit className="w-3 h-3" />
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => setCareLogToDelete(log.id)}
-                            className="px-3 py-1 text-sm bg-red-50 hover:bg-red-100 text-red-600 rounded-lg flex items-center gap-1"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                            Delete
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-[var(--clay)] text-center py-8">No care logs recorded yet</p>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'ai' && (
-            <div className="space-y-6">
-              <div className="mb-4">
-                <h3 className="text-xl font-bold mb-2">AI Botanical Assistant</h3>
-                <p className="text-[var(--clay)]">
-                  Chat with your AI assistant about {plant.genus} {plant.species}.
-                  Get care tips, diagnose issues, or ask any botanical questions.
-                </p>
-              </div>
-
-              <AIAssistant
-                plantId={plant.id}
-                plantData={{
-                  id: plant.id,
-                  plantId: plant.plantId,
-                  catalogId: plant.catalogId,
-                  genus: plant.genus,
-                  species: plant.species,
-                  hybridName: plant.hybridName,
-                  section: plant.section,
-                  healthStatus: plant.healthStatus,
-                  breederCode: plant.breederCode,
-                  location: plant.location?.name,
-                  careLogs: plant.careLogs,
-                  lastWatered: plant.careLogs ? getLastWateringEvent(plant.careLogs) : null,
-                  lastFertilized: plant.careLogs ? getLastFertilizingEvent(plant.careLogs) : null,
-                  notes: plant.notes,
-                  wateringFrequency: plant.wateringFrequency,
-                  lightRequirements: plant.lightRequirements,
-                  soilType: plant.soilType,
-                  // Include all photos for AI vision analysis (API filters based on mode)
-                  photos: plant.photos?.map((p: any) => ({
-                    url: p.url,
-                    photoType: p.photoType,
-                    dateTaken: p.dateTaken,
-                    notes: p.notes
-                  }))
-                }}
-                embedded={true}
-              />
-            </div>
+          {/* LINEAGE TAB - Ancestry, progeny, breeding participation */}
+          {activeTab === 'lineage' && (
+            <LineageTab plant={plant} />
           )}
         </div>
       </div>

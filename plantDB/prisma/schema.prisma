@@ -63,6 +63,7 @@ model Plant {
   growthMetrics     GrowthMetric[]
   floweringCycles   FloweringCycle[]
   journal           PlantJournal[]
+  chatLogs          ChatLog[]  // AI consultations saved by user
 
   // Breeding - Offspring relations
   femaleOffspring   Plant[]  @relation("FemaleOffspring")
@@ -696,6 +697,40 @@ model CloneBatch {
   @@index([sourcePlantId])
   @@index([status])
   @@index([locationId])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AI CHAT LOG - Curated AI consultations with HITL quality control
+// Saved manually by user when conversation is valuable
+// ═══════════════════════════════════════════════════════════════════════════
+
+model ChatLog {
+  id              String   @id @default(cuid())
+
+  plant           Plant    @relation(fields: [plantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  plantId         String
+
+  // Conversation content
+  title           String?  // User-editable summary title
+  messages        String   // JSON array: [{role: 'user'|'assistant', content: string, timestamp: string}]
+
+  // HITL Quality Control
+  confidence      String   @default("unverified") // unverified, verified, partially_verified, disputed
+  userEdits       String?  // JSON: notes about what was edited/corrected
+
+  // Metadata
+  savedAt         DateTime @default(now())
+  conversationDate DateTime // When the actual conversation happened
+
+  // Future: pgvector embeddings
+  embedding       Bytes?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([plantId])
+  @@index([savedAt])
+  @@index([confidence])
 }
 
 model Seedling {

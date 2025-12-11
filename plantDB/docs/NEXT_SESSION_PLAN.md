@@ -1,292 +1,115 @@
-# Next Session Plan: Plant Detail Page Refactor
+# Plant Detail Page Refactor
 
 **Created:** December 10, 2025
-**Status:** READY TO IMPLEMENT
-**Priority:** HIGH - UX improvement, reduces tabs from 9 to 5
+**Status:** COMPLETED
+**Completed:** December 10, 2025
 
 ---
 
-## Overview
+## Summary
 
-Consolidate the plant detail page tabs from 9 scattered views into 5 focused tabs that match actual usage patterns.
+Successfully refactored the plant detail page from 9 scattered tabs into 5 focused tabs:
 
-## Current State (9 tabs)
+### Tab Structure Change
 
-```
-1. overview        - Basic plant info
-2. recommendations - Care Schedule (ML predictions)
-3. care            - Care & Notes (static fields: soil, light, temp, etc.)
-4. morphology      - Morphological traits
-5. flowering       - Flowering cycles (KEEP AS IS)
-6. photos          - Photo gallery (KEEP AS IS)
-7. breeding        - Genetics/lineage
-8. logs            - Care log history
-9. ai              - AI Assistant
-```
-
-## Target State (5 tabs)
-
-```
-1. overview  - CONSOLIDATED: Health metrics + AI + Quick actions + Plant details
-2. journal   - NEW: Unified timeline (care logs + notes + morphology + measurements)
-3. photos    - UNCHANGED
-4. flowering - UNCHANGED
-5. genetics  - RENAMED from "breeding"
-```
+| Before (9 tabs) | After (5 tabs) |
+|-----------------|----------------|
+| overview | **overview** (consolidated: health + AI + quick actions + details) |
+| recommendations | → merged into overview (HealthMetrics) |
+| care | → merged into overview (Plant Details section) |
+| morphology | → merged into journal |
+| flowering | **flowering** (unchanged) |
+| photos | **photos** (unchanged) |
+| breeding | **lineage** (renamed, enhanced) |
+| logs | → merged into journal |
+| ai | → moved to overview |
+| — | **journal** (NEW: unified timeline) |
 
 ---
 
-## Tab 1: Overview (Consolidated)
+## Components Created
 
-### Layout Structure
+1. **`src/components/plant/HealthMetrics.tsx`**
+   - Displays ML predictions (substrate health, watering schedule, trajectory)
+   - Shows alerts and risk factors
+   - EC/pH trend visualization
 
-```
-┌─────────────────────────────────────────┐
-│ [Cover Photo]  ANT-2025-0036            │
-│                Hybrid Name · Section     │
-│                📍 BALCONY · 🩺 Healthy    │
-├─────────────────────────────────────────┤
-│ HEALTH METRICS                          │
-│ ┌─────────┬─────────┬─────────────────┐ │
-│ │Substrate│ Water   │ Growth          │ │
-│ │ 78/100  │ 5 days  │ +2 leaves/mo    │ │
-│ │ ▼ drift │ avg 6d  │ stable          │ │
-│ └─────────┴─────────┴─────────────────┘ │
-│                                         │
-│ ⚠️ pH drifting acidic (6.1→5.8 over 3wk)│
-│ 💧 Water due in ~2 days                 │
-├─────────────────────────────────────────┤
-│ EC/pH TRENDS              [Last 30 days]│
-│ In:  EC 1.1 → 1.1  pH 5.9 → 5.9 (stable)│
-│ Out: EC 1.3 → 1.5  pH 6.1 → 5.8 (⚠️ pH) │
-│ Δ:   +0.2 → +0.4  (salt accumulation)   │
-├─────────────────────────────────────────┤
-│ AI ASSISTANT          [Deep analysis ☐] │
-│ ┌─────────────────────────────────────┐ │
-│ │ Ask about this plant...             │ │
-│ └─────────────────────────────────────┘ │
-├─────────────────────────────────────────┤
-│ QUICK ACTIONS                           │
-│ [💧 Water] [🧪 Feed] [📝 Note] [📷 Photo]│
-├─────────────────────────────────────────┤
-│ PLANT DETAILS                    [Edit] │
-│ Acquired: Dec 2024 · NSE · $150         │
-│ Substrate: Dave 4.0 (repotted Oct 2025) │
-│ Pot: 4" nursery → 5" azalea             │
-│ Notes: General notes here...            │
-└─────────────────────────────────────────┘
-```
+2. **`src/components/plant/QuickActions.tsx`**
+   - Water, Feed, Note, Photo buttons
+   - One-click access to common actions
 
-### Components to Integrate
+3. **`src/components/plant/JournalTab.tsx`**
+   - Unified timeline for care logs, notes, morphology, measurements
+   - Filter buttons to show/hide entry types
+   - Edit/delete actions on care logs
 
-1. **Health Metrics Section** (NEW)
-   - Substrate health score from `/lib/care/ecPhUtils.ts`
-   - Watering pattern from ML predictions
-   - EC/pH trends with delta analysis
-   - Alerts from `UpcomingCare` component's `health.alerts`
+4. **`src/components/plant/JournalEntryModal.tsx`**
+   - Single modal with type selector
+   - Forms for care, note, morphology, measurement entries
+   - Activity-specific fields (EC/pH, repotting details, pest info, etc.)
 
-2. **AI Assistant** (MOVE from `ai` tab)
-   - Embed `AIAssistant` component directly
-   - Compact mode for overview (expandable)
-
-3. **Quick Actions** (NEW)
-   - Water button → opens care log modal with watering pre-selected
-   - Feed button → opens care log modal with feeding pre-selected
-   - Note button → opens journal entry modal
-   - Photo button → opens photo upload modal
-
-4. **Plant Details** (MERGE from `care` tab)
-   - Static fields: soil mix, light, temp, humidity
-   - Acquisition info
-   - General notes
-   - Edit button to toggle edit mode
-
-### Data Sources
-
-```typescript
-// ML Predictions (from /api/ml/predict-care)
-interface MLPredictions {
-  watering: { nextDate, daysUntil, confidence, interval, trend, history }
-  health: { trajectory, currentScore, substrateHealthScore, riskFactors, alerts }
-}
-
-// EC/pH Utils (from /lib/care/ecPhUtils.ts)
-calculateSubstrateHealth(careLogs) → { score, factors, trend }
-calculateECTrend(careLogs) → { direction, delta }
-calculatePHTrend(careLogs) → { direction, delta }
-```
+5. **`src/components/plant/LineageTab.tsx`**
+   - Ancestry section (parents, clone source, breeding record origin)
+   - Progeny section (offspring, clones)
+   - Breeding participation (crosses as female/male parent)
+   - Placeholder for future family tree visualization
 
 ---
 
-## Tab 2: Journal (New Unified Timeline)
+## Key Changes
 
-### Layout Structure
+### Overview Tab Now Contains:
+- Health Metrics (ML predictions, substrate health, alerts)
+- AI Assistant (embedded, always visible)
+- Quick Actions (Water, Feed, Note, Photo buttons)
+- Plant Details (location, cost, acquisition, vendor, breeder, etc.)
 
-```
-┌─────────────────────────────────────────┐
-│ FILTERS: [All] [Care] [Notes] [Morph] [Meas]│
-├─────────────────────────────────────────┤
-│ Dec 10 - 💧 Watered (baseline feed)     │
-│          EC 1.1/5.9 → 1.5/5.8           │
-│          [Edit] [Delete]                │
-├─────────────────────────────────────────┤
-│ Dec 8 - 📝 Note                         │
-│         New leaf unfurling, velvety     │
-│         texture, dark green             │
-├─────────────────────────────────────────┤
-│ Dec 5 - 📏 Measurement                  │
-│         8 leaves, 12" span, 6" petiole  │
-├─────────────────────────────────────────┤
-│ Dec 3 - 🌸 Morphology                   │
-│         Spathe: deep red                │
-│         Spadix: cream → pink            │
-├─────────────────────────────────────────┤
-│ [+ Add Entry]                           │
-│ Type: [Care ▾] [Note ▾] [Morph ▾] [Meas ▾]│
-└─────────────────────────────────────────┘
-```
+### Journal Tab Features:
+- Unified timeline of all plant events
+- Filter by type: Care, Notes, Morphology, Measurements
+- Edit/delete existing care logs
+- Add entry button with type selection
 
-### Entry Types
-
-1. **Care** - Existing care logs (watering, feeding, repotting, treatment)
-2. **Notes** - Free-form journal entries (good for pgvector later)
-3. **Morphology** - Trait observations (leaf, spathe, spadix, etc.)
-4. **Measurements** - Growth data (leaf count, span, petiole length)
-
-### Implementation Notes
-
-- All entries stored in unified timeline (or virtual merge of existing tables)
-- Filter buttons toggle visibility by type
-- Each entry type has its own modal for adding
-- Chronological sort (newest first)
-- Edit/Delete buttons on each entry
-
-### Database Consideration
-
-Two approaches:
-1. **Virtual merge** - Query existing tables (CareLog, Measurement, Trait) and merge in UI
-2. **PlantJournal table** - Already exists, could be the unified store
-
-Recommend: Start with virtual merge (no schema changes), migrate to unified PlantJournal later if needed.
+### Lineage Tab (renamed from "breeding"):
+- Clear distinction between RELATIONAL data (family tree) vs OBSERVATION data (journal)
+- Shows ancestry, progeny, and breeding participation
+- Links to related plants and breeding records
 
 ---
 
-## Tab 3: Photos (UNCHANGED)
+## File Changes
 
-Keep existing photo gallery functionality.
-
----
-
-## Tab 4: Flowering (UNCHANGED)
-
-Keep existing flowering cycle tracking.
+- `src/app/plants/[id]/page.tsx` - Reduced from 3140 to 2834 lines
+- Created 5 new component files in `src/components/plant/`
+- Removed `UpcomingCare` import (functionality moved to HealthMetrics)
 
 ---
 
-## Tab 5: Genetics (RENAMED)
+## Design Decisions
 
-Rename from "breeding" to "genetics" for clarity. Keep existing content:
-- Female/male parent links
-- Clone source
-- Generation (F1, F2, etc.)
-- Breeding record link
-- Target traits
+1. **Lineage vs Genetics**: Chose "Lineage" because it's about family tree relationships, not DNA traits. Genetics would imply observable characteristics (which is morphology).
 
----
+2. **Morphology in Journal**: Morphology observations are time-series data (traits can change with maturity), so they belong in the journal rather than as static fields.
 
-## Files to Modify
+3. **Single modal with type selector**: Simpler than maintaining multiple specialized modals. Type selector at top of modal allows quick switching.
 
-### Primary File
-- `src/app/plants/[id]/page.tsx` - Main refactor target (~3100 lines currently)
-
-### Components to Create/Modify
-- `src/components/plant/HealthMetrics.tsx` - NEW: Health dashboard widget
-- `src/components/plant/JournalTab.tsx` - NEW: Unified journal timeline
-- `src/components/plant/QuickActions.tsx` - NEW: Action buttons row
-- `src/components/AIAssistant.tsx` - May need compact/embedded mode
-
-### Existing Components to Reuse
-- `src/components/care/UpcomingCare.tsx` - ML predictions source
-- `src/lib/care/ecPhUtils.ts` - EC/pH calculations
-- `src/lib/care/recommendations.ts` - Care recommendations
+4. **AI in Overview**: Most valuable when easily accessible, not hidden in separate tab.
 
 ---
 
-## Implementation Order
+## Future Enhancements
 
-1. **Update tabs array** (5 min)
-   - Change from 9 tabs to 5
-   - Rename breeding → genetics
-
-2. **Create HealthMetrics component** (30 min)
-   - Extract ML prediction display from UpcomingCare
-   - Add EC/pH trend display
-   - Add alerts section
-
-3. **Refactor Overview tab** (45 min)
-   - Add HealthMetrics section
-   - Move AIAssistant inline
-   - Add QuickActions row
-   - Merge plant details from care tab
-
-4. **Create Journal tab** (45 min)
-   - Filter buttons component
-   - Timeline display (virtual merge of existing data)
-   - Entry type icons
-   - Add entry modal with type selector
-
-5. **Wire up journal icon** (10 min)
-   - Header journal icon → opens Journal tab
-   - Or opens add entry modal directly
-
-6. **Test & polish** (30 min)
-   - Verify all ML data displays
-   - Test quick actions
-   - Test journal filters
-   - Mobile responsive check
+1. **Family tree visualization** - Interactive cladogram showing plant's position in breeding program
+2. **Dedicated Notes modal** - Currently uses care log modal with 'other' type
+3. **pgvector embeddings** - Journal entries are good candidates for semantic search
 
 ---
 
-## Questions for User
+## Testing
 
-1. **Journal entry modal** - Should the "Add Entry" button open:
-   - A single modal with type dropdown? (simpler)
-   - Or switch between specialized modals? (current approach)
-
-2. **Compact AI mode** - For overview embed, should AI:
-   - Start collapsed with "Ask AI" button to expand?
-   - Always show input field?
-   - Show last response summary?
-
-3. **Quick Actions** - Which actions to include?
-   - Water, Feed, Note, Photo (proposed)
-   - Add: Measurement, Morphology observation?
-
----
-
-## Success Criteria
-
-- [ ] Tabs reduced from 9 to 5
-- [ ] Health metrics visible on overview without clicking
-- [ ] AI assistant accessible from overview
-- [ ] Journal shows unified timeline with filters
-- [ ] Quick actions allow one-click care logging
-- [ ] All existing functionality preserved
-- [ ] Mobile responsive
-
----
-
-## Related Files Reference
-
-```
-src/app/plants/[id]/page.tsx          # Main file to refactor
-src/components/care/UpcomingCare.tsx  # ML predictions component
-src/components/AIAssistant.tsx        # AI chat component
-src/lib/care/ecPhUtils.ts             # EC/pH calculations
-src/lib/care/recommendations.ts       # Care recommendations
-src/lib/timezone.ts                   # Date handling
-```
-
----
-
-**Ready to implement when context is fresh.**
+- TypeScript: No errors
+- Dev server: Compiles and runs successfully
+- All tabs render correctly
+- Quick actions open appropriate modals
+- Journal filters work
+- Lineage displays ancestry/progeny correctly

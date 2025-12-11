@@ -3,25 +3,34 @@
 import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
-import { Send, Bot, X, Maximize2, Minimize2, Loader, AlertCircle, Image, ChevronDown } from 'lucide-react';
+import { Send, Bot, X, Maximize2, Minimize2, Loader, AlertCircle, Image, ChevronDown, BookmarkPlus, Check } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+}
 
 interface AIAssistantProps {
   plantId?: string;
   plantData?: any;
   embedded?: boolean;
+  onSaveConversation?: (messages: ChatMessage[]) => Promise<void>;
 }
 
 // Photo analysis modes
 type PhotoMode = 'recent' | 'comprehensive';
 
-export default function AIAssistant({ plantId, plantData, embedded = false }: AIAssistantProps) {
+export default function AIAssistant({ plantId, plantData, embedded = false, onSaveConversation }: AIAssistantProps) {
   const [isOpen, setIsOpen] = useState(embedded);
   const [isMaximized, setIsMaximized] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [photoMode, setPhotoMode] = useState<PhotoMode>('recent');
   const [userHasScrolled, setUserHasScrolled] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [savedSuccess, setSavedSuccess] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
@@ -99,7 +108,37 @@ export default function AIAssistant({ plantId, plantData, embedded = false }: AI
     const message = inputValue;
     setInputValue('');
     setUserHasScrolled(false); // Reset scroll state for new message
+    setSavedSuccess(false); // Reset save state for new conversation
     await sendMessage({ text: message });
+  };
+
+  // Check if there's a saveable conversation (more than just the context message)
+  const hasSaveableConversation = messages.length > 1 && messages.some(m => m.role === 'user');
+
+  const handleSaveConversation = async () => {
+    if (!onSaveConversation || !hasSaveableConversation || isSaving) return;
+
+    setIsSaving(true);
+    try {
+      // Convert messages to the ChatMessage format, excluding the initial context message
+      const chatMessages: ChatMessage[] = messages
+        .filter(m => m.id !== 'context') // Exclude initial context
+        .map(m => ({
+          role: m.role as 'user' | 'assistant',
+          content: m.parts
+            ?.filter((part): part is { type: 'text'; text: string } => part.type === 'text')
+            .map(part => part.text)
+            .join('') || '',
+          timestamp: new Date().toISOString(),
+        }));
+
+      await onSaveConversation(chatMessages);
+      setSavedSuccess(true);
+    } catch (error) {
+      console.error('Failed to save conversation:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (!embedded && !isOpen) {
@@ -133,22 +172,46 @@ export default function AIAssistant({ plantId, plantData, embedded = false }: AI
             </span>
           )}
         </div>
-        {!embedded && (
-          <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1">
+          {/* Save to Journal button - only show if there's a conversation and callback */}
+          {onSaveConversation && hasSaveableConversation && (
             <button
-              onClick={() => setIsMaximized(!isMaximized)}
-              className="p-1.5 text-[var(--clay)] hover:text-[var(--bark)] hover:bg-[var(--bg-primary)] rounded"
+              onClick={handleSaveConversation}
+              disabled={isSaving || savedSuccess}
+              className={`flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${
+                savedSuccess
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-[var(--bg-primary)] text-[var(--bark)] hover:bg-[var(--parchment)]'
+              }`}
+              title={savedSuccess ? 'Saved to journal' : 'Save to journal'}
             >
-              {isMaximized ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+              {isSaving ? (
+                <Loader size={12} className="animate-spin" />
+              ) : savedSuccess ? (
+                <Check size={12} />
+              ) : (
+                <BookmarkPlus size={12} />
+              )}
+              {savedSuccess ? 'Saved' : 'Save'}
             </button>
-            <button
-              onClick={() => setIsOpen(false)}
-              className="p-1.5 text-[var(--clay)] hover:text-[var(--bark)] hover:bg-[var(--bg-primary)] rounded"
-            >
-              <X size={16} />
-            </button>
-          </div>
-        )}
+          )}
+          {!embedded && (
+            <>
+              <button
+                onClick={() => setIsMaximized(!isMaximized)}
+                className="p-1.5 text-[var(--clay)] hover:text-[var(--bark)] hover:bg-[var(--bg-primary)] rounded"
+              >
+                {isMaximized ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+              </button>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="p-1.5 text-[var(--clay)] hover:text-[var(--bark)] hover:bg-[var(--bg-primary)] rounded"
+              >
+                <X size={16} />
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Messages */}
