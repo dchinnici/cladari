@@ -56,9 +56,16 @@ plantDB/
 - **API routes**: kebab-case paths
 - **ID Generation**: `src/lib/breeding-ids.ts` for all ID generation
 
-## Current Version: v1.6.1 (Dec 11, 2025)
+## Current Version: v1.6.3 (Dec 12, 2025)
 
 ### Recently Completed
+- **HITL Quality Scoring** - Granular AI feedback for ML training (v1.6.3)
+  - 0-4 quality scale with retrieval weight computation
+  - SaveChatModal: Score, edit, and save AI responses
+  - NegativeExample model: Bad responses stored separately for RLHF
+  - Failure types: hallucination, missed_context, factual_error, etc.
+  - Journal shows quality badges (color-coded 0-4)
+- **Cross-plant context isolation** - AI chat resets between plants (v1.6.3)
 - **SensorPush Integration** - Live environmental monitoring (v1.6.1)
   - Library: `/lib/sensorpush.ts` - OAuth API client with token caching
   - APIs: `/api/sensorpush/sync`, `/api/sensorpush/history`
@@ -99,10 +106,11 @@ plantDB/
 
 ## Current State (Dec 2025)
 ### Working Well
+- **HITL Quality Scoring** (v1.6.3) - 0-4 scoring, negative examples, retrieval weights
 - **SensorPush Integration** (v1.6.1) - Live environmental monitoring, 10-min cron sync
 - **Weather Integration** (v1.6.1) - Open-Meteo for outdoor conditions + AI context
 - **Plant Detail** (v1.6.0) - 5 tabs: Overview, Journal, Photos, Flowering, Lineage
-- **AI Chat Logging** (v1.6.0) - Save conversations with HITL confidence tracking
+- **AI Chat Logging** (v1.6.3) - Save with quality scoring, edit capability, context isolation
 - **AI Photo Analysis** (v1.5.0) - Claude Opus 4 with extended thinking
 - **QR Code System** (v1.5.1) - Plant and location tags with quickcare flow
 - **Timezone handling** (v1.5.1) - America/New_York, no more date bugs

@@ -2,6 +2,74 @@
 
 All notable changes to the Cladari Plant Management System will be documented in this file.
 
+## [1.6.3] - 2025-12-12
+
+### Added
+- **HITL Quality Scoring System** - Granular feedback on AI consultations for ML training
+  - **0-4 quality scale**: Marginal (0) → Reference (4) with retrieval weight computation
+  - **SaveChatModal**: New modal for scoring, editing, and saving AI responses
+  - **Edit before save**: Preserve original content while allowing corrections
+  - **Negative examples**: Separate storage for bad AI responses with failure categorization
+  - **Failure types**: hallucination, missed_context, factual_error, irrelevant, incomplete, wrong_tone
+  - **Weight versioning**: `weightVersion` field enables formula evolution without data loss
+
+- **NegativeExample Model** - Training data for fine-tuning/RLHF
+  - Stores bad responses with failure type and notes
+  - Optional `correctedResponse` field for gold-standard corrections
+  - Hidden from UI (backend-only for ML export)
+
+- **Journal Quality Display** - HITL scores visible in journal timeline
+  - Color-coded badges: gray (0), amber (1), blue (2), green (3-4)
+  - "(edited)" indicator for modified content
+  - Legacy confidence badges for pre-scored entries
+
+### Fixed
+- **Cross-plant context bleed** - AI chat now resets when switching between plants
+  - Prevents SKG/variegation hallucinations from prior plant analyses bleeding into new queries
+  - `setMessages` called on plantId change to clear conversation history
+
+- **Care log data quality** - Fixed incorrect EC/pH entries
+  - Rain logs: Removed impossible 5.7 pH / 1.15 EC values, set to estimated 7.1 pH / 0.02 EC
+  - Swapped values: Fixed 8 entries where EC and pH were entered in wrong fields
+
+- **Next.js cross-origin** - Added `allowedDevOrigins` for Tailscale access (f1, f1.tail*.ts.net)
+
+### Schema Changes
+```prisma
+model ChatLog {
+  // New fields
+  originalContent   String?   // Immutable AI response
+  displayContent    String?   // User-edited version
+  wasEdited         Boolean   @default(false)
+  qualityScore      Int?      // 0-4 HITL rating
+  retrievalWeight   Float?    // Computed: 0.25 * (score + 1)
+  weightVersion     Int       @default(1)
+  scoredAt          DateTime?
+  templateId        String?   // Future: query templates
+  modelUsed         String?   // haiku, sonnet, opus
+  tokensUsed        Int?
+}
+
+model NegativeExample {
+  id                String
+  plantId           String?
+  messages          String
+  originalContent   String?
+  failureType       String?   // hallucination, missed_context, etc.
+  failureNotes      String?
+  correctedResponse String?   // Gold standard for training
+  templateId        String?
+  modelUsed         String?
+  userPrompt        String?
+}
+```
+
+### Technical Notes
+- Retrieval weight formula v1: `weight = 0.25 * (qualityScore + 1)` → 0.25x to 2.0x multiplier
+- Weight stored (not just computed) to enable A/B testing of formulas
+- `scoredAt` timestamp enables HITL engagement analysis
+- Negative examples accessible via `/api/negative-examples` for training export
+
 ## [1.6.2] - 2025-12-11
 
 ### Added

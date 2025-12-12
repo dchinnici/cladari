@@ -66,7 +66,8 @@ interface ChatLog {
   title?: string | null
   messages: string | ChatLogMessage[] // JSON string or parsed array
   confidence: string // unverified, verified, partially_verified, disputed
-  userEdits?: string | null
+  qualityScore?: number | null // 0-4 HITL rating
+  wasEdited?: boolean
   conversationDate: string
   savedAt: string
 }
@@ -376,11 +377,33 @@ export function JournalTab({
                     {/* Actions for AI logs */}
                     {entry.type === 'ai' && (
                       <div className="flex items-center gap-2">
-                        {/* Confidence badge */}
-                        <span className={`flex items-center gap-1 text-xs ${CONFIDENCE_COLORS[entry.raw.confidence] || CONFIDENCE_COLORS.unverified}`} title={`Confidence: ${entry.raw.confidence}`}>
-                          {CONFIDENCE_ICONS[entry.raw.confidence] || CONFIDENCE_ICONS.unverified}
-                          {entry.raw.confidence === 'verified' ? 'Verified' : entry.raw.confidence === 'disputed' ? 'Disputed' : ''}
-                        </span>
+                        {/* Quality score badge */}
+                        {entry.raw.qualityScore !== null && entry.raw.qualityScore !== undefined && (
+                          <span
+                            className={`flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded font-medium ${
+                              entry.raw.qualityScore >= 3 ? 'bg-green-100 text-green-700' :
+                              entry.raw.qualityScore >= 2 ? 'bg-blue-100 text-blue-700' :
+                              entry.raw.qualityScore >= 1 ? 'bg-amber-100 text-amber-700' :
+                              'bg-gray-100 text-gray-600'
+                            }`}
+                            title={`HITL Quality: ${entry.raw.qualityScore}/4 - ${['Marginal', 'OK', 'Good', 'Great', 'Reference'][entry.raw.qualityScore]}`}
+                          >
+                            {entry.raw.qualityScore}/4
+                          </span>
+                        )}
+                        {/* Edited badge */}
+                        {entry.raw.wasEdited && (
+                          <span className="text-xs text-[var(--clay)]" title="Content was edited before saving">
+                            (edited)
+                          </span>
+                        )}
+                        {/* Legacy confidence badge - only show if no quality score */}
+                        {(entry.raw.qualityScore === null || entry.raw.qualityScore === undefined) && (
+                          <span className={`flex items-center gap-1 text-xs ${CONFIDENCE_COLORS[entry.raw.confidence] || CONFIDENCE_COLORS.unverified}`} title={`Confidence: ${entry.raw.confidence}`}>
+                            {CONFIDENCE_ICONS[entry.raw.confidence] || CONFIDENCE_ICONS.unverified}
+                            {entry.raw.confidence === 'verified' ? 'Verified' : entry.raw.confidence === 'disputed' ? 'Disputed' : ''}
+                          </span>
+                        )}
                         <div className="flex gap-1">
                           {onEditChatLog && (
                             <button

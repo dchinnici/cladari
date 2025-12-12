@@ -1124,19 +1124,6 @@ export default function PlantDetailPage() {
                         }))
                       }}
                       embedded={true}
-                      onSaveConversation={async (messages) => {
-                        const res = await fetch('/api/chat-logs', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            plantId: plant.id,
-                            messages,
-                            conversationDate: new Date().toISOString(),
-                          }),
-                        })
-                        if (!res.ok) throw new Error('Failed to save')
-                        showToast({ type: 'success', title: 'Conversation saved to journal' })
-                      }}
                     />
                   </div>
                 )}

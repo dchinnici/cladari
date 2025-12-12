@@ -64,6 +64,7 @@ model Plant {
   floweringCycles   FloweringCycle[]
   journal           PlantJournal[]
   chatLogs          ChatLog[]  // AI consultations saved by user
+  negativeExamples  NegativeExample[]  // Bad AI responses for training
 
   // Breeding - Offspring relations
   femaleOffspring   Plant[]  @relation("FemaleOffspring")
@@ -718,13 +719,29 @@ model ChatLog {
   title           String?  // User-editable summary title
   messages        String   // JSON array: [{role: 'user'|'assistant', content: string, timestamp: string}]
 
-  // HITL Quality Control
-  confidence      String   @default("unverified") // unverified, verified, partially_verified, disputed
-  userEdits       String?  // JSON: notes about what was edited/corrected
+  // Content versioning - preserve original even when edited
+  originalContent String?  // AI's final response text (immutable after save)
+  displayContent  String?  // User-edited version (what shows in UI/retrieval)
+  wasEdited       Boolean  @default(false)
 
-  // Metadata
-  savedAt         DateTime @default(now())
+  // HITL Quality Signal (0-4 scale)
+  // 0=marginal, 1=acceptable, 2=good, 3=excellent, 4=reference
+  qualityScore    Int?     // null = not yet scored
+  retrievalWeight Float?   // Computed: 0.25 * (qualityScore + 1), stored for query efficiency
+  weightVersion   Int      @default(1)  // Formula version that produced weight (enables evolution)
+
+  // Legacy/future compatibility
+  confidence      String   @default("unverified") // unverified, verified, partially_verified, disputed
+
+  // Timestamps
   conversationDate DateTime // When the actual conversation happened
+  savedAt          DateTime @default(now())  // When user clicked save
+  scoredAt         DateTime? // When quality score was assigned (HITL timing analysis)
+
+  // Future: Query template linkage
+  templateId      String?   // Link to QueryTemplate when implemented
+  modelUsed       String?   // haiku, sonnet, opus - for cost tracking
+  tokensUsed      Int?      // Actual token consumption
 
   // Future: pgvector embeddings
   embedding       Bytes?
@@ -734,7 +751,43 @@ model ChatLog {
 
   @@index([plantId])
   @@index([savedAt])
+  @@index([qualityScore])
   @@index([confidence])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// NEGATIVE EXAMPLE - Bad AI responses for fine-tuning/RLHF
+// Stored separately from ChatLog to keep training signal clean
+// ═══════════════════════════════════════════════════════════════════════════
+
+model NegativeExample {
+  id                String   @id @default(cuid())
+
+  // Optional plant context (might be general, not plant-specific)
+  plant             Plant?   @relation(fields: [plantId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  plantId           String?
+
+  // The bad response
+  messages          String   // Full conversation JSON
+  originalContent   String?  // The specific problematic AI output
+
+  // Why it was bad - critical for training signal
+  failureType       String?  // hallucination, missed_context, wrong_tone, factual_error, irrelevant, other
+  failureNotes      String?  // Free text explanation of what went wrong
+
+  // Gold standard correction (extremely valuable for supervised fine-tuning)
+  correctedResponse String?  // What the AI SHOULD have said
+
+  // Context for analysis
+  templateId        String?  // Which query type produced this (when templates exist)
+  modelUsed         String?  // haiku, sonnet, opus
+  userPrompt        String?  // What the user asked (for context)
+
+  createdAt         DateTime @default(now())
+
+  @@index([plantId])
+  @@index([failureType])
+  @@index([createdAt])
 }
 
 model Seedling {

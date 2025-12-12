@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 
+// Helper to compute retrieval weight from quality score
+function computeRetrievalWeight(qualityScore: number): number {
+  // v1 formula: linear scaling 0.25x to 2.0x
+  return 0.25 * (qualityScore + 1)
+}
+
+const WEIGHT_VERSION = 1
+
 // GET /api/chat-logs/[id] - Get a single chat log
 export async function GET(
   request: NextRequest,
@@ -25,7 +33,6 @@ export async function GET(
     return NextResponse.json({
       ...chatLog,
       messages: JSON.parse(chatLog.messages),
-      userEdits: chatLog.userEdits ? JSON.parse(chatLog.userEdits) : null,
     })
   } catch (error) {
     console.error('Error fetching chat log:', error)
@@ -33,7 +40,7 @@ export async function GET(
   }
 }
 
-// PATCH /api/chat-logs/[id] - Update a chat log (title, confidence, messages, userEdits)
+// PATCH /api/chat-logs/[id] - Update a chat log
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -41,12 +48,18 @@ export async function PATCH(
   try {
     const { id } = await params
     const body = await request.json()
-    const { title, confidence, messages, userEdits } = body
+    const {
+      title,
+      confidence,
+      messages,
+      qualityScore,
+      displayContent,
+    } = body
 
     // Verify chat log exists
     const existing = await prisma.chatLog.findUnique({
       where: { id },
-      select: { id: true }
+      select: { id: true, originalContent: true }
     })
 
     if (!existing) {
@@ -58,12 +71,17 @@ export async function PATCH(
       title?: string
       confidence?: string
       messages?: string
-      userEdits?: string
+      qualityScore?: number
+      retrievalWeight?: number
+      weightVersion?: number
+      displayContent?: string
+      wasEdited?: boolean
+      scoredAt?: Date
     } = {}
 
     if (title !== undefined) updateData.title = title
+
     if (confidence !== undefined) {
-      // Validate confidence value
       const validConfidence = ['unverified', 'verified', 'partially_verified', 'disputed']
       if (!validConfidence.includes(confidence)) {
         return NextResponse.json(
@@ -73,14 +91,30 @@ export async function PATCH(
       }
       updateData.confidence = confidence
     }
+
     if (messages !== undefined) {
       if (!Array.isArray(messages)) {
         return NextResponse.json({ error: 'messages must be an array' }, { status: 400 })
       }
       updateData.messages = JSON.stringify(messages)
     }
-    if (userEdits !== undefined) {
-      updateData.userEdits = JSON.stringify(userEdits)
+
+    if (qualityScore !== undefined) {
+      if (!Number.isInteger(qualityScore) || qualityScore < 0 || qualityScore > 4) {
+        return NextResponse.json(
+          { error: 'qualityScore must be an integer between 0 and 4' },
+          { status: 400 }
+        )
+      }
+      updateData.qualityScore = qualityScore
+      updateData.retrievalWeight = computeRetrievalWeight(qualityScore)
+      updateData.weightVersion = WEIGHT_VERSION
+      updateData.scoredAt = new Date()
+    }
+
+    if (displayContent !== undefined) {
+      updateData.displayContent = displayContent
+      updateData.wasEdited = displayContent !== existing.originalContent
     }
 
     const chatLog = await prisma.chatLog.update({
@@ -91,7 +125,6 @@ export async function PATCH(
     return NextResponse.json({
       ...chatLog,
       messages: JSON.parse(chatLog.messages),
-      userEdits: chatLog.userEdits ? JSON.parse(chatLog.userEdits) : null,
     })
   } catch (error) {
     console.error('Error updating chat log:', error)
