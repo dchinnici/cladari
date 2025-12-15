@@ -36,7 +36,6 @@ export class EmbeddingService {
       try {
         // Dynamic import to avoid build errors when dependency not installed
         console.log('Loading @xenova/transformers...');
-        // @ts-expect-error - @xenova/transformers is an optional dependency
         const transformers = await import('@xenova/transformers');
         console.log('Transformers loaded, initializing e5-base-v2 model...');
         console.log('(First run downloads ~400MB model - this may take a few minutes)');

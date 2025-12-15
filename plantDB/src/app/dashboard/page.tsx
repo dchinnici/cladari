@@ -7,6 +7,7 @@ import {
   TreeDeciduous, Activity, ChevronRight
 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell } from 'recharts'
+import KnowledgeSearch from '@/components/KnowledgeSearch'
 
 export default function Dashboard() {
   const { data: stats, isLoading, error } = useQuery({
@@ -285,6 +286,11 @@ export default function Dashboard() {
               )}
             </div>
           </div>
+        </div>
+
+        {/* Knowledge Search */}
+        <div className="mb-6">
+          <KnowledgeSearch />
         </div>
 
         {/* Recent Activity */}

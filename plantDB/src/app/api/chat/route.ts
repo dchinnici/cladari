@@ -5,6 +5,7 @@ import path from 'path';
 import prisma from '@/lib/prisma';
 import { getSamples, getSensors } from '@/lib/sensorpush';
 import { getWeather, formatCurrentWeather, windDirectionToCompass } from '@/lib/weather';
+import { embedder, EmbeddingService } from '@/lib/ml/embeddings';
 
 export const maxDuration = 120; // Opus 4 with extended thinking needs more time
 
@@ -113,16 +114,93 @@ async function getOutdoorConditions() {
   }
 }
 
-// Helper to load image as base64
-async function loadImageAsBase64(imagePath: string): Promise<{ base64: string; mimeType: string } | null> {
+// Helper to search for relevant past consultations across the collection
+async function searchRelevantConsultations(
+  query: string,
+  excludePlantId?: string,
+  limit: number = 5
+): Promise<{ plantId: string; plantName: string; chunkType: string; content: string; similarity: number }[]> {
   try {
-    // Photos are stored in public/uploads/photos/
-    const fullPath = path.join(process.cwd(), 'public', imagePath);
+    await embedder.initialize();
+
+    if (!embedder.isAvailable()) {
+      console.log('[Chat API] Embedding service not available, skipping semantic search');
+      return [];
+    }
+
+    const queryEmbedding = await embedder.embedQuery(query);
+    const embeddingVector = EmbeddingService.toPgVector(queryEmbedding);
+
+    // Build query - exclude current plant to avoid echo, prefer high-quality consultations
+    const results = await prisma.$queryRawUnsafe<{
+      content: string;
+      chunkType: string;
+      similarity: number;
+      qualityWeightedScore: number;
+      plantDisplayId: string;
+      plantName: string | null;
+      plantId: string;
+    }[]>(`
+      SELECT
+        clc.content,
+        clc."chunkType",
+        (1 - (clc.embedding <=> $1::vector)) as similarity,
+        (1 - (clc.embedding <=> $1::vector)) * COALESCE(clc."retrievalWeight", 1.0) as "qualityWeightedScore",
+        p."plantId" as "plantDisplayId",
+        COALESCE(p."hybridName", p.species) as "plantName",
+        p.id as "plantId"
+      FROM "ChatLogChunk" clc
+      JOIN "ChatLog" cl ON clc."chatLogId" = cl.id
+      JOIN "Plant" p ON cl."plantId" = p.id
+      WHERE clc.embedding IS NOT NULL
+        ${excludePlantId ? `AND p.id != $2` : ''}
+        AND (1 - (clc.embedding <=> $1::vector)) > 0.5
+      ORDER BY "qualityWeightedScore" DESC
+      LIMIT ${limit}
+    `, embeddingVector, ...(excludePlantId ? [excludePlantId] : []));
+
+    return results.map(r => ({
+      plantId: r.plantDisplayId,
+      plantName: r.plantName || 'unnamed',
+      chunkType: r.chunkType,
+      content: r.content.slice(0, 500), // Truncate for context window
+      similarity: parseFloat(r.similarity.toString())
+    }));
+  } catch (error) {
+    console.error('[Chat API] Error searching consultations:', error);
+    return [];
+  }
+}
+
+// Helper to load image as base64 (supports both local files and remote URLs)
+async function loadImageAsBase64(imageUrl: string): Promise<{ base64: string; mimeType: string } | null> {
+  try {
+    // Check if it's a remote URL (Supabase, etc.)
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      const response = await fetch(imageUrl);
+      if (!response.ok) {
+        console.error(`Failed to fetch image: ${imageUrl} - ${response.status}`);
+        return null;
+      }
+
+      const buffer = await response.arrayBuffer();
+      const base64 = Buffer.from(buffer).toString('base64');
+
+      // Get mime type from response headers or infer from URL
+      let mimeType = response.headers.get('content-type') || 'image/jpeg';
+      // Clean up mime type (remove charset etc)
+      mimeType = mimeType.split(';')[0].trim();
+
+      return { base64, mimeType };
+    }
+
+    // Local file path - photos stored in public/uploads/photos/
+    const fullPath = path.join(process.cwd(), 'public', imageUrl);
     const buffer = await readFile(fullPath);
     const base64 = buffer.toString('base64');
 
     // Determine mime type from extension
-    const ext = path.extname(imagePath).toLowerCase();
+    const ext = path.extname(imageUrl).toLowerCase();
     const mimeTypes: Record<string, string> = {
       '.jpg': 'image/jpeg',
       '.jpeg': 'image/jpeg',
@@ -134,7 +212,7 @@ async function loadImageAsBase64(imagePath: string): Promise<{ base64: string; m
 
     return { base64, mimeType };
   } catch (error) {
-    console.error(`Failed to load image: ${imagePath}`, error);
+    console.error(`Failed to load image: ${imageUrl}`, error);
     return null;
   }
 }
@@ -291,6 +369,38 @@ You're speaking to a master breeder - be professional, precise, and acknowledge 
     // Fetch outdoor conditions (barometric pressure + weather)
     const outdoor = await getOutdoorConditions();
 
+    // Search for relevant past consultations across the collection
+    // Use the latest user message as the search query
+    // Handle both formats: { content: string } and { parts: [{ type: 'text', text: string }] }
+    const latestUserMessage = [...messages].reverse().find((m: any) => m.role === 'user');
+    let searchQuery = '';
+    if (latestUserMessage) {
+      if (typeof latestUserMessage.content === 'string') {
+        searchQuery = latestUserMessage.content;
+      } else if (latestUserMessage.parts) {
+        // AI SDK format: parts array with text parts
+        searchQuery = latestUserMessage.parts
+          .filter((p: any) => p.type === 'text')
+          .map((p: any) => p.text)
+          .join('');
+      }
+    }
+    console.log('[Chat API] User query for semantic search:', searchQuery?.slice(0, 80) || '(empty)');
+
+    let relevantConsultations: Awaited<ReturnType<typeof searchRelevantConsultations>> = [];
+
+    if (searchQuery && searchQuery.length > 10) {
+      console.log('[Chat API] Searching for relevant consultations...');
+      relevantConsultations = await searchRelevantConsultations(
+        searchQuery,
+        plantContext.id, // Exclude current plant
+        5 // Top 5 relevant chunks
+      );
+      console.log(`[Chat API] Found ${relevantConsultations.length} relevant consultations`);
+    } else {
+      console.log('[Chat API] Skipping semantic search - query too short or empty');
+    }
+
     // Format care logs for context
     let careLogSummary = '';
     if (plantContext.careLogs && plantContext.careLogs.length > 0) {
@@ -366,6 +476,14 @@ Balcony Sensor: ${outdoor.sensorTemp?.toFixed(1)}°F, ${outdoor.sensorHumidity?.
 ${outdoor.forecast.map(d => `  ${d.date}: ${d.weatherDescription}, ${d.tempMin.toFixed(0)}-${d.tempMax.toFixed(0)}°F${d.precipitationProbability > 20 ? `, ${d.precipitationProbability}% chance rain` : ''}`).join('\n')}
 
 Use weather data to interpret outdoor sensor readings (e.g., 100% humidity during rain vs fog vs dew).` : ''}
+
+${relevantConsultations.length > 0 ? `RELEVANT PAST CONSULTATIONS (from other plants in the collection):
+These are semantically similar discussions that may provide relevant context. Reference them when applicable, but prioritize the current plant's specific data.
+
+${relevantConsultations.map((c, i) => `[${c.plantId} - ${c.plantName}] (${c.chunkType}, similarity: ${(c.similarity * 100).toFixed(0)}%)
+${c.content}
+`).join('\n')}
+Note: These are excerpts from past AI consultations. Use them to identify patterns across the collection or reference similar cases.` : ''}
 
 ${imageContents.length > 0 ? `PHOTOS PROVIDED FOR ANALYSIS (${photoMode} mode - ${imageContents.length} of ${plantContext.photos?.length || 0} total):
 ${photoDescriptions.map((desc, i) => `  Photo ${i + 1}: ${desc}`).join('\n')}

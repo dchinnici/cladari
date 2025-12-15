@@ -25,8 +25,9 @@ plantDB/
 │   │   │   ├── breeding/      # Breeding record API
 │   │   │   ├── seed-batches/  # Seed batch API
 │   │   │   ├── seedlings/     # Seedling API
-│   │   │   ├── chat/          # AI chat endpoint (Claude Opus 4)
-│   │   │   ├── chat-logs/     # AI conversation persistence (HITL)
+│   │   │   ├── chat/          # AI chat endpoint (Claude Opus 4 + semantic search)
+│   │   │   ├── chat-logs/     # AI conversation persistence (HITL + auto-embedding)
+│   │   │   ├── ml/            # ML endpoints (semantic-search, diagnose, predict-care)
 │   │   │   ├── sensorpush/    # SensorPush API (sync, history)
 │   │   │   ├── weather/       # Open-Meteo weather API
 │   │   │   └── print/         # QR/label print APIs (plant-tag, location-tag)
@@ -47,7 +48,10 @@ plantDB/
 │       ├── zpl.ts             # Zebra ZPL templates for label printing
 │       ├── sensorpush.ts      # SensorPush OAuth API client
 │       ├── weather.ts         # Open-Meteo weather API (Fort Lauderdale)
-│       └── ...                # Care algorithms, ML functions
+│       └── ml/                # Machine learning modules
+│           ├── embeddings.ts  # BGE embedding service (768d pgvector)
+│           ├── chunker.ts     # ChatLog semantic chunking
+│           └── ...            # Statistical analyzers, predictors
 ├── scripts/                   # Migration and automation scripts
 │   ├── migrate-to-supabase.ts      # Data migration script
 │   ├── migrate-photos-to-supabase.ts # Photo storage migration
@@ -65,9 +69,17 @@ plantDB/
 - **API routes**: kebab-case paths
 - **ID Generation**: `src/lib/breeding-ids.ts` for all ID generation
 
-## Current Version: v1.7.0 (Dec 15, 2025)
+## Current Version: v1.7.1 (Dec 15, 2025)
 
 ### Recently Completed
+- **pgvector Semantic Search** - Cross-collection AI memory (v1.7.1)
+  - Embedding model: Xenova/bge-base-en-v1.5 (768 dimensions) via @xenova/transformers
+  - ChatLog chunking: Splits on `##` headers, infers chunk types (damage_analysis, care_analysis, etc.)
+  - Auto-embedding: New ChatLogs automatically chunked and embedded on save
+  - Hybrid search API: `/api/ml/semantic-search` with quality-weighted scoring
+  - AI chat integration: Searches past consultations, injects relevant context from other plants
+  - Dashboard UI: KnowledgeSearch component for direct knowledge base queries
+  - Backfill script: `scripts/backfill-embeddings.ts` for existing ChatLogs
 - **Supabase Migration** - Full production infrastructure (v1.7.0)
   - Database: SQLite → Supabase Postgres with pgvector extension enabled
   - Auth: Supabase Auth with email/password, middleware protection

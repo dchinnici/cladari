@@ -22,6 +22,15 @@ interface AIAssistantProps {
 // Photo analysis modes
 type PhotoMode = 'recent' | 'comprehensive';
 
+// Strip XML-style tags from AI responses (Claude sometimes outputs structured tags)
+function stripXmlTags(text: string): string {
+  // Remove opening and closing XML-style tags like <analyze_photos>, <photo_analysis photo_number="1">, etc.
+  return text
+    .replace(/<\/?[a-z_]+(?:\s+[a-z_]+="[^"]*")*\s*>/gi, '')
+    .replace(/\n{3,}/g, '\n\n') // Clean up excessive newlines left behind
+    .trim();
+}
+
 export default function AIAssistant({ plantId, plantData, embedded = false }: AIAssistantProps) {
   const [isOpen, setIsOpen] = useState(embedded);
   const [isMaximized, setIsMaximized] = useState(false);
@@ -328,11 +337,12 @@ export default function AIAssistant({ plantId, plantData, embedded = false }: AI
           )}
 
           {messages.map((message) => {
-            // Extract text content from message parts
-            const textContent = message.parts
+            // Extract text content from message parts and strip XML tags
+            const rawContent = message.parts
               ?.filter((part): part is { type: 'text'; text: string } => part.type === 'text')
               .map(part => part.text)
               .join('') || '';
+            const textContent = message.role === 'assistant' ? stripXmlTags(rawContent) : rawContent;
 
             return (
               <div
