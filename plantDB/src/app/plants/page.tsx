@@ -380,7 +380,7 @@ export default function PlantsPage() {
             <p>{searchTerm ? 'No plants match your search' : 'Add your first plant to get started'}</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
             {filteredPlants.map((plant) => (
               <Link
                 href={`/plants/${plant.id}`}
@@ -393,9 +393,9 @@ export default function PlantsPage() {
                 }}
                 className="card-interactive overflow-hidden block"
               >
-                {/* Photo - 4:3 aspect ratio */}
+                {/* Photo - 2:3 portrait aspect ratio */}
                 {plant.photos && plant.photos.length > 0 ? (
-                  <div className="aspect-[4/3] bg-[var(--parchment)]">
+                  <div className="aspect-[2/3] bg-[var(--parchment)]">
                     <img
                       src={plant.photos[0].thumbnailUrl || plant.photos[0].url}
                       alt={plant.hybridName || plant.species || 'Plant'}
@@ -403,7 +403,7 @@ export default function PlantsPage() {
                     />
                   </div>
                 ) : (
-                  <div className="aspect-[4/3] bg-[var(--parchment)] flex items-center justify-center">
+                  <div className="aspect-[2/3] bg-[var(--parchment)] flex items-center justify-center">
                     <span className="text-3xl text-[var(--sage)]">🌿</span>
                   </div>
                 )}

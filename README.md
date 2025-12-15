@@ -1,6 +1,6 @@
 # Cladari Plant Management System
 
-**Version 1.3.0** | Production-grade Anthurium collection & breeding database
+**Version 1.6.3** | Production plant database for breeding programs
 
 ## Quick Start
 
@@ -15,9 +15,10 @@ cd plantDB && npm i && npx prisma generate   # First time only
 ```
 cladari/
 ├── plantDB/              # Main Next.js application
-│   ├── README.md         # Full app documentation
-│   ├── OPERATOR_MANUAL.md # User guide
-│   ├── CHANGELOG.md      # Version history
+│   ├── prisma/           # Database schema & SQLite
+│   ├── src/app/          # App Router pages & API
+│   ├── src/components/   # React components
+│   ├── src/lib/          # Business logic
 │   └── docs/             # Technical documentation
 ├── mcp-server/           # AI integration (MCP protocol)
 ├── ai/                   # [submodule] Botanical AI service
@@ -25,13 +26,23 @@ cladari/
 └── CLAUDE.md             # AI assistant context
 ```
 
-## Key Features
+## Current Features (v1.6.x)
 
-- **Plant Management**: 70+ plants with full CRUD, photos, care tracking
-- **Breeding Pipeline (NEW v1.3.0)**: Cross → Harvest → SeedBatch → Seedling → Plant
-- **Care System**: EC/pH monitoring, batch operations, quick care (Cmd+K)
-- **Photo Management**: Cover selection, EXIF extraction, thumbnails
-- **MCP Server**: Natural language queries via Sovria AI
+- **Plant Management**: 70 plants, photos, care logging, health tracking
+- **Breeding Pipeline**: Cross → Harvest → SeedBatch → Seedling → Plant
+- **AI Assistant**: Claude Opus 4 with photo analysis, HITL quality scoring
+- **Environmental**: SensorPush integration, weather data, VPD tracking
+- **Care System**: EC/pH monitoring, batch operations, quick care
+- **QR Labels**: Zebra printer support, mobile quick-log workflow
+
+## Recent Updates
+
+| Version | Highlights |
+|---------|------------|
+| 1.6.3 | HITL quality scoring, cross-plant context isolation |
+| 1.6.2 | Plant detail UX redesign (5 tabs), orphan photo recovery |
+| 1.6.1 | SensorPush + Weather integrations |
+| 1.6.0 | AI chat logging, unified journal |
 
 ## Essential Commands
 
@@ -44,18 +55,16 @@ cladari/
 
 ## Documentation
 
-All detailed documentation lives in `plantDB/`:
-- **[README.md](plantDB/README.md)** - Full feature documentation
-- **[OPERATOR_MANUAL.md](plantDB/OPERATOR_MANUAL.md)** - User guide
-- **[docs/](plantDB/docs/)** - Technical deep-dives
+- **[CLAUDE.md](CLAUDE.md)** - Full project context & strategic direction
+- **[plantDB/CHANGELOG.md](plantDB/CHANGELOG.md)** - Version history
+- **[plantDB/docs/](plantDB/docs/)** - Technical documentation
 
 ## Access
 
 - **Local**: http://localhost:3000
 - **Tailscale**: http://f1:3000
-- **Database UI**: `npx prisma studio` → http://localhost:5555
+- **Public Site**: https://cladari.ai
 
 ---
 
-*Private project - All rights reserved*
-
+*Private project - Fort Lauderdale, FL*

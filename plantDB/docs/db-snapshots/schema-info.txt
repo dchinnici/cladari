@@ -468,15 +468,38 @@ CREATE INDEX "CareLog_plantId_idx" ON "CareLog"("plantId");
 CREATE INDEX "CareLog_cloneBatchId_idx" ON "CareLog"("cloneBatchId");
 CREATE INDEX "CareLog_date_idx" ON "CareLog"("date");
 CREATE INDEX "CareLog_action_idx" ON "CareLog"("action");
+CREATE TABLE IF NOT EXISTS "NegativeExample" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "plantId" TEXT,
+    "messages" TEXT NOT NULL,
+    "originalContent" TEXT,
+    "failureType" TEXT,
+    "failureNotes" TEXT,
+    "correctedResponse" TEXT,
+    "templateId" TEXT,
+    "modelUsed" TEXT,
+    "userPrompt" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "NegativeExample_plantId_fkey" FOREIGN KEY ("plantId") REFERENCES "Plant" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
 CREATE TABLE IF NOT EXISTS "ChatLog" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "plantId" TEXT NOT NULL,
     "title" TEXT,
     "messages" TEXT NOT NULL,
+    "originalContent" TEXT,
+    "displayContent" TEXT,
+    "wasEdited" BOOLEAN NOT NULL DEFAULT false,
+    "qualityScore" INTEGER,
+    "retrievalWeight" REAL,
+    "weightVersion" INTEGER NOT NULL DEFAULT 1,
     "confidence" TEXT NOT NULL DEFAULT 'unverified',
-    "userEdits" TEXT,
-    "savedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "conversationDate" DATETIME NOT NULL,
+    "savedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "scoredAt" DATETIME,
+    "templateId" TEXT,
+    "modelUsed" TEXT,
+    "tokensUsed" INTEGER,
     "embedding" BLOB,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
@@ -484,4 +507,8 @@ CREATE TABLE IF NOT EXISTS "ChatLog" (
 );
 CREATE INDEX "ChatLog_plantId_idx" ON "ChatLog"("plantId");
 CREATE INDEX "ChatLog_savedAt_idx" ON "ChatLog"("savedAt");
+CREATE INDEX "ChatLog_qualityScore_idx" ON "ChatLog"("qualityScore");
 CREATE INDEX "ChatLog_confidence_idx" ON "ChatLog"("confidence");
+CREATE INDEX "NegativeExample_plantId_idx" ON "NegativeExample"("plantId");
+CREATE INDEX "NegativeExample_failureType_idx" ON "NegativeExample"("failureType");
+CREATE INDEX "NegativeExample_createdAt_idx" ON "NegativeExample"("createdAt");

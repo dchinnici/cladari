@@ -9,6 +9,7 @@ GrowthMetric|1
 Harvest|1
 Location|1
 Measurement|1
+NegativeExample|1
 Photo|1
 Plant|1
 PlantJournal|1

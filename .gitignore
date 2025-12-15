@@ -50,3 +50,6 @@ backups/
 
 # Personal context docs (not for git)
 CLAUDE READ/
+
+# Separate website repo (has its own git)
+cladari-website/

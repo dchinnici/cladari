@@ -6,7 +6,7 @@ import {
   Leaf, Heart, Sprout, FlaskConical, Scissors,
   TreeDeciduous, Activity, ChevronRight
 } from 'lucide-react'
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell } from 'recharts'
 
 export default function Dashboard() {
   const { data: stats, isLoading, error } = useQuery({
@@ -224,25 +224,26 @@ export default function Dashboard() {
           <div className="bg-white border border-black/[0.08] rounded-xl p-4">
             <h2 className="text-sm font-medium text-[var(--bark)] mb-4">Collection by Section</h2>
             {stats?.sectionDistribution && stats.sectionDistribution.length > 0 ? (
-              <ResponsiveContainer width="100%" height={200}>
-                <PieChart>
-                  <Pie
-                    data={stats.sectionDistribution}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={40}
-                    outerRadius={70}
-                    paddingAngle={2}
-                    dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    labelLine={false}
-                  >
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart
+                  data={stats.sectionDistribution}
+                  layout="vertical"
+                  margin={{ top: 5, right: 30, left: 100, bottom: 5 }}
+                >
+                  <XAxis type="number" tick={{ fontSize: 11 }} />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    tick={{ fontSize: 11 }}
+                    width={95}
+                  />
+                  <Tooltip formatter={(value: number) => [`${value} plants`, 'Count']} />
+                  <Bar dataKey="value" radius={[0, 4, 4, 0]}>
                     {stats.sectionDistribution.map((entry: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
+                  </Bar>
+                </BarChart>
               </ResponsiveContainer>
             ) : (
               <div className="h-[200px] flex items-center justify-center text-[var(--clay)]">

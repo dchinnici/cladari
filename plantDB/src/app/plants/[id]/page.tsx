@@ -1426,10 +1426,10 @@ export default function PlantDetailPage() {
               </div>
 
               {plant.photos && plant.photos.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {plant.photos.map((photo: any) => (
                     <div key={photo.id} className="group relative bg-[var(--parchment)] rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-all">
-                      <div className="aspect-[3/2] relative bg-gray-100">
+                      <div className="aspect-[2/3] relative bg-gray-100">
                         <img
                           src={photo.url}
                           alt={photo.notes || 'Plant photo'}
