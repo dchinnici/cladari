@@ -16,7 +16,9 @@ export const EMBEDDING_DIMENSION = 768;
 
 export class EmbeddingService {
   private encoder: Pipeline | null = null;
-  private modelName = 'intfloat/e5-base-v2'; // 768-dimensional, high quality
+  // Xenova namespace has pre-converted ONNX models for JavaScript
+  // bge-base-en-v1.5 is 768 dimensions - matches our schema
+  private modelName = 'Xenova/bge-base-en-v1.5';
   private transformersAvailable = false;
   private initPromise: Promise<void> | null = null;
 
@@ -33,15 +35,22 @@ export class EmbeddingService {
     this.initPromise = (async () => {
       try {
         // Dynamic import to avoid build errors when dependency not installed
+        console.log('Loading @xenova/transformers...');
         // @ts-expect-error - @xenova/transformers is an optional dependency
         const transformers = await import('@xenova/transformers');
-        console.log('Initializing e5-base-v2 embedding model...');
+        console.log('Transformers loaded, initializing e5-base-v2 model...');
+        console.log('(First run downloads ~400MB model - this may take a few minutes)');
         this.encoder = await transformers.pipeline('feature-extraction', this.modelName);
         this.transformersAvailable = true;
         console.log('Embedding model initialized successfully');
-      } catch (e) {
-        console.warn('Embedding service unavailable: @xenova/transformers not installed');
-        console.warn('Install with: npm install @xenova/transformers');
+      } catch (e: unknown) {
+        const error = e as Error;
+        console.warn('Embedding service unavailable:', error.message);
+        if (error.message?.includes('Cannot find module')) {
+          console.warn('Install with: npm install @xenova/transformers');
+        } else {
+          console.warn('Full error:', error);
+        }
         this.transformersAvailable = false;
       }
     })();
@@ -58,7 +67,7 @@ export class EmbeddingService {
 
   /**
    * Generate embedding for a document/passage (for indexing)
-   * Uses "passage: " prefix as required by e5 models
+   * BGE models don't require prefixes for general use
    */
   async embedDocument(text: string): Promise<number[]> {
     await this.initialize();
@@ -66,14 +75,13 @@ export class EmbeddingService {
       throw new Error('Embedding service not available - install @xenova/transformers');
     }
 
-    const prefixedText = `passage: ${text}`;
-    const output = await this.encoder(prefixedText, { pooling: 'mean', normalize: true });
+    const output = await this.encoder(text, { pooling: 'mean', normalize: true });
     return Array.from(output.data);
   }
 
   /**
    * Generate embedding for a search query
-   * Uses "query: " prefix as required by e5 models
+   * BGE models work well without prefixes for semantic similarity
    */
   async embedQuery(query: string): Promise<number[]> {
     await this.initialize();
@@ -81,8 +89,7 @@ export class EmbeddingService {
       throw new Error('Embedding service not available - install @xenova/transformers');
     }
 
-    const prefixedQuery = `query: ${query}`;
-    const output = await this.encoder(prefixedQuery, { pooling: 'mean', normalize: true });
+    const output = await this.encoder(query, { pooling: 'mean', normalize: true });
     return Array.from(output.data);
   }
 
@@ -97,8 +104,7 @@ export class EmbeddingService {
 
     const embeddings: number[][] = [];
     for (const text of texts) {
-      const prefixedText = `passage: ${text}`;
-      const output = await this.encoder(prefixedText, { pooling: 'mean', normalize: true });
+      const output = await this.encoder(text, { pooling: 'mean', normalize: true });
       embeddings.push(Array.from(output.data));
     }
     return embeddings;
