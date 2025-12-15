@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { getUser, getSignedPhotoUrl } from '@/lib/supabase/server'
 
 // GET: Retrieve single plant by ID
 export async function GET(
@@ -7,9 +8,18 @@ export async function GET(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Get authenticated user
+    const user = await getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const params = await context.params
     const plant = await prisma.plant.findUnique({
-      where: { id: params.id },
+      where: {
+        id: params.id,
+        userId: user.id  // Ensure user owns this plant
+      },
       include: {
         vendor: true,
         currentLocation: true,
@@ -38,7 +48,20 @@ export async function GET(
       return NextResponse.json({ error: 'Plant not found' }, { status: 404 })
     }
 
-    return NextResponse.json(plant)
+    // Get signed URLs for all photos
+    const photosWithUrls = await Promise.all(
+      plant.photos.map(async (photo) => {
+        if (photo.storagePath) {
+          const signedUrl = await getSignedPhotoUrl(photo.storagePath)
+          if (signedUrl) {
+            return { ...photo, url: signedUrl }
+          }
+        }
+        return photo
+      })
+    )
+
+    return NextResponse.json({ ...plant, photos: photosWithUrls })
   } catch (error) {
     console.error('Error fetching plant:', error)
     return NextResponse.json(
@@ -54,11 +77,20 @@ export async function PATCH(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Get authenticated user
+    const user = await getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const params = await context.params
     const body = await request.json()
 
     const updated = await prisma.plant.update({
-      where: { id: params.id },
+      where: {
+        id: params.id,
+        userId: user.id  // Ensure user owns this plant
+      },
       data: {
         // Only update fields that are provided
         section: body.section !== undefined ? body.section : undefined,
@@ -108,12 +140,21 @@ export async function DELETE(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Get authenticated user
+    const user = await getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const params = await context.params
     const body = await request.json().catch(() => ({}))
 
     // Soft delete: mark as archived instead of actually deleting
     const archived = await prisma.plant.update({
-      where: { id: params.id },
+      where: {
+        id: params.id,
+        userId: user.id  // Ensure user owns this plant
+      },
       data: {
         isArchived: true,
         archivedAt: new Date(),

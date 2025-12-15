@@ -39,13 +39,7 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // Parse messages JSON
-    const parsed = negativeExamples.map(ex => ({
-      ...ex,
-      messages: JSON.parse(ex.messages),
-    }))
-
-    return NextResponse.json(parsed)
+    return NextResponse.json(negativeExamples)
   } catch (error) {
     console.error('Error fetching negative examples:', error)
     return NextResponse.json({ error: 'Failed to fetch negative examples' }, { status: 500 })
@@ -108,7 +102,7 @@ export async function POST(request: NextRequest) {
     const negativeExample = await prisma.negativeExample.create({
       data: {
         plantId: plantId || null,
-        messages: JSON.stringify(messages),
+        messages,  // Json type - no stringify needed
         originalContent: extractedOriginal,
         failureType,
         failureNotes,

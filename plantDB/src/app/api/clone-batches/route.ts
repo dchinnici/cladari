@@ -1,16 +1,23 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { generateCloneBatchId } from '@/lib/breeding-ids'
+import { getUser } from '@/lib/supabase/server'
 
 // GET /api/clone-batches - List all clone batches
 export async function GET(request: Request) {
   try {
+    const user = await getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
     const propagationType = searchParams.get('propagationType')
 
     const batches = await prisma.cloneBatch.findMany({
       where: {
+        userId: user.id,
         ...(status && { status }),
         ...(propagationType && { propagationType })
       },
@@ -41,6 +48,11 @@ export async function GET(request: Request) {
 // POST /api/clone-batches - Create new clone batch
 export async function POST(request: Request) {
   try {
+    const user = await getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await request.json()
 
     // Validate required fields
@@ -58,10 +70,10 @@ export async function POST(request: Request) {
       )
     }
 
-    // Verify source plant exists if provided
+    // Verify source plant exists if provided and belongs to user
     if (body.sourcePlantId) {
       const sourcePlant = await prisma.plant.findUnique({
-        where: { id: body.sourcePlantId }
+        where: { id: body.sourcePlantId, userId: user.id }
       })
       if (!sourcePlant) {
         return NextResponse.json({ error: 'Source plant not found' }, { status: 404 })
@@ -83,6 +95,7 @@ export async function POST(request: Request) {
     const batch = await prisma.cloneBatch.create({
       data: {
         batchId,
+        userId: user.id,
         propagationType: body.propagationType,
         sourcePlantId: body.sourcePlantId || null,
         externalSource: body.externalSource || null,
@@ -97,7 +110,7 @@ export async function POST(request: Request) {
         locationId: body.locationId || null,
         identifier: body.identifier || null,
         notes: body.notes || null,
-        photos: body.photos ? JSON.stringify(body.photos) : '[]'
+        photos: body.photos || []
       },
       include: {
         sourcePlant: {

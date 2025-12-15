@@ -823,7 +823,7 @@ export default function BreedingPage() {
                           <span>Target Traits</span>
                         </div>
                         <div className="flex flex-wrap gap-1">
-                          {JSON.parse(cross.targetTraits).map((trait: string, i: number) => (
+                          {(Array.isArray(cross.targetTraits) ? cross.targetTraits : []).map((trait: string, i: number) => (
                             <span
                               key={i}
                               className="text-xs px-2 py-0.5 bg-[var(--moss)]/10 text-[var(--moss)] rounded-full"

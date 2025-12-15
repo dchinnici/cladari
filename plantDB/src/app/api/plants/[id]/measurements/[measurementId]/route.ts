@@ -21,9 +21,6 @@ export async function PATCH(
         leafCount: body.leafCount !== undefined ? (body.leafCount ? parseInt(body.leafCount) : null) : undefined,
         height: body.height !== undefined ? (body.height ? parseFloat(body.height) : null) : undefined,
         vigorScore: body.vigorScore !== undefined ? (body.vigorScore ? parseInt(body.vigorScore) : null) : undefined,
-        ecValue: body.ecValue !== undefined ? (body.ecValue ? parseFloat(body.ecValue) : null) : undefined,
-        phValue: body.phValue !== undefined ? (body.phValue ? parseFloat(body.phValue) : null) : undefined,
-        tdsValue: body.tdsValue !== undefined ? (body.tdsValue ? parseInt(body.tdsValue) : null) : undefined,
         texture: body.texture !== undefined ? (body.texture || null) : undefined,
         notes: body.notes !== undefined ? (body.notes || null) : undefined,
       }

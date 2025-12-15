@@ -5,7 +5,9 @@ Cladari is a production plant database for managing a high-value Anthurium breed
 
 ## Tech Stack
 - **Framework**: Next.js 15.5.6 (App Router)
-- **Database**: SQLite + Prisma ORM (Postgres-ready schema exists)
+- **Database**: Supabase Postgres + Prisma ORM
+- **Auth**: Supabase Auth (email/password)
+- **Storage**: Supabase Storage (photos)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
 - **Location**: `plantDB/` is the app root
@@ -14,12 +16,12 @@ Cladari is a production plant database for managing a high-value Anthurium breed
 ```
 plantDB/
 ├── prisma/
-│   ├── schema.prisma          # ACTIVE SCHEMA - read this first
-│   ├── schema.postgres.prisma # Future migration target
-│   └── dev.db                 # SQLite database
+│   ├── schema.prisma          # ACTIVE SCHEMA (Postgres) - read this first
+│   ├── schema.sqlite.backup   # Archived SQLite schema
+│   └── dev.db                 # Legacy SQLite (archived, not used)
 ├── src/
 │   ├── app/                   # Next.js App Router pages + API routes
-│   │   ├── api/               # REST endpoints
+│   │   ├── api/               # REST endpoints (all require auth)
 │   │   │   ├── breeding/      # Breeding record API
 │   │   │   ├── seed-batches/  # Seed batch API
 │   │   │   ├── seedlings/     # Seedling API
@@ -28,6 +30,7 @@ plantDB/
 │   │   │   ├── sensorpush/    # SensorPush API (sync, history)
 │   │   │   ├── weather/       # Open-Meteo weather API
 │   │   │   └── print/         # QR/label print APIs (plant-tag, location-tag)
+│   │   ├── login/             # Supabase auth login page
 │   │   ├── q/                 # QR redirect handler (/q/p/{id}, /q/l/{loc})
 │   │   ├── plants/            # Plant management UI
 │   │   ├── breeding/          # Breeding pipeline UI
@@ -35,6 +38,9 @@ plantDB/
 │   │   └── dashboard/         # Analytics
 │   ├── components/            # React components
 │   └── lib/
+│       ├── supabase/          # Supabase client utilities
+│       │   ├── server.ts      # Server-side client (API routes)
+│       │   └── client.ts      # Browser client (components)
 │       ├── breeding-ids.ts    # ID generation utilities
 │       ├── timezone.ts        # Timezone utilities (America/New_York default)
 │       ├── qr.ts              # QR code generation (Tailscale URL encoding)
@@ -42,8 +48,11 @@ plantDB/
 │       ├── sensorpush.ts      # SensorPush OAuth API client
 │       ├── weather.ts         # Open-Meteo weather API (Fort Lauderdale)
 │       └── ...                # Care algorithms, ML functions
-├── public/uploads/            # Photo storage
-└── scripts/                   # Automation scripts
+├── scripts/                   # Migration and automation scripts
+│   ├── migrate-to-supabase.ts      # Data migration script
+│   ├── migrate-photos-to-supabase.ts # Photo storage migration
+│   └── setup-rls-policies.sql      # Row Level Security policies
+└── middleware.ts              # Auth middleware (protects routes)
 ```
 
 ## Naming Conventions
@@ -56,9 +65,16 @@ plantDB/
 - **API routes**: kebab-case paths
 - **ID Generation**: `src/lib/breeding-ids.ts` for all ID generation
 
-## Current Version: v1.6.3 (Dec 12, 2025)
+## Current Version: v1.7.0 (Dec 15, 2025)
 
 ### Recently Completed
+- **Supabase Migration** - Full production infrastructure (v1.7.0)
+  - Database: SQLite → Supabase Postgres with pgvector extension enabled
+  - Auth: Supabase Auth with email/password, middleware protection
+  - Storage: 564 photos migrated to Supabase Storage with signed URLs
+  - Multi-tenant ready: Profile model, userId on all primary entities
+  - RLS policies prepared for future Swift app (direct Supabase SDK access)
+  - Data migrated: 70 plants, 871 care logs, 17 chat logs, full breeding pipeline
 - **HITL Quality Scoring** - Granular AI feedback for ML training (v1.6.3)
   - 0-4 quality scale with retrieval weight computation
   - SaveChatModal: Score, edit, and save AI responses
@@ -87,13 +103,8 @@ plantDB/
 - Hardware: RTX 4090 on F2
 - Purpose: Rigorous morphological analysis, not "good enough" similarity search
 
-**Production Deployment + pgvector** (When ready)
-- Postgres migration + pgvector extension
-- Auth layer (Clerk/Supabase)
-- cladari.ai landing page (separate project, merge later)
-- External photo storage (Supabase Storage / S3)
-
-**pgvector Migration Workflow:**
+**pgvector Semantic Search** (NEXT PRIORITY)
+pgvector extension is enabled on Supabase. Ready for embedding infrastructure:
 1. **ChatLog chunking** - Parse existing ChatLogs, split on `##` headers into semantic chunks
 2. **Embed chunks** - 768 dimensions recommended (e5-base-v2 or nomic-embed-text)
 3. **ChatLogChunk model** - Store: embedding, chunkType (damage_analysis, care_analysis, environmental, recommendation), summary
@@ -106,6 +117,7 @@ plantDB/
 
 ## Current State (Dec 2025)
 ### Working Well
+- **Supabase Infrastructure** (v1.7.0) - Postgres, Auth, Storage all operational
 - **HITL Quality Scoring** (v1.6.3) - 0-4 scoring, negative examples, retrieval weights
 - **SensorPush Integration** (v1.6.1) - Live environmental monitoring, 10-min cron sync
 - **Weather Integration** (v1.6.1) - Open-Meteo for outdoor conditions + AI context
@@ -116,7 +128,7 @@ plantDB/
 - **Timezone handling** (v1.5.1) - America/New_York, no more date bugs
 - **Breeding pipeline** (v1.3.0) - Full cross tracking
 - Care logging with EC/pH tracking
-- Photo management with cover selection (578 photos)
+- Photo management with cover selection (564 photos in Supabase Storage)
 - Batch care operations
 - Dashboard analytics
 
@@ -153,8 +165,7 @@ Cross (CLX-YYYY-###) → Harvest → SeedBatch (SDB-YYYY-###) → Seedling (SDL-
 - Graduation workflow UI (API complete)
 - Zebra ZD421CN printer integration (ZPL templates ready)
 - Batch print functionality (all plants in a location)
-- Postgres migration for production
-- Auth layer (Clerk/Supabase) for multi-tenant
+- pgvector semantic search (infrastructure ready, needs chunking + embedding)
 
 ### Just Completed (Dec 10, 2025 - v1.6.0)
 
@@ -247,22 +258,39 @@ Cardiolonchium, Pachyneurium, Porphyrochitonium, Xialophyllum, and others. Inter
 
 ## Running the Project
 ```bash
-# From repo root
-./scripts/dev          # Dev server with hot reload
+# From plantDB directory
+npm run dev            # Dev server with hot reload (localhost:3000)
+
+# From repo root (convenience scripts)
+./scripts/dev          # Start dev server
 ./scripts/stop         # Stop background servers
-./scripts/db studio    # Visual database editor
+./scripts/db studio    # Visual database editor (connects to Supabase)
 ./scripts/db generate  # Regenerate Prisma client after schema changes
 ```
+
+**Environment Setup:**
+- Copy `.env.example` to `.env` and fill in Supabase credentials
+- Requires: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
+- Database URLs use Supabase connection pooler (port 6543 for app, 5432 for migrations)
 
 ## Testing Changes
 ```bash
 # After schema changes
-npx prisma db push     # Push to dev.db (no migration)
+cd plantDB
+npx prisma db push     # Push schema to Supabase Postgres
 npx prisma generate    # Regenerate client
 
 # Verify
-npx prisma studio      # Visual inspection
+npx prisma studio      # Visual inspection (opens in browser)
+
+# Check build
+npm run build          # Verify no TypeScript errors
 ```
+
+**Auth Testing:**
+- Login at `/login` with Supabase Auth credentials
+- All API routes require authentication
+- Middleware protects `/dashboard`, `/plants`, `/breeding`, etc.
 
 ## Before Committing
 1. Run `npx prisma validate` to check schema
@@ -313,8 +341,10 @@ Each step in this chain is documented with timestamps, photos, and environmental
 ### Phased Roadmap
 
 **Phase 1: Pro Web Tool (Now → 6 months)**
+- ✅ Supabase Postgres + Auth (multi-tenant ready)
+- ✅ Photo storage migration to Supabase Storage
 - Finish breeding pipeline UI (harvest/seedling modals, graduation)
-- Deploy with Postgres + auth (multi-tenant ready)
+- pgvector semantic search for AI context retrieval
 - QR code scanning → quick care logging (key mobile feature)
 - PWA for mobile access (add to homescreen works now)
 - Alpha test with 5-10 serious breeders

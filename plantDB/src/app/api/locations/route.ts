@@ -1,10 +1,17 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { getUser } from '@/lib/supabase/server'
 
 // GET: Retrieve all locations
 export async function GET() {
   try {
+    const user = await getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const locations = await prisma.location.findMany({
+      where: { userId: user.id },
       orderBy: { name: 'asc' },
       include: {
         _count: {
@@ -26,10 +33,16 @@ export async function GET() {
 // POST: Create new location
 export async function POST(request: Request) {
   try {
+    const user = await getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await request.json()
 
     const newLocation = await prisma.location.create({
       data: {
+        userId: user.id,
         name: body.name,
         type: body.type,
         zone: body.zone,

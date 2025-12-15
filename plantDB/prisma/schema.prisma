@@ -1,16 +1,51 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
+  extensions = [vector]
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SUPABASE + POSTGRES + PGVECTOR SCHEMA
+// Multi-user ready with RLS support
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Profile - Links to Supabase auth.users
+// The id is the same UUID as auth.users.id
+model Profile {
+  id            String   @id @db.Uuid
+  email         String   @unique
+  displayName   String?
+  avatarUrl     String?
+  tier          String   @default("free")  // free, pro, enterprise
+  maxPlants     Int      @default(100)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Owned entities
+  plants        Plant[]
+  locations     Location[]
+  vendors       Vendor[]
+  breedingRecords BreedingRecord[]
+  cloneBatches  CloneBatch[]
+
+  @@index([email])
 }
 
 model Plant {
   id                String   @id @default(cuid())
   plantId           String   @unique // ANT-2025-XXXX format
   accessionDate     DateTime @default(now())
+
+  // Multi-user: Owner
+  user              Profile  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String   @db.Uuid
 
   // Taxonomy
   genus             String   @default("Anthurium")
@@ -63,8 +98,12 @@ model Plant {
   growthMetrics     GrowthMetric[]
   floweringCycles   FloweringCycle[]
   journal           PlantJournal[]
-  chatLogs          ChatLog[]  // AI consultations saved by user
-  negativeExamples  NegativeExample[]  // Bad AI responses for training
+  chatLogs          ChatLog[]
+  negativeExamples  NegativeExample[]
+
+  // pgvector: Plant profile embedding for semantic search
+  descriptionEmbedding  Unsupported("vector(768)")?
+  lastEmbeddingUpdate   DateTime?
 
   // Breeding - Offspring relations
   femaleOffspring   Plant[]  @relation("FemaleOffspring")
@@ -94,7 +133,7 @@ model Plant {
 
   // Metadata
   notes             String?
-  tags              String   @default("[]") // JSON array stored as string
+  tags              Json     @default("[]") // JSON array
   identifier        String?  @unique // QR/RFID/NFC tag for quick scanning
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -107,12 +146,17 @@ model Plant {
   @@index([cloneSourceId])
   @@index([breedingRecordId])
   @@index([cloneBatchId])
+  @@index([userId])  // Multi-user queries
 }
 
 model BreedingRecord {
   id                String   @id @default(cuid())
   crossId           String   @unique // CLX-YYYY-### format
   crossDate         DateTime
+
+  // Multi-user: Owner
+  user              Profile  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String   @db.Uuid
 
   // Parents
   femalePlant       Plant    @relation("FemalePlant", fields: [femalePlantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
@@ -126,7 +170,7 @@ model BreedingRecord {
   pollinationMethod String?  // fresh, stored, mixed
 
   // Breeding Goals
-  targetTraits      String?  // JSON array of target traits for this cross
+  targetTraits      Json?    // JSON array of target traits for this cross
 
   // Harvests (replaces flat seed tracking)
   harvests          Harvest[]
@@ -141,12 +185,12 @@ model BreedingRecord {
   f1PlantsRaised    Int?     // Total graduated to Plant table
 
   // Selection
-  selectionCriteria String   @default("[]") // JSON array
-  selectedPlants    String   @default("[]") // JSON array of Plant IDs
+  selectionCriteria Json     @default("[]") // JSON array
+  selectedPlants    Json     @default("[]") // JSON array of Plant IDs
 
   // Documentation
   notes             String?
-  photos            String   @default("[]") // JSON array
+  photos            Json     @default("[]") // JSON array
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -154,6 +198,7 @@ model BreedingRecord {
   @@index([malePlantId])
   @@index([crossDate])
   @@index([crossCategory])
+  @@index([userId])
 }
 
 model Genetics {
@@ -169,14 +214,17 @@ model Genetics {
   // Genetic data
   ploidy          String?  // 2n, 3n, 4n
   dnaBarcode      String?
-  sequenceData    String?  // JSON stored as string
+  sequenceData    Json?    // Sequence data as JSON
 
   // Breeding value
   breedingValue   Float?   // 0-1 score
   inbreedingCoeff Float?   // COI calculation
 
   // Trait predictions
-  traitPredictions String? // JSON - ML model outputs
+  traitPredictions Json?   // ML model outputs
+
+  // Future: pgvector embeddings
+  // traitEmbedding Unsupported("vector(768)")?
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -203,7 +251,6 @@ model Trait {
   @@index([category])
   @@index([observationDate])
   // No unique constraint - allows multiple observations over time
-  // Each observation has unique id for editing
 }
 
 model Photo {
@@ -211,29 +258,39 @@ model Photo {
   plant           Plant    @relation(fields: [plantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   plantId         String
 
-  url             String
+  // Multi-user: inherit from plant, but store for RLS efficiency
+  userId          String?  @db.Uuid
+
+  // Supabase Storage paths (new)
+  storagePath     String?  // e.g., "userId/photos/ANT-2025-0003_1762902888348.jpeg"
+  thumbnailPath   String?  // e.g., "userId/thumbnails/ANT-2025-0003_1762902888348_thumb.jpeg"
+
+  // Legacy local paths (keep during migration)
+  url             String?
   thumbnailUrl    String?
+
   dateTaken       DateTime
   growthStage     String?  // seedling, juvenile, mature
   photoType       String   // whole_plant, leaf, spathe, spadix, roots
 
-  metadata        String?  // JSON - EXIF data, camera settings
-  aiAnalysis      String?  // JSON - Computer vision results
+  metadata        Json?    // EXIF data, camera settings
+  aiAnalysis      Json?    // Computer vision results
 
   notes           String?
   createdAt       DateTime @default(now())
 
   @@index([plantId])
   @@index([dateTaken])
+  @@index([userId])
 }
 
 model CareLog {
   id              String   @id @default(cuid())
-
-  // Links to either Plant OR CloneBatch (one required)
   plant           Plant?   @relation(fields: [plantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   plantId         String?
-  cloneBatch      CloneBatch? @relation("CloneBatchCareLogs", fields: [cloneBatchId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  // Clone batch care (for batches not yet individualized)
+  cloneBatch      CloneBatch? @relation("CloneBatchCareLogs", fields: [cloneBatchId], references: [id], onDelete: Cascade)
   cloneBatchId    String?
 
   date            DateTime
@@ -247,7 +304,7 @@ model CareLog {
 
   // Feed composition - enables ML to understand chemistry
   isBaselineFeed  Boolean  @default(false)  // Standard feed (CaMg + TPS One)
-  feedComponents  String?  // JSON: [{productId, mlPerLiter}] for detailed tracking
+  feedComponents  Json?    // [{productId, mlPerLiter}] for detailed tracking
 
   // Legacy treatment link (keep for backwards compat)
   treatment       Treatment? @relation(fields: [treatmentId], references: [id])
@@ -273,7 +330,7 @@ model Treatment {
   type            String   // fertilizer, fungicide, insecticide, hormone
   brand           String?
 
-  composition     String?  // JSON - NPK ratios, active ingredients
+  composition     Json?    // NPK ratios, active ingredients
   applicationRate String?
   frequency       String?
 
@@ -363,11 +420,16 @@ model Vendor {
   id              String   @id @default(cuid())
   name            String   @unique
   type            String   // nursery, private, import, local
+
+  // Multi-user: Owner
+  user            Profile  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String   @db.Uuid
+
   location        String?
   country         String?
 
   reputationScore Float?   // 1-5
-  specialties     String   @default("[]") // JSON array
+  specialties     Json     @default("[]") // JSON array
 
   contactInfo     String?
   website         String?
@@ -381,6 +443,7 @@ model Vendor {
   updatedAt       DateTime @updatedAt
 
   @@index([name])
+  @@index([userId])
 }
 
 model Purchase {
@@ -395,7 +458,7 @@ model Purchase {
   invoiceNumber   String?
   trackingNumber  String?
 
-  plantIds        String   @default("[]") // JSON array of Plant IDs
+  plantIds        Json     @default("[]") // JSON array of Plant IDs
   notes           String?
 
   createdAt       DateTime @default(now())
@@ -409,9 +472,17 @@ model Location {
   name            String   @unique
   type            String   // greenhouse, tent, indoor, outdoor
 
+  // Multi-user: Owner
+  user            Profile  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String   @db.Uuid
+
   zone            String?  // A1, B2, etc.
   shelf           String?
   position        String?
+
+  // SensorPush Integration (v1.6.1)
+  sensorPushId    String?  // SensorPush device ID
+  lastSensorSync  DateTime?
 
   // Environmental conditions
   lightLevel      String?  // low, medium, high, grow_light
@@ -419,22 +490,18 @@ model Location {
   temperature     Float?   // celsius
 
   // Advanced environmental metrics
-  dli             Float?   // Daily Light Integral (mol/m²/day) - typically 10-20 for anthuriums
-  vpd             Float?   // Vapor Pressure Deficit (kPa) - optimal 0.8-1.2 for anthuriums
+  dli             Float?   // Daily Light Integral (mol/m²/day)
+  vpd             Float?   // Vapor Pressure Deficit (kPa)
   pressure        Float?   // Atmospheric pressure (hPa/mbar)
-  co2             Float?   // CO2 concentration (ppm) - ambient ~400, enriched ~800-1200
+  co2             Float?   // CO2 concentration (ppm)
 
   // Lighting setup
-  growLights      String?  // JSON: [{type, wattage, spectrum, distance, photoperiod}]
+  growLights      Json?    // [{type, wattage, spectrum, distance, photoperiod}]
   photoperiod     String?  // Light schedule (e.g., "16/8", "12/12")
 
   // Ventilation & air flow
   airflow         String?  // none, low, medium, high, automated
   fanSpeed        String?  // CFM or percentage
-
-  // SensorPush integration
-  sensorPushId    String?  // SensorPush device ID (e.g., "16938503.1326776003983611910")
-  lastSensorSync  DateTime? // Last time sensor data was synced
 
   capacity        Int?
   currentOccupancy Int     @default(0)
@@ -448,6 +515,7 @@ model Location {
   updatedAt       DateTime @updatedAt
 
   @@index([name])
+  @@index([userId])
 }
 
 model Species {
@@ -456,12 +524,12 @@ model Species {
   species         String
   section         String?  // Cardiolonchium, Xialophyllum, etc.
 
-  commonNames     String   @default("[]") // JSON array
+  commonNames     Json     @default("[]") // JSON array
   nativeRange     String?
   conservationStatus String? // IUCN status
   citesListing    String?  // Appendix I, II, III
 
-  keyTraits       String   @default("[]") // JSON array
+  keyTraits       Json     @default("[]") // JSON array
   description     String?
 
   createdAt       DateTime @default(now())
@@ -491,7 +559,7 @@ model FloweringCycle {
   pollenStorageDate DateTime?  // When pollen was collected/stored
 
   // Outcome tracking
-  crossesAttempted String @default("[]")  // JSON: [{crossId, date, success}]
+  crossesAttempted Json    @default("[]")  // [{crossId, date, success}]
   seedsProduced   Int?
 
   // Environmental conditions during cycle
@@ -560,10 +628,10 @@ model PlantJournal {
 
   // Metadata
   author      String?  // Who made the entry (user, system, ML)
-  tags        String   @default("[]") // JSON array for categorization
+  tags        Json     @default("[]") // JSON array for categorization
 
-  // ML/Search optimization (future)
-  embedding   Bytes?   // Vector embedding for semantic search
+  // ML/Search optimization - pgvector
+  embedding   Unsupported("vector(768)")?  // Vector embedding for semantic search
   summary     String?  // AI-generated summary for long entries
 
   createdAt   DateTime @default(now())
@@ -597,7 +665,7 @@ model Harvest {
   seedBatches       SeedBatch[]
 
   notes             String?
-  photos            String   @default("[]") // JSON array
+  photos            Json     @default("[]") // JSON array
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -639,7 +707,7 @@ model SeedBatch {
   seedlings       Seedling[]
 
   notes           String?
-  photos          String   @default("[]") // JSON array
+  photos          Json     @default("[]") // JSON array
   identifier      String?  @unique // QR/RFID/NFC tag for batch scanning
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -657,6 +725,10 @@ model SeedBatch {
 model CloneBatch {
   id                String   @id @default(cuid())
   batchId           String   @unique // CLB-YYYY-### format
+
+  // Multi-user: Owner
+  user              Profile  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String   @db.Uuid
 
   propagationType   String   // TC, CUTTING, DIVISION, OFFSET
 
@@ -683,9 +755,6 @@ model CloneBatch {
   // When individualized, link to Plants
   plants            Plant[]  @relation("CloneBatchPlants")
 
-  // Care tracking (before graduation)
-  careLogs          CareLog[] @relation("CloneBatchCareLogs")
-
   // Location
   location          Location? @relation("CloneBatchLocation", fields: [locationId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   locationId        String?
@@ -694,100 +763,18 @@ model CloneBatch {
   identifier        String?  @unique
 
   notes             String?
-  photos            String   @default("[]") // JSON array
+  photos            Json     @default("[]") // JSON array
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+
+  // Care logs for batch
+  careLogs          CareLog[] @relation("CloneBatchCareLogs")
 
   @@index([batchId])
   @@index([sourcePlantId])
   @@index([status])
   @@index([locationId])
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// AI CHAT LOG - Curated AI consultations with HITL quality control
-// Saved manually by user when conversation is valuable
-// ═══════════════════════════════════════════════════════════════════════════
-
-model ChatLog {
-  id              String   @id @default(cuid())
-
-  plant           Plant    @relation(fields: [plantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  plantId         String
-
-  // Conversation content
-  title           String?  // User-editable summary title
-  messages        String   // JSON array: [{role: 'user'|'assistant', content: string, timestamp: string}]
-
-  // Content versioning - preserve original even when edited
-  originalContent String?  // AI's final response text (immutable after save)
-  displayContent  String?  // User-edited version (what shows in UI/retrieval)
-  wasEdited       Boolean  @default(false)
-
-  // HITL Quality Signal (0-4 scale)
-  // 0=marginal, 1=acceptable, 2=good, 3=excellent, 4=reference
-  qualityScore    Int?     // null = not yet scored
-  retrievalWeight Float?   // Computed: 0.25 * (qualityScore + 1), stored for query efficiency
-  weightVersion   Int      @default(1)  // Formula version that produced weight (enables evolution)
-
-  // Legacy/future compatibility
-  confidence      String   @default("unverified") // unverified, verified, partially_verified, disputed
-
-  // Timestamps
-  conversationDate DateTime // When the actual conversation happened
-  savedAt          DateTime @default(now())  // When user clicked save
-  scoredAt         DateTime? // When quality score was assigned (HITL timing analysis)
-
-  // Future: Query template linkage
-  templateId      String?   // Link to QueryTemplate when implemented
-  modelUsed       String?   // haiku, sonnet, opus - for cost tracking
-  tokensUsed      Int?      // Actual token consumption
-
-  // Future: pgvector embeddings
-  embedding       Bytes?
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@index([plantId])
-  @@index([savedAt])
-  @@index([qualityScore])
-  @@index([confidence])
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// NEGATIVE EXAMPLE - Bad AI responses for fine-tuning/RLHF
-// Stored separately from ChatLog to keep training signal clean
-// ═══════════════════════════════════════════════════════════════════════════
-
-model NegativeExample {
-  id                String   @id @default(cuid())
-
-  // Optional plant context (might be general, not plant-specific)
-  plant             Plant?   @relation(fields: [plantId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  plantId           String?
-
-  // The bad response
-  messages          String   // Full conversation JSON
-  originalContent   String?  // The specific problematic AI output
-
-  // Why it was bad - critical for training signal
-  failureType       String?  // hallucination, missed_context, wrong_tone, factual_error, irrelevant, other
-  failureNotes      String?  // Free text explanation of what went wrong
-
-  // Gold standard correction (extremely valuable for supervised fine-tuning)
-  correctedResponse String?  // What the AI SHOULD have said
-
-  // Context for analysis
-  templateId        String?  // Which query type produced this (when templates exist)
-  modelUsed         String?  // haiku, sonnet, opus
-  userPrompt        String?  // What the user asked (for context)
-
-  createdAt         DateTime @default(now())
-
-  @@index([plantId])
-  @@index([failureType])
-  @@index([createdAt])
+  @@index([userId])
 }
 
 model Seedling {
@@ -828,7 +815,7 @@ model Seedling {
   locationId      String?
 
   notes           String?
-  photos          String   @default("[]") // JSON array
+  photos          Json     @default("[]") // JSON array
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -836,4 +823,104 @@ model Seedling {
   @@index([selectionStatus])
   @@index([emergenceDate])
   @@index([locationId])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AI CONSULTATION + HITL MODELS (v1.6.3)
+// For semantic search and RLHF training
+// ═══════════════════════════════════════════════════════════════════════════
+
+model ChatLog {
+  id                String   @id @default(cuid())
+  plant             Plant    @relation(fields: [plantId], references: [id], onDelete: Cascade)
+  plantId           String
+
+  // Conversation
+  title             String?
+  messages          Json     // JSON array of messages [{role, content, timestamp}]
+  conversationDate  DateTime
+  savedAt           DateTime @default(now())
+
+  // HITL Quality Control
+  originalContent   String?  // Immutable AI response for comparison
+  displayContent    String?  // User-edited version
+  wasEdited         Boolean  @default(false)
+  qualityScore      Int?     // 0-4 scale: marginal, acceptable, good, excellent, reference
+  retrievalWeight   Float?   // Computed: 0.25 * (qualityScore + 1) for search ranking
+  weightVersion     Int      @default(1)
+  confidence        String   @default("unverified") // unverified, verified, partially_verified, disputed
+  scoredAt          DateTime?
+
+  // Model metadata
+  templateId        String?
+  modelUsed         String?  // claude-opus-4, etc.
+  tokensUsed        Int?
+
+  // pgvector: Full conversation embedding
+  embedding         Unsupported("vector(768)")?
+
+  // Semantic chunks for granular retrieval
+  chunks            ChatLogChunk[]
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([plantId])
+  @@index([savedAt])
+  @@index([qualityScore])
+  @@index([conversationDate])
+}
+
+model ChatLogChunk {
+  id                String   @id @default(cuid())
+
+  // Source linkage
+  chatLog           ChatLog  @relation(fields: [chatLogId], references: [id], onDelete: Cascade)
+  chatLogId         String
+
+  // Chunk metadata
+  chunkIndex        Int      // Position in original content (0-based)
+  chunkType         String   // damage_analysis, care_analysis, environmental, recommendation, observation, diagnosis, breeding, general
+
+  // Content
+  content           String   // The actual chunk text
+  summary           String?  // AI-generated summary for long chunks
+
+  // pgvector: Chunk embedding for semantic search
+  embedding         Unsupported("vector(768)")?
+
+  // HITL inheritance (from parent ChatLog)
+  retrievalWeight   Float?   // Inherited from parent, enables quality-weighted search
+
+  createdAt         DateTime @default(now())
+
+  @@index([chatLogId])
+  @@index([chunkType])
+}
+
+model NegativeExample {
+  id                  String   @id @default(cuid())
+  plant               Plant?   @relation(fields: [plantId], references: [id], onDelete: SetNull)
+  plantId             String?
+
+  // The bad response
+  messages            Json     // Full conversation for context
+  originalContent     String?  // The problematic AI response
+
+  // Failure classification (for RLHF)
+  failureType         String?  // hallucination, missed_context, factual_error, poor_reasoning, wrong_plant, etc.
+  failureNotes        String?  // Human explanation of why it's wrong
+
+  // Correction
+  correctedResponse   String?  // What the AI should have said
+
+  // Metadata
+  templateId          String?
+  modelUsed           String?
+  userPrompt          String?  // The prompt that triggered the bad response
+
+  createdAt           DateTime @default(now())
+
+  @@index([plantId])
+  @@index([failureType])
 }

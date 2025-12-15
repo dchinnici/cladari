@@ -1,11 +1,18 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { generateCrossId } from '@/lib/breeding-ids'
+import { getUser } from '@/lib/supabase/server'
 
 // GET /api/breeding - List all breeding records
 export async function GET() {
   try {
+    const user = await getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const records = await prisma.breedingRecord.findMany({
+      where: { userId: user.id },
       include: {
         femalePlant: {
           select: {
@@ -78,6 +85,11 @@ export async function GET() {
 // POST /api/breeding - Create new breeding record
 export async function POST(request: Request) {
   try {
+    const user = await getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await request.json()
 
     // Validate required fields
@@ -88,10 +100,10 @@ export async function POST(request: Request) {
       )
     }
 
-    // Verify plants exist
+    // Verify plants exist and belong to user
     const [female, male] = await Promise.all([
-      prisma.plant.findUnique({ where: { id: body.femalePlantId } }),
-      prisma.plant.findUnique({ where: { id: body.malePlantId } })
+      prisma.plant.findUnique({ where: { id: body.femalePlantId, userId: user.id } }),
+      prisma.plant.findUnique({ where: { id: body.malePlantId, userId: user.id } })
     ])
 
     if (!female) {
@@ -116,6 +128,7 @@ export async function POST(request: Request) {
     const record = await prisma.breedingRecord.create({
       data: {
         crossId,
+        userId: user.id,
         crossDate: body.crossDate ? new Date(body.crossDate) : new Date(),
         femalePlantId: body.femalePlantId,
         malePlantId: body.malePlantId,

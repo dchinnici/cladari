@@ -43,13 +43,7 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // Parse messages JSON for each log
-    const parsed = chatLogs.map(log => ({
-      ...log,
-      messages: JSON.parse(log.messages),
-    }))
-
-    return NextResponse.json(parsed)
+    return NextResponse.json(chatLogs)
   } catch (error) {
     console.error('Error fetching chat logs:', error)
     return NextResponse.json({ error: 'Failed to fetch chat logs' }, { status: 500 })
@@ -127,7 +121,7 @@ export async function POST(request: NextRequest) {
       data: {
         plantId,
         title: autoTitle,
-        messages: JSON.stringify(messages),
+        messages,  // Json type - no stringify needed
         originalContent: extractedOriginal,
         displayContent: wasEdited ? displayContent : null,
         wasEdited: wasEdited || false,

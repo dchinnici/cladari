@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { generatePlantId } from '@/lib/breeding-ids'
+import { getUser } from '@/lib/supabase/server'
 
 /**
  * POST /api/seedlings/[id]/graduate
@@ -20,6 +21,11 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { id } = await params
     const body = await request.json()
 
@@ -106,6 +112,7 @@ export async function POST(
     const plant = await prisma.plant.create({
       data: {
         plantId,
+        userId: user.id,
         accessionDate: body.accessionDate ? new Date(body.accessionDate) : new Date(),
         genus: 'Anthurium',
         section: body.section || femalePlant.section || malePlant.section || null,
@@ -121,7 +128,7 @@ export async function POST(
         currentPotSize: seedling.potSize || body.potSize || null,
         locationId: seedling.locationId || body.locationId || null,
         notes: body.notes || `Graduated from ${seedling.seedlingId}. ${seedling.selectionNotes || ''}`.trim(),
-        tags: JSON.stringify(body.tags || [])
+        tags: body.tags || []
       }
     })
 

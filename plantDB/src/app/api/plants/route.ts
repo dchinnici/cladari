@@ -1,10 +1,18 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { getUser, getSignedPhotoUrl } from '@/lib/supabase/server'
 
 export async function GET() {
   try {
+    // Get authenticated user
+    const user = await getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const plants = await prisma.plant.findMany({
       where: {
+        userId: user.id,  // Filter by authenticated user
         isArchived: false  // Exclude archived plants from main collection view
       },
       include: {
@@ -33,7 +41,7 @@ export async function GET() {
     })
 
     // Add lastActivityDate and select display photo for each plant
-    const plantsWithActivity = plants.map(plant => {
+    const plantsWithActivity = await Promise.all(plants.map(async (plant) => {
       const dates = [
         plant.updatedAt,
         plant.careLogs[0]?.date,
@@ -54,12 +62,20 @@ export async function GET() {
         displayPhoto = plant.photos[0]
       }
 
+      // Get signed URL for display photo if it's in Supabase Storage
+      if (displayPhoto?.storagePath) {
+        const signedUrl = await getSignedPhotoUrl(displayPhoto.storagePath)
+        if (signedUrl) {
+          displayPhoto = { ...displayPhoto, url: signedUrl }
+        }
+      }
+
       return {
         ...plant,
         photos: displayPhoto ? [displayPhoto] : [],  // Return as array for backward compatibility
         lastActivityDate
       }
-    })
+    }))
 
     // Sort by name (hybridName or species, whichever exists)
     const sortedPlants = plantsWithActivity.sort((a, b) => {
@@ -108,6 +124,12 @@ const createPlantSchema = z.object({
 
 export async function POST(request: Request) {
   try {
+    // Get authenticated user
+    const user = await getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const json = await request.json()
     const parseResult = createPlantSchema.safeParse(json)
 
@@ -136,6 +158,7 @@ export async function POST(request: Request) {
     const created = await prisma.plant.create({
       data: {
         plantId,
+        userId: user.id,  // Associate with authenticated user
         accessionDate: body.accessionDate ? new Date(body.accessionDate) : new Date(),
         genus: 'Anthurium',
         section: body.section || null,

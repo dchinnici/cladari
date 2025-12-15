@@ -9,6 +9,15 @@ const nextConfig = {
     'http://f1.tail2ea078.ts.net',
     'http://100.88.172.122',
   ],
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'wtvydonwfnypzzeizptw.supabase.co',
+        pathname: '/storage/v1/**',
+      },
+    ],
+  },
 }
 
 module.exports = nextConfig

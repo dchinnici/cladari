@@ -30,10 +30,7 @@ export async function GET(
       return NextResponse.json({ error: 'Chat log not found' }, { status: 404 })
     }
 
-    return NextResponse.json({
-      ...chatLog,
-      messages: JSON.parse(chatLog.messages),
-    })
+    return NextResponse.json(chatLog)
   } catch (error) {
     console.error('Error fetching chat log:', error)
     return NextResponse.json({ error: 'Failed to fetch chat log' }, { status: 500 })
@@ -70,7 +67,7 @@ export async function PATCH(
     const updateData: {
       title?: string
       confidence?: string
-      messages?: string
+      messages?: any  // Json type
       qualityScore?: number
       retrievalWeight?: number
       weightVersion?: number
@@ -96,7 +93,7 @@ export async function PATCH(
       if (!Array.isArray(messages)) {
         return NextResponse.json({ error: 'messages must be an array' }, { status: 400 })
       }
-      updateData.messages = JSON.stringify(messages)
+      updateData.messages = messages  // Json type - no stringify needed
     }
 
     if (qualityScore !== undefined) {
@@ -122,10 +119,7 @@ export async function PATCH(
       data: updateData,
     })
 
-    return NextResponse.json({
-      ...chatLog,
-      messages: JSON.parse(chatLog.messages),
-    })
+    return NextResponse.json(chatLog)
   } catch (error) {
     console.error('Error updating chat log:', error)
     return NextResponse.json({ error: 'Failed to update chat log' }, { status: 500 })
