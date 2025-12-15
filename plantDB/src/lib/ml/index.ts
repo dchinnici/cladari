@@ -58,3 +58,20 @@ export {
   type FloweringPrediction,
   type FloweringStatistics
 } from './floweringPredictor'
+
+// Embedding service (pgvector)
+export {
+  embedder,
+  EmbeddingService,
+  EMBEDDING_DIMENSION
+} from './embeddings'
+
+// ChatLog chunking
+export {
+  chunkContent,
+  extractContentFromMessages,
+  getDisplayContent,
+  summarizeChunk,
+  type ChatChunk,
+  type ChunkType
+} from './chunker'

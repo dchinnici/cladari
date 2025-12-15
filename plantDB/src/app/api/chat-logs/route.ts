@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
+import { chunkContent, getDisplayContent, summarizeChunk } from '@/lib/ml/chunker'
+import { embedder, EmbeddingService } from '@/lib/ml/embeddings'
 
 // Helper to compute retrieval weight from quality score
 function computeRetrievalWeight(qualityScore: number): number {
@@ -47,6 +50,76 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching chat logs:', error)
     return NextResponse.json({ error: 'Failed to fetch chat logs' }, { status: 500 })
+  }
+}
+
+/**
+ * Generate chunks and embeddings for a ChatLog (async, non-blocking)
+ * Called after creating/updating a ChatLog
+ */
+async function generateChunksAndEmbeddings(
+  chatLogId: string,
+  content: string,
+  retrievalWeight: number | null
+): Promise<void> {
+  try {
+    // Initialize embedding service
+    await embedder.initialize()
+
+    if (!embedder.isAvailable()) {
+      console.warn('Embedding service not available, skipping chunk generation')
+      return
+    }
+
+    // Chunk the content
+    const chunks = chunkContent(content)
+
+    if (chunks.length === 0) {
+      console.log(`No chunks generated for ChatLog ${chatLogId}`)
+      return
+    }
+
+    // Delete any existing chunks
+    await prisma.chatLogChunk.deleteMany({
+      where: { chatLogId }
+    })
+
+    // Generate and insert chunks with embeddings
+    for (const chunk of chunks) {
+      const embedding = await embedder.embedDocument(chunk.content)
+      const summary = summarizeChunk(chunk)
+      const chunkId = `clc_${Date.now()}_${chunk.chunkIndex}_${Math.random().toString(36).slice(2, 8)}`
+
+      await prisma.$executeRaw`
+        INSERT INTO "ChatLogChunk" (
+          id, "chatLogId", "chunkIndex", "chunkType", content, summary,
+          embedding, "retrievalWeight", "createdAt"
+        ) VALUES (
+          ${chunkId},
+          ${chatLogId},
+          ${chunk.chunkIndex},
+          ${chunk.chunkType},
+          ${chunk.content},
+          ${summary},
+          ${Prisma.raw(`'${EmbeddingService.toPgVector(embedding)}'::vector`)},
+          ${retrievalWeight},
+          NOW()
+        )
+      `
+    }
+
+    // Also embed the full ChatLog content (truncated for model limits)
+    const fullEmbedding = await embedder.embedDocument(content.slice(0, 8000))
+    await prisma.$executeRaw`
+      UPDATE "ChatLog"
+      SET embedding = ${Prisma.raw(`'${EmbeddingService.toPgVector(fullEmbedding)}'::vector`)}
+      WHERE id = ${chatLogId}
+    `
+
+    console.log(`Generated ${chunks.length} chunks with embeddings for ChatLog ${chatLogId}`)
+  } catch (error) {
+    console.error(`Error generating chunks for ChatLog ${chatLogId}:`, error)
+    // Don't throw - embedding failures shouldn't break the save
   }
 }
 
@@ -134,6 +207,14 @@ export async function POST(request: NextRequest) {
         modelUsed,
       }
     })
+
+    // Generate chunks and embeddings asynchronously (don't await)
+    // This keeps the response fast while embeddings generate in background
+    const contentForChunking = getDisplayContent(displayContent, extractedOriginal, messages)
+    if (contentForChunking && contentForChunking.length >= 50) {
+      generateChunksAndEmbeddings(chatLog.id, contentForChunking, retrievalWeight)
+        .catch(err => console.error('Background embedding error:', err))
+    }
 
     return NextResponse.json({
       id: chatLog.id,

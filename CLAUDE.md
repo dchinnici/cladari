@@ -103,20 +103,34 @@ plantDB/
 - Hardware: RTX 4090 on F2
 - Purpose: Rigorous morphological analysis, not "good enough" similarity search
 
-**pgvector Semantic Search** (NEXT PRIORITY)
-pgvector extension is enabled on Supabase. Ready for embedding infrastructure:
-1. **ChatLog chunking** - Parse existing ChatLogs, split on `##` headers into semantic chunks
-2. **Embed chunks** - 768 dimensions recommended (e5-base-v2 or nomic-embed-text)
-3. **ChatLogChunk model** - Store: embedding, chunkType (damage_analysis, care_analysis, environmental, recommendation), summary
-4. **Re-engineer Journal** - Write chunks at save time, not just full consultation
-5. **Hybrid search** - pgvector (semantic) + full-text (exact terminology like "Cardiolonchium")
+**pgvector Semantic Search** (IMPLEMENTED v1.7.1)
+Full semantic search infrastructure:
+- **Embedding service**: e5-base-v2 via @xenova/transformers (768 dimensions)
+- **Chunking**: ChatLogs split on `##` headers into semantic chunks
+- **Chunk types**: damage_analysis, care_analysis, environmental, recommendation, observation, diagnosis, breeding, history, general
+- **Auto-embedding**: New ChatLogs automatically chunked and embedded on save
+- **Hybrid search API**: `/api/ml/semantic-search` with quality-weighted ranking
+- **Backfill script**: `scripts/backfill-embeddings.ts` for existing ChatLogs
 
-**Current data strategy:** Rich AI consultations via Opus → knowledge crystallization for future vector retrieval. Corpus building now; retrieval infrastructure at migration. ~700 entries to backfill (trivial at current scale).
+**Search usage:**
+```bash
+# Simple search
+GET /api/ml/semantic-search?q=spider+mites&limit=10
+
+# Advanced search (POST)
+POST /api/ml/semantic-search
+{
+  "query": "yellowing leaves",
+  "chunkTypes": ["damage_analysis", "diagnosis"],
+  "minQuality": 3
+}
+```
 
 ---
 
 ## Current State (Dec 2025)
 ### Working Well
+- **Semantic Search** (v1.7.1) - pgvector embeddings, quality-weighted retrieval, auto-chunking
 - **Supabase Infrastructure** (v1.7.0) - Postgres, Auth, Storage all operational
 - **HITL Quality Scoring** (v1.6.3) - 0-4 scoring, negative examples, retrieval weights
 - **SensorPush Integration** (v1.6.1) - Live environmental monitoring, 10-min cron sync
@@ -165,7 +179,7 @@ Cross (CLX-YYYY-###) → Harvest → SeedBatch (SDB-YYYY-###) → Seedling (SDL-
 - Graduation workflow UI (API complete)
 - Zebra ZD421CN printer integration (ZPL templates ready)
 - Batch print functionality (all plants in a location)
-- pgvector semantic search (infrastructure ready, needs chunking + embedding)
+- Run backfill script to embed existing ChatLogs
 
 ### Just Completed (Dec 10, 2025 - v1.6.0)
 
