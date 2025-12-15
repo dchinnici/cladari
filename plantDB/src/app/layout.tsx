@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { Providers } from './providers'
 import Link from 'next/link'
@@ -6,12 +6,17 @@ import { Home, Trees, Droplets, MapPin, Layers } from 'lucide-react'
 import { ToastContainer } from '@/components/toast'
 import ServiceWorker from '@/components/ServiceWorker'
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  themeColor: '#1a3a2f',
+}
 
 export const metadata: Metadata = {
   title: 'Cladari',
   description: 'Plant collection management for breeding and conservation',
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes',
-  themeColor: '#1a3a2f',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,

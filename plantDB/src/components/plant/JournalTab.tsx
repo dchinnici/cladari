@@ -83,6 +83,10 @@ interface JournalTabProps {
   onAddEntry: (type: JournalEntryType) => void
   onEditChatLog?: (log: ChatLog) => void
   onDeleteChatLog?: (logId: string) => void
+  onEditTrait?: (trait: Trait) => void
+  onDeleteTrait?: (traitId: string) => void
+  onEditMeasurement?: (measurement: Measurement) => void
+  onDeleteMeasurement?: (measurementId: string) => void
 }
 
 interface JournalEntry {
@@ -143,7 +147,11 @@ export function JournalTab({
   onDeleteCareLog,
   onAddEntry,
   onEditChatLog,
-  onDeleteChatLog
+  onDeleteChatLog,
+  onEditTrait,
+  onDeleteTrait,
+  onEditMeasurement,
+  onDeleteMeasurement
 }: JournalTabProps) {
   const [activeFilter, setActiveFilter] = useState<JournalEntryType | 'all'>('all')
   const [expandedChatLogs, setExpandedChatLogs] = useState<Set<string>>(new Set())
@@ -433,6 +441,43 @@ export function JournalTab({
                         </div>
                       </div>
                     )}
+
+                    {/* Actions for morphology (expand to see individual traits) */}
+                    {entry.type === 'morphology' && (onEditTrait || onDeleteTrait) && (
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => toggleChatLogExpanded(entry.id)}
+                          className="p-1.5 text-[var(--clay)] hover:text-[var(--bark)] hover:bg-white rounded transition-colors"
+                          title={expandedChatLogs.has(entry.id) ? 'Collapse' : 'Expand to edit'}
+                        >
+                          {expandedChatLogs.has(entry.id) ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Actions for measurements */}
+                    {entry.type === 'measurement' && (onEditMeasurement || onDeleteMeasurement) && (
+                      <div className="flex gap-1">
+                        {onEditMeasurement && (
+                          <button
+                            onClick={() => onEditMeasurement(entry.raw)}
+                            className="p-1.5 text-[var(--clay)] hover:text-[var(--bark)] hover:bg-white rounded transition-colors"
+                            title="Edit"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {onDeleteMeasurement && (
+                          <button
+                            onClick={() => onDeleteMeasurement(entry.raw.id)}
+                            className="p-1.5 text-[var(--clay)] hover:text-[var(--alert-red)] hover:bg-white rounded transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {entry.subtitle && (
@@ -461,6 +506,40 @@ export function JournalTab({
                         </div>
                       )}
                     </>
+                  )}
+
+                  {/* Morphology traits expanded view with individual edit/delete */}
+                  {entry.type === 'morphology' && expandedChatLogs.has(entry.id) && Array.isArray(entry.raw) && (
+                    <div className="mt-3 space-y-2 border-t border-black/[0.05] pt-3">
+                      {(entry.raw as Trait[]).map((trait) => (
+                        <div key={trait.id} className="flex items-center justify-between py-1.5 px-2 bg-white rounded">
+                          <div className="flex-1 min-w-0">
+                            <span className="text-sm font-medium text-[var(--bark)]">{trait.traitName}: </span>
+                            <span className="text-sm text-[var(--clay)]">{trait.value}</span>
+                          </div>
+                          <div className="flex gap-1 ml-2">
+                            {onEditTrait && (
+                              <button
+                                onClick={() => onEditTrait(trait)}
+                                className="p-1 text-[var(--clay)] hover:text-[var(--bark)] hover:bg-[var(--parchment)] rounded transition-colors"
+                                title="Edit trait"
+                              >
+                                <Edit className="w-3 h-3" />
+                              </button>
+                            )}
+                            {onDeleteTrait && (
+                              <button
+                                onClick={() => onDeleteTrait(trait.id)}
+                                className="p-1 text-[var(--clay)] hover:text-[var(--alert-red)] hover:bg-[var(--parchment)] rounded transition-colors"
+                                title="Delete trait"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
               </div>

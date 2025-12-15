@@ -284,8 +284,31 @@ A **pro breeding/growing intelligence platform**, not a consumer plant care app.
 **Decided against**: Native mobile app, consumer market, competing with Planta/Greg.
 **Decided for**: Web-first PWA, serious breeders/growers, B2B path to commercial operations.
 
-### The Thesis
-This is Layer 2 (Biological Biography) of the Stream Protocol - verification through continuous narrative rather than point-in-time snapshots. The breeding pipeline (Cross → Harvest → SeedBatch → Seedling → Plant) creates the documented lineage that proves provenance.
+### The Thesis: Stream Protocol
+
+**Core insight**: "Authenticity isn't a state. It's a story."
+
+Cladari implements **Layer 2 (Biological Biography)** of the three-layer Stream Protocol:
+
+| Layer | Name | What It Does | Cladari Implementation |
+|-------|------|--------------|------------------------|
+| 1 | Genomic Identity | Foundational markers (DNA fingerprint) | Future: MinION sequencing |
+| 2 | **Biological Biography** | Continuous documentation creates narrative | **NOW**: Care logs, photos, breeding pipeline, AI consultations |
+| 3 | Coherence Verification | Pattern recognition catches inconsistencies | Future: ML Vision Pipeline |
+
+**Why narrative beats snapshots**: Fakes can match a single photo or claim provenance. They cannot maintain coherent biological narratives over time. A plant with 2 years of documented care logs, EC/pH trends, flowering cycles, and AI consultations creates a story that counterfeiting cannot replicate.
+
+**The breeding pipeline is verification infrastructure**:
+```
+Cross (CLX) → Harvest → SeedBatch (SDB) → Seedling (SDL) → Plant (ANT)
+```
+Each step in this chain is documented with timestamps, photos, and environmental context. This isn't just record-keeping - it's creating the "streaming authentication" that proves provenance.
+
+**Why this guides development decisions**:
+- Rich data capture (HITL scoring, AI consultations) > quick features
+- Documentation depth > breadth of plants
+- Layer 2 (narrative) must be solid before Layer 3 (ML coherence checking)
+- Every feature should ask: "Does this add to the verification story?"
 
 ### Phased Roadmap
 
@@ -330,6 +353,9 @@ The mobile unlock isn't an app - it's frictionless data entry:
 - Data quality > data quantity for ML training
 
 ## Owner Context
+
 Dave operates Cladari as an elite anthurium breeding program in Fort Lauderdale. Conservation focus, transparent documentation, anti-counterfeiting measures. Building toward becoming one of the highest quality breeders in the Americas within five years.
 
 **Bigger picture**: Cladari is the first implementation of the Stream Protocol (see `CLAUDE READ/Authenticity 5.1.md`). PlantDB is infrastructure for biological verification that may expand to other domains. VA Collective is the meta-framework. This isn't a hobby app - it's proof of concept for verification infrastructure.
+
+**Development philosophy**: Dave is a polymath systems-builder. Features should be robust and complete rather than rushed. The codebase serves as both production tool and learning infrastructure. When in doubt, prioritize data quality and verification depth over velocity.

@@ -1410,6 +1410,50 @@ export default function PlantDetailPage() {
                   showToast({ type: 'error', title: 'Failed to delete consultation' })
                 }
               }}
+              onEditTrait={(trait) => {
+                const newValue = prompt(`Edit "${trait.traitName}" value:`, trait.value)
+                if (newValue === null || newValue === trait.value) return
+                fetch(`/api/plants/${params.id}/traits/${trait.id}`, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ value: newValue })
+                }).then(res => {
+                  if (res.ok) {
+                    showToast({ type: 'success', title: 'Trait updated' })
+                    fetchPlant()
+                  } else {
+                    showToast({ type: 'error', title: 'Failed to update trait' })
+                  }
+                })
+              }}
+              onDeleteTrait={async (traitId) => {
+                if (!confirm('Delete this trait observation?')) return
+                try {
+                  const res = await fetch(`/api/plants/${params.id}/traits/${traitId}`, { method: 'DELETE' })
+                  if (!res.ok) throw new Error('Failed to delete')
+                  showToast({ type: 'success', title: 'Trait deleted' })
+                  fetchPlant()
+                } catch {
+                  showToast({ type: 'error', title: 'Failed to delete trait' })
+                }
+              }}
+              onEditMeasurement={(measurement) => {
+                // For simplicity, open measurement modal pre-populated
+                // This will need a dedicated edit flow - for now, show a message
+                showToast({ type: 'info', title: 'Use the form to re-enter measurement data' })
+                setMeasurementModalOpen(true)
+              }}
+              onDeleteMeasurement={async (measurementId) => {
+                if (!confirm('Delete this measurement?')) return
+                try {
+                  const res = await fetch(`/api/plants/${params.id}/measurements/${measurementId}`, { method: 'DELETE' })
+                  if (!res.ok) throw new Error('Failed to delete')
+                  showToast({ type: 'success', title: 'Measurement deleted' })
+                  fetchPlant()
+                } catch {
+                  showToast({ type: 'error', title: 'Failed to delete measurement' })
+                }
+              }}
             />
           )}
 

@@ -1,7 +1,7 @@
 # Cladari Plant Database - Engineering Manual
-**Version:** 1.6.0
-**Last Updated:** December 10, 2025
-**Status:** PRODUCTION PHASE - Plant Detail Refactor + AI Chat Logging + Full Breeding Pipeline
+**Version:** 1.6.3
+**Last Updated:** December 15, 2025
+**Status:** PRODUCTION PHASE - HITL Quality Scoring + Environmental Integrations + Full Breeding Pipeline
 **Architecture:** SQLite + Next.js 15 + Prisma ORM + Claude AI
 
 ---
@@ -37,7 +37,7 @@ The Cladari Plant Database is a comprehensive Anthurium breeding management syst
 ```
 ✅ Web UI (http://localhost:3000): Plant browsing, detail pages, editing
 ✅ SQLite Database: 70+ plants, relationships, vendor data
-✅ API Endpoints: CRUD operations for plants, care logs, measurements
+✅ API Endpoints: CRUD operations for plants, care logs, measurements, traits
 ✅ Prisma ORM: Type-safe database access, migrations
 ✅ Hot Reload: Code changes appear immediately in browser
 ✅ Data Standardization: Section, Health Status, Propagation Type dropdowns
@@ -52,10 +52,41 @@ The Cladari Plant Database is a comprehensive Anthurium breeding management syst
 ✅ TIMEZONE HANDLING: America/New_York default, no more date bugs
 ✅ PLANT DETAIL REFACTOR: 9 tabs → 5 tabs (Overview, Journal, Photos, Flowering, Lineage)
 ✅ AI CHAT LOGGING: Save conversations with HITL confidence tracking
+✅ HITL QUALITY SCORING: 0-4 quality scale, negative examples for RLHF
+✅ SENSORPUSH INTEGRATION: Live environmental data, 10-min sync
+✅ WEATHER INTEGRATION: Open-Meteo API, AI chat context
+✅ JOURNAL EDIT/DELETE: Edit or remove any historical entry (traits, measurements)
 ```
 
 ### Recent Improvements 🚀
 ```
+Dec 15: JOURNAL EDIT/DELETE + DOCUMENTATION (v1.6.3+)
+        - Edit/delete for morphology traits in Journal timeline
+        - Edit/delete for measurements in Journal timeline
+        - New API: /api/plants/[id]/measurements/[measurementId] (PATCH/DELETE)
+        - Expandable trait entries showing individual observations
+        - CLAUDE.md updated with Stream Protocol thesis context
+
+Dec 12: HITL QUALITY SCORING (v1.6.3)
+        - 0-4 quality scale for AI consultation feedback
+        - SaveChatModal: Score, edit, and save AI responses
+        - NegativeExample model for bad responses (RLHF training data)
+        - Failure types: hallucination, missed_context, factual_error, etc.
+        - Journal shows quality badges (color-coded 0-4)
+        - Cross-plant context isolation (AI chat resets between plants)
+
+Dec 11: PLANT DETAIL UX REDESIGN (v1.6.2)
+        - Orphan photo recovery tool
+        - UI polish and navigation improvements
+
+Dec 11: SENSORPUSH + WEATHER INTEGRATIONS (v1.6.1)
+        - SensorPush OAuth API client (/lib/sensorpush.ts)
+        - Live environmental monitoring with "Live" badge
+        - 10-minute cron sync for all sensors
+        - Weather integration via Open-Meteo API
+        - AI chat receives weather + barometric pressure context
+        - Fort Lauderdale coordinates hardcoded
+
 Dec 10: PLANT DETAIL REFACTOR + AI CHAT LOGGING (v1.6.0)
         - Consolidated 9 tabs → 5 tabs: Overview, Journal, Photos, Flowering, Lineage
         - Overview now includes: Health Metrics, AI Assistant, Quick Actions, Plant Details
