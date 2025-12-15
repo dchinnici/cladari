@@ -105,7 +105,7 @@ plantDB/
 
 **pgvector Semantic Search** (IMPLEMENTED v1.7.1)
 Full semantic search infrastructure:
-- **Embedding service**: e5-base-v2 via @xenova/transformers (768 dimensions)
+- **Embedding service**: BGE-base-en-v1.5 via @xenova/transformers (768 dimensions)
 - **Chunking**: ChatLogs split on `##` headers into semantic chunks
 - **Chunk types**: damage_analysis, care_analysis, environmental, recommendation, observation, diagnosis, breeding, history, general
 - **Auto-embedding**: New ChatLogs automatically chunked and embedded on save
@@ -179,7 +179,6 @@ Cross (CLX-YYYY-###) → Harvest → SeedBatch (SDB-YYYY-###) → Seedling (SDL-
 - Graduation workflow UI (API complete)
 - Zebra ZD421CN printer integration (ZPL templates ready)
 - Batch print functionality (all plants in a location)
-- Run backfill script to embed existing ChatLogs
 
 ### Just Completed (Dec 10, 2025 - v1.6.0)
 
