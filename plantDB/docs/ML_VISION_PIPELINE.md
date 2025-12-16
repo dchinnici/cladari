@@ -1,15 +1,94 @@
 # ML Vision Pipeline - Design Document
 
 **Created:** December 10, 2025
+**Updated:** December 16, 2025
 **Status:** QUEUED - Separate workstream
 **Priority:** HIGH - Foundational infrastructure
-**Estimated Effort:** 40-80 hours
+**Estimated Effort:** 60-100 hours (includes Taxon Reference System)
 
 ---
 
 ## Purpose
 
 Build a rigorous computer vision pipeline for morphological analysis, not "good enough" similarity search. This is verification infrastructure aligned with the Stream Protocol thesis.
+
+---
+
+## Component 0: Taxon Reference System (Foundational)
+
+The vision pipeline requires ground truth reference data to compare against. Without verified species/cultivar references, the AI can only work from general training knowledge - it cannot compare a hybrid to "your verified regale specimen."
+
+### Why This Is Critical
+
+**Current gap identified (Dec 2025):** AI analysis of ANT-2025-0036 (Regale × Besseae aff) noted it couldn't compare to besseae because there are no reference photos. But how does it know what regale looks like? It doesn't - it's using general knowledge, not your verified specimens.
+
+**With reference system:** AI can say "This leaf texture matches your verified regale ANT-2025-0012 with 94% similarity" instead of guessing from training data.
+
+### Data Model
+
+```
+TaxonReference
+├── id, taxonType (SPECIES | VARIETY | CULTIVAR | HYBRID)
+├── genus, species, authority (e.g., "Anthurium regale Linden")
+├── section (Cardiolonchium, Pachyneurium, etc.)
+├── commonNames[], synonyms[]
+├── diagnosticTraits (JSON) - key identifying features
+├── description - authoritative text
+├── habitatNotes, cultivationNotes
+├── sources[] - provenance (MOBOT, literature, etc.)
+│
+├── ReferencePhoto[]
+│   ├── photoType (whole_plant, leaf_adaxial, venation, spathe, etc.)
+│   ├── source (USER_COLLECTION | INATURALIST | GBIF | LITERATURE)
+│   ├── sourceUrl, specimenId (if from collection)
+│   ├── annotations (JSON) - trait callouts
+│   ├── verificationStatus (VERIFIED | UNVERIFIED)
+│   └── embedding (pgvector 768d) - for visual similarity
+│
+└── DiagnosticTrait[]
+    ├── category (leaf, spathe, spadix, growth)
+    ├── traitName (velvet_texture, bullate_lamina, pale_venation)
+    ├── valueType (BOOLEAN | RANGE | ENUM)
+    ├── typicalValue, range
+    └── diagnosticWeight (0-1, how distinctive)
+```
+
+### Data Sources (Priority Order)
+
+| Source | Confidence | Use Case |
+|--------|------------|----------|
+| Your verified specimens | Highest | Plants with known provenance in collection |
+| MOBOT/Tropicos | High | Taxonomic authority, type specimens |
+| iNaturalist (Research Grade) | Medium-High | Geo-located photos, community verification |
+| GBIF | Medium | Occurrence data, specimen records |
+| Published literature | High | Descriptions, botanical illustrations |
+| Breeder documentation | Variable | TZ, EPP lineage documentation |
+
+### Integration Points
+
+1. **AI Chat Context**: When analyzing a plant, inject relevant taxon reference data
+2. **Semantic Search**: Find similar traits across reference specimens
+3. **Vision Pipeline Stage 4**: Compare extracted features against reference embeddings
+4. **Verification Queries**: "Is this really a Colón form?" → compare to verified Colón references
+
+### Implementation Phases
+
+**Phase 0A: Schema + Your Specimens (5-8 hours)**
+- Add TaxonReference, ReferencePhoto, DiagnosticTrait models
+- CRUD API for taxon management
+- Link existing verified specimens as references
+- Start with parents of your hybrids (regale, besseae, papillilaminum, magnificum, etc.)
+
+**Phase 0B: External Data Import (8-12 hours)**
+- iNaturalist API client (research-grade Anthurium observations)
+- MOBOT/Tropicos scraper for authoritative descriptions
+- GBIF integration for additional imagery
+- Deduplication and confidence scoring
+
+**Phase 0C: AI Context Injection (5-8 hours)**
+- Query relevant taxon references when analyzing a plant
+- Include diagnostic traits + reference photo URLs in AI context
+- Enable "compare to reference" queries
 
 ---
 
@@ -167,10 +246,12 @@ Build a rigorous computer vision pipeline for morphological analysis, not "good 
 
 ## Dependencies
 
-- [ ] Postgres migration (for pgvector)
+- [x] Postgres migration (for pgvector) - COMPLETED v1.7.0
+- [x] pgvector extension enabled - COMPLETED v1.7.1
+- [ ] Taxon Reference System (Component 0) - enables meaningful comparisons
 - [ ] F2 environment setup (Python, CUDA, models)
 - [ ] 6+ months of trait observations for custom model training
-- [ ] Photo organization (current 578 photos, growing)
+- [ ] Photo organization (current ~600 photos in Supabase Storage)
 
 ---
 

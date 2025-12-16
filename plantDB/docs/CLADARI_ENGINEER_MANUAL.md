@@ -1,8 +1,8 @@
 # Cladari Plant Database - Engineering Manual
-**Version:** 1.6.3
-**Last Updated:** December 15, 2025
-**Status:** PRODUCTION PHASE - HITL Quality Scoring + Environmental Integrations + Full Breeding Pipeline
-**Architecture:** SQLite + Next.js 15 + Prisma ORM + Claude AI
+**Version:** 1.7.2
+**Last Updated:** December 16, 2025
+**Status:** PRODUCTION - Supabase Cloud + pgvector Semantic Search + AI Photo Analysis
+**Architecture:** PostgreSQL (Supabase) + Next.js 15 + Prisma ORM + Claude AI + pgvector
 
 ---
 
@@ -31,13 +31,18 @@ The Cladari Plant Database is a comprehensive Anthurium breeding management syst
 
 ---
 
-## 📊 Current System State (December 10, 2025)
+## 📊 Current System State (December 15, 2025)
 
 ### What's Working ✅
 ```
+✅ SUPABASE CLOUD: PostgreSQL database, Auth, Photo Storage - PRODUCTION DEPLOYED
+✅ PGVECTOR SEMANTIC SEARCH: Cross-collection AI memory with quality-weighted retrieval
+✅ KNOWLEDGE SEARCH: Dashboard widget for exploring past AI consultations
 ✅ Web UI (http://localhost:3000): Plant browsing, detail pages, editing
-✅ SQLite Database: 70+ plants, relationships, vendor data
-✅ API Endpoints: CRUD operations for plants, care logs, measurements, traits
+✅ PostgreSQL Database: 70+ plants, relationships, vendor data
+✅ Multi-user Auth: Supabase Auth with protected routes
+✅ Cloud Photo Storage: ~600 photos on Supabase Storage
+✅ API Endpoints: CRUD operations with auth + userId filtering
 ✅ Prisma ORM: Type-safe database access, migrations
 ✅ Hot Reload: Code changes appear immediately in browser
 ✅ Data Standardization: Section, Health Status, Propagation Type dropdowns
@@ -53,13 +58,39 @@ The Cladari Plant Database is a comprehensive Anthurium breeding management syst
 ✅ PLANT DETAIL REFACTOR: 9 tabs → 5 tabs (Overview, Journal, Photos, Flowering, Lineage)
 ✅ AI CHAT LOGGING: Save conversations with HITL confidence tracking
 ✅ HITL QUALITY SCORING: 0-4 quality scale, negative examples for RLHF
-✅ SENSORPUSH INTEGRATION: Live environmental data, 10-min sync
+✅ SENSORPUSH INTEGRATION: Live environmental data with VPD, 10-min sync
 ✅ WEATHER INTEGRATION: Open-Meteo API, AI chat context
 ✅ JOURNAL EDIT/DELETE: Edit or remove any historical entry (traits, measurements)
 ```
 
 ### Recent Improvements 🚀
 ```
+Dec 16: MOBILE PWA FIXES + PHOTO UPLOAD TO SUPABASE (v1.7.2)
+        - Photo uploads now go directly to Supabase Storage
+        - PWA viewport locked (no zoom/scroll issues on mobile)
+        - Bottom nav safe area padding for iPhone home indicator
+        - Photo rotation fix via explicit EXIF orientation handling
+        - Modal scroll containment (forms scrollable to submit button)
+        - Modal accidental close protection during device rotation
+
+Dec 15: PGVECTOR SEMANTIC SEARCH (v1.7.1)
+        - Cross-collection AI memory via vector embeddings
+        - BGE-base-en-v1.5 embeddings (768 dimensions)
+        - Auto-chunking on ## headers with type classification
+        - Quality-weighted retrieval (HITL scores influence search)
+        - Knowledge Search component on dashboard
+        - Fixed: Photo loading for AI (Supabase URLs)
+        - Fixed: VPD sync from SensorPush
+        - Fixed: AI response XML tag stripping
+
+Dec 14: SUPABASE MIGRATION (v1.7.0)
+        - Full migration to Supabase cloud
+        - PostgreSQL database with pgvector extension
+        - Supabase Auth with protected routes
+        - ~600 photos migrated to Supabase Storage
+        - Multi-user architecture (Profile model, userId filtering)
+        - All API routes updated with auth checks
+
 Dec 15: JOURNAL EDIT/DELETE + DOCUMENTATION (v1.6.3+)
         - Edit/delete for morphology traits in Journal timeline
         - Edit/delete for measurements in Journal timeline
@@ -232,26 +263,34 @@ Active Crosses: 1+ with harvests and seed batches
 
 ---
 
-## 🏗️ Database Architecture (Simple Explanation)
+## 🏗️ Database Architecture (December 2025 - Supabase)
 
-### What is SQLite?
-**Think of it like Excel, but much more powerful:**
-- File-based database (just one file: `dev.db`)
-- No server required (unlike PostgreSQL/MySQL)
-- Perfect for single-user applications (you)
-- Fast for small-to-medium datasets (<100K records)
-- Easy to backup (just copy the file)
+### What is Supabase?
+**A full backend-as-a-service built on PostgreSQL:**
+- **PostgreSQL**: Enterprise-grade relational database
+- **Auth**: Built-in user authentication (email/password, OAuth)
+- **Storage**: S3-compatible file storage for photos
+- **Realtime**: WebSocket subscriptions (future use)
+- **pgvector**: Native vector similarity search for AI memory
 
-**Location:** `/Users/davidchinnici/cladari/plantDB/prisma/dev.db`
+**Connection:** Via Prisma to Supabase PostgreSQL (pooled + direct URLs)
 
 ### What is Prisma?
 **Your translator between JavaScript and SQL:**
 - Defines your database structure in `schema.prisma`
 - Generates TypeScript types automatically
 - Prevents SQL injection and common errors
-- Makes database changes through "migrations"
+- Makes database changes through migrations
+- Supports pgvector via `Unsupported("vector(768)")` type
 
 **Think of it as:** A type-safe layer that prevents you from breaking your database
+
+### What is pgvector?
+**PostgreSQL extension for AI/ML vector operations:**
+- Stores embeddings (768-dimensional float arrays)
+- Cosine similarity search via `<=>` operator
+- Enables semantic search across AI consultations
+- Quality-weighted retrieval using HITL scores
 
 ### Database Tables (Current)
 
@@ -402,9 +441,9 @@ curl -X POST http://localhost:3000/api/photos \
 ### Database Files
 ```
 prisma/
-├── schema.prisma                 # Database structure (THE SOURCE OF TRUTH)
-├── dev.db                        # SQLite database file
-├── dev.db-shm, dev.db-wal        # SQLite working files
+├── schema.prisma                 # Database structure (THE SOURCE OF TRUTH) - PostgreSQL
+├── schema.postgres.prisma        # Reference schema (synced with main)
+├── schema.sqlite.backup          # Legacy SQLite schema (archived)
 └── migrations/                   # Database change history
 ```
 
@@ -456,12 +495,20 @@ src/
     ├── qr.ts                     # QR code generation (Tailscale URL)
     ├── zpl.ts                    # Zebra ZPL templates (2"x1" labels)
     ├── breeding-ids.ts           # ID generation (ANT-, CLX-, SDB-, SDL-)
+    ├── sensorpush.ts             # SensorPush OAuth API client
+    ├── weather.ts                # Open-Meteo weather API
+    ├── supabase/
+    │   ├── server.ts             # Server-side Supabase client (SSR)
+    │   └── client.ts             # Browser-side Supabase client
     ├── care/
     │   ├── ecPhUtils.ts          # EC/pH calculations
     │   ├── recommendations.ts    # ML care predictions
     │   └── types.ts              # TypeScript definitions
     └── ml/
-        └── diagnosis.ts          # AI diagnostic functions
+        ├── embeddings.ts         # Vector embedding generation (BGE-base-en-v1.5)
+        ├── chunker.ts            # ChatLog chunking for semantic search
+        ├── diagnosis.ts          # AI diagnostic functions
+        └── index.ts              # ML module exports
 ```
 
 ### Documentation

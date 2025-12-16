@@ -9,8 +9,9 @@ import ServiceWorker from '@/components/ServiceWorker'
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 5,
-  userScalable: true,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
   themeColor: '#1a3a2f',
 }
 
@@ -79,8 +80,8 @@ export default function RootLayout({
             {/* Main Content - no top padding on mobile */}
             <main className="pb-16 sm:pt-12 sm:pb-0">{children}</main>
 
-            {/* Mobile Bottom Navigation - compact */}
-            <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-black/[0.08]">
+            {/* Mobile Bottom Navigation - compact with safe area */}
+            <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-black/[0.08] pb-[env(safe-area-inset-bottom)]">
               <div className="grid grid-cols-5 h-14">
                 <Link href="/dashboard" className="flex flex-col items-center justify-center text-[var(--clay)] active:text-[var(--forest)]">
                   <Home className="w-5 h-5" />

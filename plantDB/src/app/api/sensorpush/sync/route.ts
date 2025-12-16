@@ -47,11 +47,13 @@ export async function GET() {
 
       if (reading) {
         // Update location with latest environmental data
+        // Note: SensorPush provides VPD directly, no need to calculate
         await prisma.location.update({
           where: { id: location.id },
           data: {
             temperature: reading.temperature,
             humidity: reading.humidity,
+            vpd: reading.vpd,
             lastSensorSync: new Date(),
           },
         });

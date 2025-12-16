@@ -69,9 +69,16 @@ plantDB/
 - **API routes**: kebab-case paths
 - **ID Generation**: `src/lib/breeding-ids.ts` for all ID generation
 
-## Current Version: v1.7.1 (Dec 15, 2025)
+## Current Version: v1.7.2 (Dec 16, 2025)
 
 ### Recently Completed
+- **Mobile PWA Fixes & Photo Upload to Supabase** (v1.7.2)
+  - Photo uploads now go directly to Supabase Storage (consistent with migrated photos)
+  - PWA viewport locked to prevent unwanted zoom/scroll on mobile
+  - Bottom nav safe area padding for iPhone home indicator
+  - Photo rotation fix: explicit EXIF orientation handling for HEIC and all formats
+  - Modal scroll containment: forms scrollable to submit button on mobile
+  - Modal accidental close protection during device rotation
 - **pgvector Semantic Search** - Cross-collection AI memory (v1.7.1)
   - Embedding model: Xenova/bge-base-en-v1.5 (768 dimensions) via @xenova/transformers
   - ChatLog chunking: Splits on `##` headers, infers chunk types (damage_analysis, care_analysis, etc.)
@@ -110,6 +117,7 @@ plantDB/
 
 **ML Vision Pipeline** (HIGH PRIORITY - Separate workstream)
 - See `plantDB/docs/ML_VISION_PIPELINE.md` for full spec
+- **Component 0: Taxon Reference System** - Species/cultivar reference database with verified photos and diagnostic traits. Enables AI to compare against YOUR verified specimens, not just general training data. Data sources: your collection, iNaturalist, MOBOT/Tropicos, GBIF.
 - 5-stage pipeline: Segmentation → Feature Extraction → Temporal Alignment → Cross-Collection Reasoning → Knowledge Graph
 - Models: SAM2, DINOv2, Florence-2
 - Hardware: RTX 4090 on F2
@@ -142,6 +150,8 @@ POST /api/ml/semantic-search
 
 ## Current State (Dec 2025)
 ### Working Well
+- **Mobile PWA** (v1.7.2) - Viewport locked, safe area padding, scroll containment
+- **Photo Upload** (v1.7.2) - All uploads go to Supabase Storage, EXIF rotation handling
 - **Semantic Search** (v1.7.1) - pgvector embeddings, quality-weighted retrieval, auto-chunking
 - **Supabase Infrastructure** (v1.7.0) - Postgres, Auth, Storage all operational
 - **HITL Quality Scoring** (v1.6.3) - 0-4 scoring, negative examples, retrieval weights
@@ -154,7 +164,7 @@ POST /api/ml/semantic-search
 - **Timezone handling** (v1.5.1) - America/New_York, no more date bugs
 - **Breeding pipeline** (v1.3.0) - Full cross tracking
 - Care logging with EC/pH tracking
-- Photo management with cover selection (564 photos in Supabase Storage)
+- Photo management with cover selection (~600 photos in Supabase Storage)
 - Batch care operations
 - Dashboard analytics
 

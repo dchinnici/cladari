@@ -2,6 +2,119 @@
 
 All notable changes to the Cladari Plant Management System will be documented in this file.
 
+## [1.7.2] - 2025-12-16
+
+### Added
+- **Photo Upload to Supabase Storage** - New uploads now go directly to cloud
+  - Consistent with migrated photos (all photos now in Supabase Storage)
+  - Production-ready (works on serverless deployments)
+  - Proper cleanup on delete (removes from both DB and Storage)
+  - Path structure: `{userId}/photos/{filename}` and `{userId}/thumbnails/{filename}`
+
+### Fixed
+- **PWA Viewport Stability** - Locked viewport to prevent unwanted zoom/scroll on mobile
+  - `maximumScale: 1`, `userScalable: false` prevents pinch zoom
+  - `viewportFit: cover` enables safe area CSS variables
+  - `touch-action: manipulation` prevents double-tap zoom
+  - `-webkit-text-size-adjust: 100%` prevents text scaling
+
+- **Mobile Bottom Nav Safe Area** - Buttons no longer hidden by iPhone home indicator
+  - Bottom nav now includes `pb-[env(safe-area-inset-bottom)]`
+  - Proper clearance on all iPhone models with home indicator
+
+- **Photo Rotation** - Images now maintain correct orientation on upload
+  - Explicit EXIF orientation extraction via exiftool (handles HEIC, JPEG, etc.)
+  - Maps orientation codes (1-8) to rotation degrees
+  - No longer relies on Sharp's auto-rotate which failed for some formats
+
+- **Modal Scroll Containment** - Forms with multiple photos now scrollable to submit button
+  - `overscrollBehavior: contain` prevents scroll leaking to background
+  - Proper `pointer-events` layering (backdrop vs modal content)
+  - `-webkit-overflow-scrolling: touch` for smooth iOS scrolling
+  - Modal clears bottom nav with proper safe area calculation
+  - Sticky header stays visible while content scrolls
+
+- **Modal Accidental Close Protection** - Rotation no longer dismisses modal
+  - 300ms delay before backdrop clicks register
+  - Prevents accidental closes during device rotation or gestures
+
+### Technical
+- `src/app/api/photos/route.ts` - Complete rewrite for Supabase Storage
+- `src/components/modal.tsx` - Restructured for proper mobile scroll behavior
+- `src/app/layout.tsx` - Viewport and safe area updates
+- `src/app/globals.css` - Touch handling improvements
+
+## [1.7.1] - 2025-12-15
+
+### Added
+- **pgvector Semantic Search** - Cross-collection AI memory via vector embeddings
+  - **Embeddings**: BGE-base-en-v1.5 (768 dimensions) via @xenova/transformers
+  - **Auto-chunking**: ChatLogs parsed on `##` headers, each chunk embedded separately
+  - **Chunk types**: damage_analysis, care_analysis, environmental, recommendation, observation, diagnosis
+  - **Quality weighting**: HITL scores (0-4) influence retrieval weight (0.25x to 2.0x)
+  - **Semantic search API**: `/api/ml/semantic-search?q=query&limit=10`
+  - **Knowledge Search UI**: New dashboard component for searching past AI consultations
+
+- **Knowledge Search Component** - Dashboard widget for semantic exploration
+  - Debounced search with live results
+  - Chunk type badges with color coding
+  - Quality-weighted similarity scoring
+  - Links to source plant journal entries
+
+### Fixed
+- **Photo Loading for AI** - Remote Supabase Storage URLs now work for AI analysis
+  - `loadImageAsBase64()` detects HTTP URLs and fetches from remote
+  - Previously failed silently when photos migrated to cloud storage
+- **Semantic Search Query Extraction** - Handle AI SDK message format
+  - SDK sends `{ parts: [{ type: 'text', text: '...' }] }` not `{ content: '...' }`
+  - Fixed empty query issue causing search to be skipped
+- **AI Response Formatting** - Strip XML-style tags from Claude responses
+  - `<analyze_photos>` and similar tags no longer appear in UI
+- **VPD Sync from SensorPush** - VPD now stored in Location table during sync
+  - Previously only temperature and humidity were synced
+- **SensorPush Auth** - Sync endpoint exempted from auth middleware for cron jobs
+
+### Technical
+- New files: `src/lib/ml/embeddings.ts`, `src/lib/ml/chunker.ts`, `src/components/KnowledgeSearch.tsx`
+- New hook: `src/hooks/useDebounce.ts`
+- Prisma: `ChatLogChunk` model with vector embedding support
+- PWA icons: `icon-192.png`, `icon-512.png` placeholders added
+
+## [1.7.0] - 2025-12-14
+
+### Added
+- **Supabase Migration** - Full production infrastructure upgrade
+  - **Database**: SQLite → PostgreSQL on Supabase
+  - **Auth**: Supabase Auth with email/password
+  - **Storage**: Photos migrated to Supabase Storage buckets
+  - **Multi-user ready**: Profile model, userId on all primary entities
+  - **Row Level Security**: Prepared for future Swift app direct access
+
+- **Profile Model** - User accounts linked to Supabase auth
+  - `id` matches auth.users.id (UUID)
+  - `email`, `displayName`, `tier` fields
+  - All plants, locations, vendors scoped to user
+
+- **Photo Storage Migration** - ~600 photos moved to cloud
+  - Signed URLs for secure access
+  - Original paths preserved for backup reference
+  - AI chat loads photos from Supabase URLs
+
+- **Auth Middleware** - Route protection with Supabase SSR
+  - Protected paths: /plants, /dashboard, /breeding, /batches, /locations
+  - API routes return 401 for unauthenticated requests
+  - Login page with redirect handling
+
+### Changed
+- **Prisma schema**: Switched from SQLite to PostgreSQL provider
+- **Environment variables**: New Supabase URLs and keys
+- **All API routes**: Now include auth check and userId filtering
+
+### Technical
+- New files: `src/lib/supabase/server.ts`, `src/lib/supabase/client.ts`, `src/middleware.ts`
+- Migration script: `scripts/migrate-to-supabase.ts`
+- Photo migration: `scripts/migrate-photos-to-supabase.ts`
+
 ## [1.6.3] - 2025-12-12
 
 ### Added

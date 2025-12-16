@@ -50,9 +50,10 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith(path)
   )
 
-  // Check if API route (except auth endpoints)
+  // Check if API route (except auth and cron-accessible endpoints)
   const isProtectedApi = request.nextUrl.pathname.startsWith('/api/') &&
-    !request.nextUrl.pathname.startsWith('/api/auth/')
+    !request.nextUrl.pathname.startsWith('/api/auth/') &&
+    !request.nextUrl.pathname.startsWith('/api/sensorpush/sync') // Cron job endpoint
 
   // Redirect to login if accessing protected route without auth
   if ((isProtectedPath || isProtectedApi) && !user) {

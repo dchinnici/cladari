@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { writeFile, mkdir } from 'fs/promises'
+import { writeFile, mkdir, unlink } from 'fs/promises'
 import { existsSync } from 'fs'
 import path from 'path'
 import sharp from 'sharp'
 import prisma from '@/lib/prisma'
 import { exiftool } from 'exiftool-vendored'
+import { getUser, uploadToStorage, deleteFromStorage } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
   try {
+    // Verify authentication
+    const user = await getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const formData = await request.formData()
     const file = formData.get('file') as File
     const plantId = formData.get('plantId') as string
@@ -24,7 +31,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Plant ID is required' }, { status: 400 })
     }
 
-    // Verify plant exists
+    // Verify plant exists and belongs to user
     const plant = await prisma.plant.findUnique({ where: { id: plantId } })
     if (!plant) {
       return NextResponse.json({ error: 'Plant not found' }, { status: 404 })
@@ -47,6 +54,7 @@ export async function POST(request: NextRequest) {
     // Extract EXIF data from photo using exiftool (handles all formats: JPEG, DNG, RAW, HEIC, etc.)
     let exifDate: Date | null = null
     let exifTags: any = null
+    let exifOrientation: number = 1 // Default: normal orientation
     try {
       exifTags = await exiftool.read(tempFilePath)
 
@@ -63,18 +71,43 @@ export async function POST(request: NextRequest) {
         exifDate = exifTags.DateTime instanceof Date ? exifTags.DateTime : new Date(exifTags.DateTime)
       }
 
-      console.log(`EXIF extraction successful: ${exifDate?.toISOString() || 'No date found'}`)
+      // Extract orientation for rotation correction
+      // EXIF Orientation values:
+      // 1: Normal (0°)
+      // 3: Rotated 180°
+      // 6: Rotated 90° CW (phone held portrait, home button bottom)
+      // 8: Rotated 270° CW (90° CCW)
+      if (exifTags.Orientation) {
+        exifOrientation = typeof exifTags.Orientation === 'number'
+          ? exifTags.Orientation
+          : parseInt(exifTags.Orientation, 10) || 1
+      }
+
+      console.log(`EXIF extraction successful: date=${exifDate?.toISOString() || 'No date found'}, orientation=${exifOrientation}`)
     } catch (error) {
-      console.log('Could not extract EXIF date, will use manual date:', error)
+      console.log('Could not extract EXIF data, will use defaults:', error)
     } finally {
       // Clean up temp file
       try {
-        const fs = await import('fs/promises')
-        await fs.unlink(tempFilePath)
+        await unlink(tempFilePath)
       } catch (cleanupError) {
         console.error('Failed to cleanup temp file:', cleanupError)
       }
     }
+
+    // Map EXIF orientation to rotation degrees
+    // This explicit mapping handles cases where sharp's auto-rotate fails (e.g., HEIC)
+    const orientationToRotation: Record<number, number> = {
+      1: 0,    // Normal
+      2: 0,    // Mirrored horizontal (flip handled separately if needed)
+      3: 180,  // Rotated 180°
+      4: 0,    // Mirrored vertical
+      5: 270,  // Mirrored horizontal + 270° CW
+      6: 90,   // Rotated 90° CW
+      7: 90,   // Mirrored horizontal + 90° CW
+      8: 270,  // Rotated 270° CW
+    }
+    const rotationDegrees = orientationToRotation[exifOrientation] || 0
 
     // Determine final date: prefer EXIF date, fall back to manual or current date
     let dateTaken: Date
@@ -82,33 +115,17 @@ export async function POST(request: NextRequest) {
       dateTaken = exifDate
     } else if (manualDateTaken) {
       // Fix timezone issue: interpret date string as local date, not UTC
-      // Split the date string and create Date with local timezone
       const [year, month, day] = manualDateTaken.split('-').map(Number)
       dateTaken = new Date(year, month - 1, day, 12, 0, 0) // Use noon to avoid timezone edge cases
     } else {
       dateTaken = new Date()
     }
 
-    // Generate unique filename
+    // Generate unique filename (always use .jpeg since we convert)
     const timestamp = Date.now()
     const sanitizedPlantId = plant.plantId.replace(/[^a-zA-Z0-9-]/g, '_')
-    const fileExt = file.name.split('.').pop() || 'jpg'
-    const filename = `${sanitizedPlantId}_${timestamp}.${fileExt}`
-    const thumbnailFilename = `${sanitizedPlantId}_${timestamp}_thumb.${fileExt}`
-
-    // Define paths
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'photos')
-    const thumbnailsDir = path.join(process.cwd(), 'public', 'uploads', 'thumbnails')
-    const filePath = path.join(uploadsDir, filename)
-    const thumbnailPath = path.join(thumbnailsDir, thumbnailFilename)
-
-    // Ensure directories exist
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true })
-    }
-    if (!existsSync(thumbnailsDir)) {
-      await mkdir(thumbnailsDir, { recursive: true })
-    }
+    const filename = `${sanitizedPlantId}_${timestamp}.jpeg`
+    const thumbnailFilename = `${sanitizedPlantId}_${timestamp}_thumb.jpeg`
 
     // Build comprehensive metadata object using sharp + exiftool data
     let metadata: any = {}
@@ -121,7 +138,7 @@ export async function POST(request: NextRequest) {
         format: imageMetadata.format,
         space: imageMetadata.space,
         hasAlpha: imageMetadata.hasAlpha,
-        orientation: imageMetadata.orientation,
+        orientation: exifOrientation,
         exif: exifTags ? {
           dateTimeOriginal: exifTags.DateTimeOriginal ?
             (exifTags.DateTimeOriginal instanceof Date ? exifTags.DateTimeOriginal.toISOString() : new Date(exifTags.DateTimeOriginal).toISOString())
@@ -143,44 +160,73 @@ export async function POST(request: NextRequest) {
       console.error('Error extracting metadata:', error)
     }
 
-    // Process and save full-size image (max 2000px width, maintain aspect ratio)
-    await sharp(buffer)
+    // Process full-size image (max 2000px, maintain aspect ratio) to buffer
+    const processedImageBuffer = await sharp(buffer)
+      .rotate(rotationDegrees) // Explicit rotation based on EXIF orientation
       .resize(2000, 2000, {
         fit: 'inside',
         withoutEnlargement: true
       })
-      .rotate() // Auto-rotate based on EXIF orientation
       .jpeg({ quality: 90 })
-      .toFile(filePath)
+      .toBuffer()
 
-    // Create thumbnail (300px width)
-    await sharp(buffer)
+    // Process thumbnail (300px square crop) to buffer
+    const thumbnailBuffer = await sharp(buffer)
+      .rotate(rotationDegrees) // Explicit rotation based on EXIF orientation
       .resize(300, 300, {
         fit: 'cover',
         position: 'center'
       })
-      .rotate() // Auto-rotate based on EXIF orientation
       .jpeg({ quality: 80 })
-      .toFile(thumbnailPath)
+      .toBuffer()
 
-    // Save to database
+    // Upload to Supabase Storage
+    // Path structure: {userId}/photos/{filename} and {userId}/thumbnails/{filename}
+    const photoStoragePath = `${user.id}/photos/${filename}`
+    const thumbStoragePath = `${user.id}/thumbnails/${thumbnailFilename}`
+
+    const photoUploadResult = await uploadToStorage(processedImageBuffer, photoStoragePath, 'image/jpeg')
+    if ('error' in photoUploadResult) {
+      console.error('Failed to upload photo to Supabase:', photoUploadResult.error)
+      return NextResponse.json(
+        { error: 'Failed to upload photo to storage', details: photoUploadResult.error.message },
+        { status: 500 }
+      )
+    }
+
+    const thumbUploadResult = await uploadToStorage(thumbnailBuffer, thumbStoragePath, 'image/jpeg')
+    if ('error' in thumbUploadResult) {
+      // Clean up the photo we just uploaded
+      await deleteFromStorage(photoStoragePath)
+      console.error('Failed to upload thumbnail to Supabase:', thumbUploadResult.error)
+      return NextResponse.json(
+        { error: 'Failed to upload thumbnail to storage', details: thumbUploadResult.error.message },
+        { status: 500 }
+      )
+    }
+
+    // Save to database with Supabase Storage paths
     const photo = await prisma.photo.create({
       data: {
         plantId,
-        url: `/uploads/photos/${filename}`,
-        thumbnailUrl: `/uploads/thumbnails/${thumbnailFilename}`,
-        dateTaken: dateTaken, // Already a Date object
+        userId: user.id,
+        storagePath: photoStoragePath,
+        thumbnailPath: thumbStoragePath,
+        // Keep legacy fields null for new uploads
+        url: null,
+        thumbnailUrl: null,
+        dateTaken,
         photoType,
         growthStage,
         notes,
-        metadata: JSON.stringify(metadata)
+        metadata
       }
     })
 
     return NextResponse.json({
       success: true,
       photo,
-      exifDateUsed: exifDate !== null // Tell the client if EXIF date was used
+      exifDateUsed: exifDate !== null
     })
   } catch (error) {
     console.error('Error uploading photo:', error)
@@ -194,6 +240,11 @@ export async function POST(request: NextRequest) {
 // GET endpoint to retrieve photos for a plant
 export async function GET(request: NextRequest) {
   try {
+    const user = await getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const searchParams = request.nextUrl.searchParams
     const plantId = searchParams.get('plantId')
 
@@ -219,6 +270,11 @@ export async function GET(request: NextRequest) {
 // PATCH endpoint to update photo details
 export async function PATCH(request: NextRequest) {
   try {
+    const user = await getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const searchParams = request.nextUrl.searchParams
     const photoId = searchParams.get('id')
 
@@ -266,6 +322,11 @@ export async function PATCH(request: NextRequest) {
 // DELETE endpoint to remove a photo
 export async function DELETE(request: NextRequest) {
   try {
+    const user = await getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const searchParams = request.nextUrl.searchParams
     const photoId = searchParams.get('id')
 
@@ -273,25 +334,28 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Photo ID is required' }, { status: 400 })
     }
 
-    // Get photo to get file paths before deleting from DB
+    // Get photo to get storage paths before deleting from DB
     const photo = await prisma.photo.findUnique({ where: { id: photoId } })
     if (!photo) {
       return NextResponse.json({ error: 'Photo not found' }, { status: 404 })
     }
 
-    // Delete from database
+    // Delete from database first
     await prisma.photo.delete({ where: { id: photoId } })
 
-    // Optionally delete files from filesystem (commented out for safety - can be enabled later)
-    // const fs = require('fs').promises
-    // try {
-    //   await fs.unlink(path.join(process.cwd(), 'public', photo.url))
-    //   if (photo.thumbnailUrl) {
-    //     await fs.unlink(path.join(process.cwd(), 'public', photo.thumbnailUrl))
-    //   }
-    // } catch (fileError) {
-    //   console.error('Error deleting files:', fileError)
-    // }
+    // Delete from Supabase Storage if paths exist
+    if (photo.storagePath) {
+      const photoDeleted = await deleteFromStorage(photo.storagePath)
+      if (!photoDeleted) {
+        console.warn(`Failed to delete photo from storage: ${photo.storagePath}`)
+      }
+    }
+    if (photo.thumbnailPath) {
+      const thumbDeleted = await deleteFromStorage(photo.thumbnailPath)
+      if (!thumbDeleted) {
+        console.warn(`Failed to delete thumbnail from storage: ${photo.thumbnailPath}`)
+      }
+    }
 
     return NextResponse.json({ success: true, message: 'Photo deleted' })
   } catch (error) {
@@ -302,4 +366,3 @@ export async function DELETE(request: NextRequest) {
     )
   }
 }
-
