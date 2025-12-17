@@ -42,6 +42,55 @@ export interface EnvironmentalData {
   co2?: number | null
 }
 
+/**
+ * Recent precipitation data for rain-adjusted predictions
+ * Only applies to outdoor/exposed locations
+ */
+export interface PrecipitationData {
+  last24h: number      // mm in last 24 hours
+  last48h: number      // mm in last 48 hours (cumulative)
+  isOutdoor: boolean   // Is the plant location exposed to rain?
+}
+
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * RAIN ADJUSTMENT TUNABLE PARAMETERS
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * These are HYPOTHETICAL values based on horticultural reasoning, NOT
+ * empirically validated. They should be tuned based on real-world data
+ * correlating rain events with actual watering intervals.
+ *
+ * FUTURE ENHANCEMENT: Replace threshold model with learned correlations:
+ * 1. Track precipitation history alongside watering events
+ * 2. Build regression model: precipitation_mm → days_adjustment
+ * 3. Account for substrate type (chunky aroid mix drains faster than soil)
+ * 4. Consider rain intensity (mm/hour) not just total accumulation
+ * 5. Factor in forecast (skip watering if heavy rain coming)
+ *
+ * Data collection needed:
+ * - Store daily precipitation with care logs
+ * - Track "effective rain" (did substrate actually get wet?)
+ * - User feedback: "rained but I watered anyway because..."
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+const RAIN_THRESHOLDS = {
+  // Minimum mm in 24h to have any effect (light drizzle = no impact)
+  MINIMUM_EFFECTIVE: 5,
+
+  // Moderate rain: extend interval slightly
+  MODERATE_THRESHOLD: 10,
+  MODERATE_ADJUSTMENT: 1.0, // days - TUNABLE, initial hypothesis
+
+  // Heavy rain: treat as equivalent to watering
+  HEAVY_THRESHOLD: 20,
+  HEAVY_ADJUSTMENT: 1.5, // days - TUNABLE, initial hypothesis
+
+  // 48h accumulation bonus (sustained wet conditions)
+  SUSTAINED_THRESHOLD: 25,
+  SUSTAINED_BONUS: 0.5, // additional days if 48h > threshold
+}
+
 export interface WateringPrediction {
   nextWaterDate: Date
   daysUntilWater: number
@@ -74,7 +123,8 @@ export function predictWateringInterval(
   careLogs: CareEvent[],
   environment?: EnvironmentalData,
   lastRepotDate?: Date | string | null,
-  healthStatus?: string
+  healthStatus?: string,
+  precipitation?: PrecipitationData
 ): WateringPrediction {
   const factors: WateringFactor[] = []
 
@@ -120,6 +170,15 @@ export function predictWateringInterval(
     if (seasonalAdj.adjustment !== 0) {
       optimal += seasonalAdj.adjustment
       factors.push(seasonalAdj.factor)
+    }
+  }
+
+  // Rain/precipitation adjustment (outdoor locations only)
+  if (precipitation && precipitation.isOutdoor) {
+    const rainAdj = calculateRainAdjustment(precipitation)
+    if (rainAdj.adjustment !== 0) {
+      optimal += rainAdj.adjustment
+      factors.push(rainAdj.factor)
     }
   }
 
@@ -453,6 +512,78 @@ function calculateSeasonalAdjustment(wateringEvents: CareEvent[]): {
       impact: adjustment > 0 ? 'increase' : adjustment < 0 ? 'decrease' : 'neutral',
       adjustment,
       description: description || `Seasonal amplitude: ${(seasonality.amplitude * 100).toFixed(0)}%`
+    }
+  }
+}
+
+/**
+ * Calculate rain/precipitation adjustment for outdoor locations
+ *
+ * NOTE: Adjustment values are HYPOTHETICAL starting points.
+ * See RAIN_THRESHOLDS documentation for tuning guidance.
+ */
+function calculateRainAdjustment(precip: PrecipitationData): {
+  adjustment: number
+  factor: WateringFactor
+} {
+  // Indoor plants don't get rain (shouldn't reach here, but safety check)
+  if (!precip.isOutdoor) {
+    return {
+      adjustment: 0,
+      factor: {
+        name: 'Rain',
+        impact: 'neutral',
+        adjustment: 0,
+        description: 'Indoor location - rain not applicable'
+      }
+    }
+  }
+
+  // No significant rain
+  if (precip.last24h < RAIN_THRESHOLDS.MINIMUM_EFFECTIVE) {
+    return {
+      adjustment: 0,
+      factor: {
+        name: 'Rain',
+        impact: 'neutral',
+        adjustment: 0,
+        description: `${precip.last24h.toFixed(1)}mm (24h) - below threshold`
+      }
+    }
+  }
+
+  let adjustment = 0
+  let description = ''
+
+  // Heavy rain (>20mm in 24h)
+  if (precip.last24h >= RAIN_THRESHOLDS.HEAVY_THRESHOLD) {
+    adjustment = RAIN_THRESHOLDS.HEAVY_ADJUSTMENT
+    description = `Heavy rain: ${precip.last24h.toFixed(1)}mm (24h)`
+  }
+  // Moderate rain (10-20mm in 24h)
+  else if (precip.last24h >= RAIN_THRESHOLDS.MODERATE_THRESHOLD) {
+    adjustment = RAIN_THRESHOLDS.MODERATE_ADJUSTMENT
+    description = `Moderate rain: ${precip.last24h.toFixed(1)}mm (24h)`
+  }
+  // Light effective rain (5-10mm)
+  else {
+    adjustment = 0.5 // Small adjustment for light but effective rain
+    description = `Light rain: ${precip.last24h.toFixed(1)}mm (24h)`
+  }
+
+  // Bonus for sustained wet conditions (48h accumulation)
+  if (precip.last48h >= RAIN_THRESHOLDS.SUSTAINED_THRESHOLD) {
+    adjustment += RAIN_THRESHOLDS.SUSTAINED_BONUS
+    description += ` + sustained (${precip.last48h.toFixed(1)}mm 48h)`
+  }
+
+  return {
+    adjustment,
+    factor: {
+      name: 'Recent Rain',
+      impact: adjustment > 0 ? 'increase' : 'neutral',
+      adjustment,
+      description: `${description} [⚠️ TUNABLE - validate with real data]`
     }
   }
 }

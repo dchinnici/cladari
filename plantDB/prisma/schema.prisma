@@ -471,6 +471,7 @@ model Location {
   id              String   @id @default(cuid())
   name            String   @unique
   type            String   // greenhouse, tent, indoor, outdoor
+  isOutdoor       Boolean  @default(false) // Exposed to rain? Used for weather-adjusted watering predictions
 
   // Multi-user: Owner
   user            Profile  @relation(fields: [userId], references: [id], onDelete: Cascade)

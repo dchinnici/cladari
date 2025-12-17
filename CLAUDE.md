@@ -69,9 +69,30 @@ plantDB/
 - **API routes**: kebab-case paths
 - **ID Generation**: `src/lib/breeding-ids.ts` for all ID generation
 
-## Current Version: v1.7.2 (Dec 16, 2025)
+## Current Version: v1.7.3 (Dec 17, 2025)
 
 ### Recently Completed
+- **Plant Diary Export + Zebra Printer Integration** (v1.7.3)
+  - **Plant Diary Export**: `/api/plants/[id]/export` endpoint with multi-format output
+    - Structured JSON with identity, status, statistics for blockchain/verification
+    - Pre-chunked semantic sections for ML embeddings pipeline
+    - Full markdown narrative for AI chat paste (Claude, ChatGPT)
+    - SHA256 content hash for Stream Protocol verification
+    - "Export Diary" button in plant detail dropdown menu
+  - **Zebra ZD421CN One-Click Printing**: Server-side via `lp` command
+    - Print API: `POST /api/print/zebra` accepts plant ID, location name, or raw ZPL
+    - Plant detail: Menu → "Print Label" → instant print with toast confirmation
+    - Locations page: Printer icon → instant print for any location
+    - 57x32mm holographic labels tested (thermal transfer mode with ribbon)
+    - Compact templates: `generateCompactPlantTagZPL()`, `generateCompactLocationTagZPL()`
+    - Layout: QR code (mag 6) + ID/Name + details, vertically centered
+- **ML Watering Predictor Enhancements** (v1.7.3)
+  - **Temperature unit fix**: SensorPush stores °F, predictor expects °C - now converts correctly
+  - **Rain-adjusted predictions**: Outdoor locations now factor in recent precipitation
+  - Location model: Added `isOutdoor` boolean for rain exposure
+  - Weather API integration: Fetches 24h/48h precipitation from Open-Meteo
+  - **IMPORTANT**: Rain adjustment values are TUNABLE HYPOTHESES, not empirically validated
+  - See `RAIN_THRESHOLDS` in `src/lib/ml/wateringPredictor.ts` for tuning parameters
 - **Mobile PWA Fixes & Photo Upload to Supabase** (v1.7.2)
   - Photo uploads now go directly to Supabase Storage (consistent with migrated photos)
   - PWA viewport locked to prevent unwanted zoom/scroll on mobile
@@ -199,8 +220,64 @@ Cross (CLX-YYYY-###) → Harvest → SeedBatch (SDB-YYYY-###) → Seedling (SDL-
 - Seed batch modal UI (API complete)
 - Seedling modal UI (API complete)
 - Graduation workflow UI (API complete)
-- Zebra ZD421CN printer integration (ZPL templates ready)
 - Batch print functionality (all plants in a location)
+- Standard 2"x1" label templates (need labels)
+
+### Zebra Printer Setup (Dec 17, 2025)
+**Hardware**: Zebra ZD421CN-300dpi thermal printer via macOS CUPS (`lp` command)
+
+**Architecture**: Server-side printing via `/api/print/zebra` endpoint
+- UI click → API call → server executes `lp -d Zebra -o raw` → label prints
+- No browser plugins needed (not using QZ Tray)
+- Works from any device on network (phone, tablet, etc.)
+
+**One-Click Printing UI**:
+- **Plant detail page**: Menu → "Print Label" → instant print
+- **Locations page** (`/locations`): Printer icon → instant print
+- Toast notification confirms job ID
+
+**Print API** (`POST /api/print/zebra`):
+```typescript
+// Print plant label
+{ type: 'plant', id: 'cmgsezkjd003tgw74hosd87vo' }
+
+// Print location label
+{ type: 'location', name: 'Balcony' }
+
+// Raw ZPL
+{ zpl: '^XA...^XZ' }
+```
+
+**Working Label Sizes**:
+1. **Compact Sticker (57mm x 32mm)** - PRODUCTION READY
+   - 672 x 378 dots at 300 DPI
+   - Thermal transfer mode (`^MTT`) with ribbon
+   - Darkness: 20 (`^MD20`)
+   - QR code magnification: 6
+   - Templates: `generateCompactPlantTagZPL()`, `generateCompactLocationTagZPL()`
+   - Great for holographic/foil "Cladari Verified" stickers
+
+2. **Standard Plant Tag (2" x 1")** - TEMPLATES READY, NEED LABELS
+   - 600 x 300 dots at 300 DPI
+   - Direct thermal mode
+   - Template: `generatePlantTagZPL()` in `/src/lib/zpl.ts`
+
+**Printing via CLI**:
+```bash
+# Print ZPL directly (thermal transfer, 57x32mm)
+echo '^XA^MTT^MD20^PW672^LL378^FO100,150^A0N,60,60^FDTEST^FS^XZ' | lp -d Zebra -o raw -
+
+# Print calibration label
+echo '^XA~WC^XZ' | lp -d Zebra -o raw -
+```
+
+**Key ZPL Commands**:
+- `^MTT` = Thermal transfer (uses ribbon)
+- `^MTD` = Direct thermal (heat-sensitive labels, no ribbon)
+- `^MD{n}` = Darkness (0-30, higher = darker)
+- `^PW{n}` = Print width in dots
+- `^LL{n}` = Label length in dots
+- `^BQN,2,{mag}` = QR code (native ZPL, magnification 1-10)
 
 ### Just Completed (Dec 10, 2025 - v1.6.0)
 
@@ -243,6 +320,32 @@ Cross (CLX-YYYY-###) → Harvest → SeedBatch (SDB-YYYY-###) → Seedling (SDL-
 - Postgres schema synced
 
 ### Phase 2 Backlog: ML Improvements
+
+**Rain-Adjusted Watering - Future Enhancements:**
+Current implementation (v1.7.3) uses simple threshold model with HYPOTHETICAL adjustment values.
+```typescript
+// Current thresholds in src/lib/ml/wateringPredictor.ts
+MINIMUM_EFFECTIVE: 5mm   // Below this = no impact
+MODERATE_THRESHOLD: 10mm // +1.0 day adjustment
+HEAVY_THRESHOLD: 20mm    // +1.5 day adjustment
+SUSTAINED_BONUS: +0.5    // If 48h > 25mm
+```
+
+**Upgrade path to learned correlations:**
+1. **Data collection**: Store daily precipitation with care logs (CareLog.precipitationContext?)
+2. **Correlation analysis**: Build regression model: precipitation_mm → actual_watering_interval
+3. **Substrate awareness**: Chunky aroid mix drains faster than dense soil - factor in pot/substrate type
+4. **Intensity vs duration**: 10mm in 20 minutes (runoff) vs 10mm over 6 hours (deep soak)
+5. **Forecast integration**: Skip watering if heavy rain coming tomorrow
+6. **User feedback loop**: "Rained but I watered anyway because..." → learn exceptions
+
+**Data needed:**
+- Precipitation history stored per care log
+- User feedback: "Was this rain prediction helpful?"
+- Substrate drainage characteristics per plant
+
+---
+
 **Substrate Health Analysis needs upgrade:**
 Current: Snapshot of last 3 logs → threshold check
 Needed: Time series since last repot → trend analysis
@@ -403,7 +506,7 @@ The mobile unlock isn't an app - it's frictionless data entry:
 - Walk past a bench, notice something, log it in 5 seconds
 - Makes one-off VALUABLE data entry possible in real-time
 - **Network**: Uses Tailscale IP (100.88.172.122) for phone → dev machine access
-- **Next step**: Connect Zebra ZD421CN printer for physical tag printing
+- **Printing**: Zebra ZD421CN connected via QZ Tray, 57x32mm holographic labels tested
 
 ### Why Not Consumer App
 - Red ocean market (Planta, Greg, etc.)

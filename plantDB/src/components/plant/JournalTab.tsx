@@ -21,10 +21,11 @@ import {
   Shield,
   ShieldCheck,
   ShieldAlert,
-  ShieldQuestion
+  ShieldQuestion,
+  Flower2
 } from 'lucide-react'
 
-export type JournalEntryType = 'care' | 'note' | 'morphology' | 'measurement' | 'ai'
+export type JournalEntryType = 'care' | 'note' | 'morphology' | 'measurement' | 'ai' | 'flowering'
 
 interface CareLog {
   id: string
@@ -72,11 +73,38 @@ interface ChatLog {
   savedAt: string
 }
 
+interface PlantJournalEntry {
+  id: string
+  entry: string
+  entryType: string
+  timestamp: string
+  context?: string
+  author?: string
+  referenceType?: string  // CareLog, ChatLog, etc. - used to filter out duplicates
+  referenceId?: string
+}
+
+interface FloweringCycle {
+  id: string
+  spatheEmergence?: string | null
+  spatheClose?: string | null
+  femaleStart?: string | null
+  femaleEnd?: string | null
+  maleStart?: string | null
+  maleEnd?: string | null
+  pollenCollected?: boolean
+  pollenQuality?: string | null
+  pollenStored?: boolean
+  notes?: string | null
+}
+
 interface JournalTabProps {
   careLogs: CareLog[]
   traits: Trait[]
   measurements: Measurement[]
   chatLogs?: ChatLog[]
+  journalEntries?: PlantJournalEntry[]
+  floweringCycles?: FloweringCycle[]
   notes?: string // Plant notes field
   onEditCareLog: (log: CareLog) => void
   onDeleteCareLog: (logId: string) => void
@@ -87,6 +115,9 @@ interface JournalTabProps {
   onDeleteTrait?: (traitId: string) => void
   onEditMeasurement?: (measurement: Measurement) => void
   onDeleteMeasurement?: (measurementId: string) => void
+  onDeleteNote?: (entryId: string) => void
+  onEditFlowering?: (cycle: FloweringCycle) => void
+  onDeleteFlowering?: (cycleId: string) => void
 }
 
 interface JournalEntry {
@@ -142,6 +173,8 @@ export function JournalTab({
   traits,
   measurements,
   chatLogs = [],
+  journalEntries: plantJournalEntries = [],
+  floweringCycles = [],
   notes,
   onEditCareLog,
   onDeleteCareLog,
@@ -151,13 +184,16 @@ export function JournalTab({
   onEditTrait,
   onDeleteTrait,
   onEditMeasurement,
-  onDeleteMeasurement
+  onDeleteMeasurement,
+  onDeleteNote,
+  onEditFlowering,
+  onDeleteFlowering
 }: JournalTabProps) {
   const [activeFilter, setActiveFilter] = useState<JournalEntryType | 'all'>('all')
   const [expandedChatLogs, setExpandedChatLogs] = useState<Set<string>>(new Set())
 
   // Transform all data into unified journal entries
-  const journalEntries = useMemo(() => {
+  const journalEntriesData = useMemo(() => {
     const entries: JournalEntry[] = []
 
     // Care logs
@@ -268,19 +304,70 @@ export function JournalTab({
       })
     })
 
+    // Plant Journal Entries (Notes)
+    // Filter out entries that reference CareLogs - those are system-generated summaries
+    // that duplicate the CareLog entries already displayed above
+    plantJournalEntries
+      .filter(entry => entry.referenceType !== 'CareLog')
+      .forEach(entry => {
+        const preview = entry.entry.slice(0, 150) + (entry.entry.length > 150 ? '...' : '')
+
+        entries.push({
+          id: `note-${entry.id}`,
+          type: 'note',
+          date: new Date(entry.timestamp),
+          title: 'Note',
+          subtitle: entry.author === 'system' ? 'System note' : undefined,
+          details: preview,
+          icon: <FileText className="w-4 h-4" />,
+          iconBg: 'bg-amber-100 text-amber-600',
+          raw: entry
+        })
+      })
+
+    // Flowering Cycles
+    floweringCycles.forEach(cycle => {
+      const cycleDate = cycle.spatheEmergence ? new Date(cycle.spatheEmergence) : new Date()
+
+      // Determine current phase for subtitle
+      let phase = 'Spathe emerging'
+      if (cycle.spatheClose) phase = 'Cycle complete'
+      else if (cycle.maleEnd) phase = 'Male phase ended'
+      else if (cycle.maleStart) phase = 'Male phase'
+      else if (cycle.femaleEnd) phase = 'Female phase ended'
+      else if (cycle.femaleStart) phase = 'Female phase'
+
+      const details: string[] = []
+      if (cycle.pollenCollected) details.push(`Pollen: ${cycle.pollenQuality || 'collected'}${cycle.pollenStored ? ' (stored)' : ''}`)
+      if (cycle.notes) details.push(cycle.notes)
+
+      entries.push({
+        id: `flowering-${cycle.id}`,
+        type: 'flowering',
+        date: cycleDate,
+        title: 'Flowering Cycle',
+        subtitle: phase,
+        details: details.join(' • ') || undefined,
+        icon: <Flower2 className="w-4 h-4" />,
+        iconBg: 'bg-pink-100 text-pink-600',
+        raw: cycle
+      })
+    })
+
     // Sort by date descending
     return entries.sort((a, b) => b.date.getTime() - a.date.getTime())
-  }, [careLogs, traits, measurements, chatLogs])
+  }, [careLogs, traits, measurements, chatLogs, plantJournalEntries, floweringCycles])
 
   // Filter entries
   const filteredEntries = useMemo(() => {
-    if (activeFilter === 'all') return journalEntries
-    return journalEntries.filter(e => e.type === activeFilter)
-  }, [journalEntries, activeFilter])
+    if (activeFilter === 'all') return journalEntriesData
+    return journalEntriesData.filter(e => e.type === activeFilter)
+  }, [journalEntriesData, activeFilter])
 
   const filters: { key: JournalEntryType | 'all'; label: string; icon: React.ReactNode }[] = [
     { key: 'all', label: 'All', icon: <Filter className="w-3.5 h-3.5" /> },
     { key: 'care', label: 'Care', icon: <Droplet className="w-3.5 h-3.5" /> },
+    { key: 'flowering', label: 'Flower', icon: <Flower2 className="w-3.5 h-3.5" /> },
     { key: 'note', label: 'Notes', icon: <FileText className="w-3.5 h-3.5" /> },
     { key: 'morphology', label: 'Morph', icon: <Dna className="w-3.5 h-3.5" /> },
     { key: 'measurement', label: 'Meas', icon: <Ruler className="w-3.5 h-3.5" /> },
@@ -470,6 +557,43 @@ export function JournalTab({
                         {onDeleteMeasurement && (
                           <button
                             onClick={() => onDeleteMeasurement(entry.raw.id)}
+                            className="p-1.5 text-[var(--clay)] hover:text-[var(--alert-red)] hover:bg-white rounded transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Actions for notes */}
+                    {entry.type === 'note' && onDeleteNote && (
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => onDeleteNote(entry.raw.id)}
+                          className="p-1.5 text-[var(--clay)] hover:text-[var(--alert-red)] hover:bg-white rounded transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Actions for flowering */}
+                    {entry.type === 'flowering' && (onEditFlowering || onDeleteFlowering) && (
+                      <div className="flex gap-1">
+                        {onEditFlowering && (
+                          <button
+                            onClick={() => onEditFlowering(entry.raw)}
+                            className="p-1.5 text-[var(--clay)] hover:text-[var(--bark)] hover:bg-white rounded transition-colors"
+                            title="Edit"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {onDeleteFlowering && (
+                          <button
+                            onClick={() => onDeleteFlowering(entry.raw.id)}
                             className="p-1.5 text-[var(--clay)] hover:text-[var(--alert-red)] hover:bg-white rounded transition-colors"
                             title="Delete"
                           >

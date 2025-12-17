@@ -1,9 +1,19 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { generateRecommendations } from '@/lib/care/recommendations'
-import { predictWateringInterval, analyzeWateringHistory } from '@/lib/ml/wateringPredictor'
+import { predictWateringInterval, analyzeWateringHistory, PrecipitationData } from '@/lib/ml/wateringPredictor'
 import { predictHealthTrajectory, generateHealthSummary, calculateSubstrateHealthScore } from '@/lib/ml/healthTrajectory'
 import { predictFloweringCycle, generateFloweringSummary } from '@/lib/ml/floweringPredictor'
+import { getWeather } from '@/lib/weather'
+
+/**
+ * Convert Fahrenheit to Celsius
+ * SensorPush stores temps in °F, ML predictor expects °C
+ */
+function fahrenheitToCelsius(f: number | null): number | null {
+  if (f === null) return null
+  return (f - 32) * 5 / 9
+}
 
 export async function GET(
   request: Request,
@@ -35,6 +45,7 @@ export async function GET(
         currentLocation: {
           select: {
             name: true,
+            isOutdoor: true,
             temperature: true,
             humidity: true,
             vpd: true,
@@ -97,6 +108,37 @@ export async function GET(
     // ML Predictions
 
     // 1. Watering Prediction
+    // Note: SensorPush stores temperature in °F, predictor expects °C
+    const tempF = plant.currentLocation?.temperature
+    const tempC = fahrenheitToCelsius(tempF ?? null)
+    console.log(`[Watering ML] Temperature: ${tempF}°F → ${tempC?.toFixed(1)}°C`)
+
+    // Fetch weather data for rain-adjusted predictions (outdoor locations only)
+    let precipitationData: PrecipitationData | undefined
+    const isOutdoor = plant.currentLocation?.isOutdoor ?? false
+
+    if (isOutdoor) {
+      try {
+        const weather = await getWeather()
+        // Get last 24h and 48h precipitation from daily forecast
+        // daily[0] is today, daily[1] is yesterday (if we had historical)
+        // For now, use current + today's sum as approximation
+        const last24h = weather.current.precipitation + (weather.daily[0]?.precipitationSum ?? 0)
+        // 48h would need historical data - approximate with today + forecast
+        const last48h = last24h + (weather.daily[1]?.precipitationSum ?? 0)
+
+        precipitationData = {
+          last24h,
+          last48h,
+          isOutdoor: true
+        }
+        console.log(`[Watering ML] Rain: ${last24h.toFixed(1)}mm (24h), ${last48h.toFixed(1)}mm (48h), outdoor=${isOutdoor}`)
+      } catch (err) {
+        console.error('[Watering ML] Failed to fetch weather:', err)
+        // Continue without rain data
+      }
+    }
+
     const wateringPrediction = predictWateringInterval(
       plant.careLogs.map((log: any) => ({
         date: new Date(log.date),
@@ -107,14 +149,15 @@ export async function GET(
         phOut: log.outputPH ?? null
       })),
       plant.currentLocation ? {
-        temperature: plant.currentLocation.temperature,
+        temperature: fahrenheitToCelsius(plant.currentLocation.temperature),
         humidity: plant.currentLocation.humidity,
         vpd: plant.currentLocation.vpd,
         dli: plant.currentLocation.dli,
         co2: plant.currentLocation.co2
       } : undefined,
       lastRepotDate,
-      plant.healthStatus
+      plant.healthStatus,
+      precipitationData
     )
 
     const wateringHistory = analyzeWateringHistory(
@@ -226,12 +269,17 @@ export async function GET(
         plantId: plant.plantId,
         healthStatus: plant.healthStatus,
         location: plant.currentLocation?.name,
+        isOutdoor,
         lastRepotDate,
         environment: plant.currentLocation ? {
           temperature: plant.currentLocation.temperature,
           humidity: plant.currentLocation.humidity,
           vpd: plant.currentLocation.vpd,
           dli: plant.currentLocation.dli
+        } : null,
+        precipitation: precipitationData ? {
+          last24h: precipitationData.last24h,
+          last48h: precipitationData.last48h
         } : null
       }
     }

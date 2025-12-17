@@ -2,11 +2,21 @@
  * ZPL (Zebra Programming Language) Template Generator
  *
  * Generates ZPL II code for Zebra ZD421 thermal printer.
- * Label size: 2" x 1" (standard plant tag size)
  *
- * ZPL coordinates are in dots. ZD421 at 300 DPI:
- * - 2" width = 600 dots
- * - 1" height = 300 dots
+ * SUPPORTED LABEL SIZES:
+ *
+ * 1. Standard Plant Tag (2" x 1" / 51mm x 25mm)
+ *    - Functions: generatePlantTagZPL, generateLocationTagZPL
+ *    - 600 x 300 dots at 300 DPI
+ *    - Direct thermal mode
+ *
+ * 2. Compact Sticker (57mm x 32mm / 2.2" x 1.3")
+ *    - Functions: generateCompactPlantTagZPL
+ *    - 672 x 378 dots at 300 DPI
+ *    - Thermal transfer mode (uses ribbon)
+ *    - Originally designed for holographic/foil stickers
+ *
+ * ZPL coordinates are in dots. ZD421 at 300 DPI = 11.81 dots/mm
  */
 
 import { generateQRMatrix } from './qr';
@@ -190,4 +200,143 @@ ${plantCount !== undefined ? `
 `.trim();
 
   return zpl;
+}
+
+/**
+ * Compact Plant Tag Data - includes database UUID for QR routing
+ */
+export interface CompactPlantLabelData {
+  databaseId: string;     // UUID for QR code URL (e.g., cmgsezkjd003tgw74hosd87vo)
+  plantId: string;        // Display ID (e.g., ANT-2025-0053)
+  name: string;           // Hybrid name or species
+  genus?: string;         // Defaults to "Anthurium"
+  baseUrl?: string;       // Defaults to Tailscale URL
+}
+
+/**
+ * Generate ZPL code for a COMPACT plant tag (57mm x 32mm stickers)
+ *
+ * ⚠️  THIS IS FOR 57x32mm LABELS ONLY - NOT STANDARD PLANT TAGS
+ *
+ * Designed for thermal transfer printing with ribbon on holographic/foil stickers.
+ * Uses native ZPL ^BQ command for QR codes.
+ *
+ * Layout (57mm x 32mm at 300 DPI = 672 x 378 dots):
+ * +----------------------------------+
+ * |                                  |
+ * | [QR CODE]   ANT-2025-0053        |
+ * |    mag 6    Hybrid Name          |
+ * |             Anthurium            |
+ * |                                  |
+ * +----------------------------------+
+ *
+ * Printer settings: Thermal Transfer (^MTT), Darkness 20 (^MD20)
+ */
+export function generateCompactPlantTagZPL(data: CompactPlantLabelData): string {
+  const {
+    databaseId,
+    plantId,
+    name,
+    genus = 'Anthurium',
+    baseUrl = 'http://100.88.172.122:3000'
+  } = data;
+
+  const qrUrl = `${baseUrl}/q/p/${databaseId}`;
+
+  const zpl = `^XA
+^MTT
+^MD20
+^PW672
+^LL378
+^FO15,90
+^BQN,2,6
+^FDQA,${qrUrl}^FS
+^FO300,100
+^A0N,42,42
+^FD${escapeZPL(plantId)}^FS
+^FO300,160
+^A0N,58,58
+^FD${escapeZPL(truncate(name, 16))}^FS
+^FO300,235
+^A0N,34,34
+^FD${escapeZPL(genus)}^FS
+^XZ`;
+
+  return zpl;
+}
+
+/**
+ * Generate ZPL for multiple compact labels (batch print)
+ */
+export function generateBatchCompactTagsZPL(
+  plants: CompactPlantLabelData[]
+): string {
+  return plants.map(generateCompactPlantTagZPL).join('\n');
+}
+
+/**
+ * Compact Location Tag Data
+ */
+export interface CompactLocationLabelData {
+  name: string;           // Location name (e.g., "Balcony")
+  plantCount?: number;    // Optional plant count
+  baseUrl?: string;       // Defaults to Tailscale URL
+}
+
+/**
+ * Generate ZPL code for a COMPACT location tag (57mm x 32mm stickers)
+ *
+ * ⚠️  THIS IS FOR 57x32mm LABELS ONLY - NOT STANDARD TAGS
+ *
+ * Layout (57mm x 32mm at 300 DPI = 672 x 378 dots):
+ * +----------------------------------+
+ * |                                  |
+ * | [QR CODE]   BALCONY              |
+ * |    mag 6    6 plants             |
+ * |             Scan for batch care  |
+ * |                                  |
+ * +----------------------------------+
+ */
+export function generateCompactLocationTagZPL(data: CompactLocationLabelData): string {
+  const {
+    name,
+    plantCount,
+    baseUrl = 'http://100.88.172.122:3000'
+  } = data;
+
+  // Convert location name to URL slug (spaces → underscores)
+  const slug = name.replace(/\s+/g, '_').toUpperCase();
+  const qrUrl = `${baseUrl}/q/l/${slug}`;
+
+  const plantLine = plantCount !== undefined
+    ? `^FO300,160\n^A0N,40,40\n^FD${plantCount} plant${plantCount !== 1 ? 's' : ''}^FS`
+    : '';
+
+  const zpl = `^XA
+^MTT
+^MD20
+^PW672
+^LL378
+^FO15,90
+^BQN,2,6
+^FDQA,${qrUrl}^FS
+^FO300,100
+^A0N,58,58
+^FD${escapeZPL(truncate(name, 14))}^FS
+${plantLine}
+^FO300,235
+^A0N,28,28
+^FDBatch care^FS
+^XZ`;
+
+  return zpl;
+}
+
+/**
+ * Generate ZPL for multiple compact location labels (batch print)
+ */
+export function generateBatchCompactLocationTagsZPL(
+  locations: CompactLocationLabelData[]
+): string {
+  return locations.map(generateCompactLocationTagZPL).join('\n');
 }

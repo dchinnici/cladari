@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { MapPin, Plus, Edit, Trash2, QrCode, Radio } from 'lucide-react'
+import { MapPin, Plus, Edit, Trash2, QrCode, Radio, Printer } from 'lucide-react'
 import { Modal } from '@/components/modal'
 import { showToast } from '@/components/toast'
 
@@ -214,11 +214,27 @@ export default function LocationsPage() {
                   </div>
                   <div className="flex gap-1">
                     <button
-                      onClick={() => window.open(`/api/print/location-tag/${encodeURIComponent(location.name)}`, '_blank')}
+                      onClick={async () => {
+                        try {
+                          const res = await fetch('/api/print/zebra', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ type: 'location', name: location.name })
+                          })
+                          const data = await res.json()
+                          if (res.ok) {
+                            showToast({ type: 'success', title: `Label printed (${data.jobId})` })
+                          } else {
+                            showToast({ type: 'error', title: data.error || 'Print failed' })
+                          }
+                        } catch (err) {
+                          showToast({ type: 'error', title: 'Print failed' })
+                        }
+                      }}
                       className="p-1.5 hover:bg-black/[0.04] rounded"
-                      title="Print QR Tag"
+                      title="Print Label (Zebra)"
                     >
-                      <QrCode className="w-4 h-4 text-[var(--clay)]" />
+                      <Printer className="w-4 h-4 text-[var(--clay)]" />
                     </button>
                     <button
                       onClick={() => openEditModal(location)}

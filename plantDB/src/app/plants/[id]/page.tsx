@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Camera, Activity, FileText, FlaskConical, Dna, Calendar, DollarSign, MapPin, Edit, Save, X, Plus, Trash2, Upload, Image as ImageIcon, Droplets, Star, QrCode, MoreVertical, History, Flower2, ChevronDown, ChevronRight, MessageSquare, Info, Thermometer, Wind } from 'lucide-react'
+import { ArrowLeft, Camera, Activity, FileText, FlaskConical, Dna, Calendar, DollarSign, MapPin, Edit, Save, X, Plus, Trash2, Upload, Image as ImageIcon, Droplets, Star, QrCode, MoreVertical, History, Flower2, ChevronDown, ChevronRight, MessageSquare, Info, Thermometer, Wind, Download, Printer } from 'lucide-react'
 import Image from 'next/image'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useDropzone } from 'react-dropzone'
@@ -12,6 +12,7 @@ import { getLastWateringEvent, getLastFertilizingEvent } from '@/lib/careLogUtil
 import AIAssistant from '@/components/AIAssistant'
 import { getTodayString } from '@/lib/timezone'
 import { HealthMetrics } from '@/components/plant/HealthMetrics'
+import { TrendCharts } from '@/components/plant/TrendCharts'
 import { JournalTab, type JournalEntryType } from '@/components/plant/JournalTab'
 import { LineageTab } from '@/components/plant/LineageTab'
 
@@ -32,6 +33,7 @@ export default function PlantDetailPage() {
   const [photoUploadModalOpen, setPhotoUploadModalOpen] = useState(false)
   const [overviewModalOpen, setOverviewModalOpen] = useState(false)
   const [floweringModalOpen, setFloweringModalOpen] = useState(false)
+  const [noteModalOpen, setNoteModalOpen] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [archiveReason, setArchiveReason] = useState<string>('died')
   const [journalEntryType, setJournalEntryType] = useState<JournalEntryType>('care')
@@ -44,6 +46,9 @@ export default function PlantDetailPage() {
   // Flowering cycle state
   const [floweringCycles, setFloweringCycles] = useState<any[]>([])
   const [currentCycle, setCurrentCycle] = useState<any>(null)
+
+  // Journal entries state (PlantJournal model - notes)
+  const [journalEntries, setJournalEntries] = useState<any[]>([])
 
   // Locations state
   const [locations, setLocations] = useState<any[]>([])
@@ -61,9 +66,13 @@ export default function PlantDetailPage() {
 
   // Form states
   const [measurementForm, setMeasurementForm] = useState({
-    ecValue: '',
-    phValue: '',
-    tdsValue: '',
+    leafLength: '',
+    leafWidth: '',
+    petioleLength: '',
+    height: '',
+    leafCount: '',
+    vigorScore: '',
+    texture: '',
     notes: '',
     measurementDate: getTodayString()
   })
@@ -115,6 +124,11 @@ export default function PlantDetailPage() {
     newLeafColor: ''
   })
 
+  const [noteForm, setNoteForm] = useState({
+    content: '',
+    date: getTodayString()
+  })
+
   const [overviewForm, setOverviewForm] = useState({
     name: '',
     species: '',
@@ -158,6 +172,7 @@ export default function PlantDetailPage() {
   useEffect(() => {
     fetchPlant()
     fetchFloweringCycles()
+    fetchJournalEntries()
     fetchLocations()
   }, [params.id])
 
@@ -364,9 +379,13 @@ export default function PlantDetailPage() {
         showToast({ type: 'success', title: 'Measurement added' })
         // Reset form
         setMeasurementForm({
-          ecValue: '',
-          phValue: '',
-          tdsValue: '',
+          leafLength: '',
+          leafWidth: '',
+          petioleLength: '',
+          height: '',
+          leafCount: '',
+          vigorScore: '',
+          texture: '',
           notes: '',
           measurementDate: getTodayString()
         })
@@ -376,6 +395,63 @@ export default function PlantDetailPage() {
     } catch (error) {
       console.error('Error adding measurement:', error)
       showToast({ type: 'error', title: 'Error adding measurement' })
+    }
+  }
+
+  const handleAddNote = async () => {
+    if (!noteForm.content.trim()) {
+      showToast({ type: 'error', title: 'Note content is required' })
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/plants/${params.id}/journal`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          entry: noteForm.content,
+          entryType: 'manual',
+          context: 'journal',
+          author: 'user',
+          timestamp: new Date(noteForm.date).toISOString()
+        })
+      })
+
+      if (response.ok) {
+        await fetchJournalEntries()
+        setNoteModalOpen(false)
+        showToast({ type: 'success', title: 'Note added' })
+        // Reset form
+        setNoteForm({
+          content: '',
+          date: getTodayString()
+        })
+      } else {
+        showToast({ type: 'error', title: 'Failed to add note' })
+      }
+    } catch (error) {
+      console.error('Error adding note:', error)
+      showToast({ type: 'error', title: 'Error adding note' })
+    }
+  }
+
+  const handleDeleteNote = async (entryId: string) => {
+    if (!confirm('Delete this note?')) return
+
+    try {
+      const response = await fetch(`/api/plants/${params.id}/journal?entryId=${entryId}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        await fetchJournalEntries()
+        showToast({ type: 'success', title: 'Note deleted' })
+      } else {
+        showToast({ type: 'error', title: 'Failed to delete note' })
+      }
+    } catch (error) {
+      console.error('Error deleting note:', error)
+      showToast({ type: 'error', title: 'Error deleting note' })
     }
   }
 
@@ -695,6 +771,18 @@ export default function PlantDetailPage() {
     }
   }
 
+  const fetchJournalEntries = async () => {
+    try {
+      const response = await fetch(`/api/plants/${params.id}/journal`)
+      if (response.ok) {
+        const data = await response.json()
+        setJournalEntries(data.entries || [])
+      }
+    } catch (error) {
+      console.error('Error fetching journal entries:', error)
+    }
+  }
+
   const fetchLocations = async () => {
     try {
       const response = await fetch('/api/locations')
@@ -853,14 +941,59 @@ export default function PlantDetailPage() {
                 <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
                 <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-black/[0.08] rounded-lg shadow-lg z-50 py-1">
                   <button
-                    onClick={() => {
-                      window.open(`/api/print/plant-tag/${plant.id}`, '_blank')
+                    onClick={async () => {
                       setMenuOpen(false)
+                      try {
+                        const res = await fetch('/api/print/zebra', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ type: 'plant', id: plant.id })
+                        })
+                        const data = await res.json()
+                        if (res.ok) {
+                          showToast({ type: 'success', title: `Label printed (${data.jobId})` })
+                        } else {
+                          showToast({ type: 'error', title: data.error || 'Print failed' })
+                        }
+                      } catch (err) {
+                        showToast({ type: 'error', title: 'Print failed' })
+                      }
                     }}
                     className="w-full px-4 py-2 text-left text-sm text-[var(--bark)] hover:bg-[var(--parchment)] flex items-center gap-3"
                   >
-                    <QrCode className="w-4 h-4" />
-                    Print QR Tag
+                    <Printer className="w-4 h-4" />
+                    Print Label
+                  </button>
+                  <button
+                    onClick={async () => {
+                      setMenuOpen(false)
+                      try {
+                        showToast({ type: 'info', title: 'Generating export...' })
+                        const res = await fetch(`/api/plants/${plant.id}/export`)
+                        if (!res.ok) throw new Error('Export failed')
+                        const data = await res.json()
+
+                        // Create and download JSON file
+                        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+                        const url = URL.createObjectURL(blob)
+                        const a = document.createElement('a')
+                        a.href = url
+                        a.download = `${plant.plantId}-diary-${new Date().toISOString().split('T')[0]}.json`
+                        document.body.appendChild(a)
+                        a.click()
+                        document.body.removeChild(a)
+                        URL.revokeObjectURL(url)
+
+                        showToast({ type: 'success', title: 'Diary exported successfully' })
+                      } catch (err) {
+                        console.error('Export error:', err)
+                        showToast({ type: 'error', title: 'Failed to export diary' })
+                      }
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-[var(--bark)] hover:bg-[var(--parchment)] flex items-center gap-3"
+                  >
+                    <Download className="w-4 h-4" />
+                    Export Diary
                   </button>
                   <button
                     onClick={() => {
@@ -1079,6 +1212,17 @@ export default function PlantDetailPage() {
                 <h3 className="text-lg font-semibold text-[var(--bark)] mb-3">Health & Care</h3>
                 <HealthMetrics plantId={params.id as string} />
               </section>
+
+              {/* Trend Charts Section */}
+              {plant.careLogs && plant.careLogs.length > 0 && (
+                <section>
+                  <h3 className="text-lg font-semibold text-[var(--bark)] mb-3">Trends & Analytics</h3>
+                  <TrendCharts
+                    careLogs={plant.careLogs}
+                    measurements={plant.measurements || []}
+                  />
+                </section>
+              )}
 
               {/* AI Assistant - Collapsible */}
               <section className="border border-black/[0.08] rounded-lg overflow-hidden">
@@ -1342,7 +1486,39 @@ export default function PlantDetailPage() {
               traits={plant.traits || []}
               measurements={plant.measurements || []}
               chatLogs={plant.chatLogs || []}
+              journalEntries={journalEntries}
+              floweringCycles={floweringCycles}
               notes={editedPlant.notes}
+              onDeleteNote={handleDeleteNote}
+              onEditFlowering={(cycle) => {
+                setFloweringForm({
+                  cycleId: cycle.id,
+                  spatheEmergence: cycle.spatheEmergence ? new Date(cycle.spatheEmergence).toISOString().split('T')[0] : '',
+                  femaleStart: cycle.femaleStart ? new Date(cycle.femaleStart).toISOString().split('T')[0] : '',
+                  femaleEnd: cycle.femaleEnd ? new Date(cycle.femaleEnd).toISOString().split('T')[0] : '',
+                  maleStart: cycle.maleStart ? new Date(cycle.maleStart).toISOString().split('T')[0] : '',
+                  maleEnd: cycle.maleEnd ? new Date(cycle.maleEnd).toISOString().split('T')[0] : '',
+                  spatheClose: cycle.spatheClose ? new Date(cycle.spatheClose).toISOString().split('T')[0] : '',
+                  pollenCollected: cycle.pollenCollected || false,
+                  pollenQuality: cycle.pollenQuality || '',
+                  pollenStored: cycle.pollenStored || false,
+                  pollenStorageDate: '',
+                  notes: cycle.notes || ''
+                })
+                setFloweringModalOpen(true)
+              }}
+              onDeleteFlowering={async (cycleId) => {
+                if (!confirm('Delete this flowering cycle?')) return
+                try {
+                  const res = await fetch(`/api/plants/${params.id}/flowering/${cycleId}`, { method: 'DELETE' })
+                  if (!res.ok) throw new Error('Failed to delete')
+                  await fetchFloweringCycles()
+                  showToast({ type: 'success', title: 'Flowering cycle deleted' })
+                } catch (error) {
+                  console.error('Error deleting flowering cycle:', error)
+                  showToast({ type: 'error', title: 'Failed to delete flowering cycle' })
+                }
+              }}
               onEditCareLog={(log) => {
                 const details = log.details ? (typeof log.details === 'string' ? JSON.parse(log.details) : log.details) : {}
                 setCareLogForm({
@@ -1388,15 +1564,27 @@ export default function PlantDetailPage() {
                 } else if (type === 'measurement') {
                   setMeasurementModalOpen(true)
                 } else if (type === 'note') {
-                  // For notes, open care log modal with 'other' type for now
-                  // Future: Create a dedicated notes modal
-                  setCareLogForm({
-                    ...careLogForm,
-                    logId: '',
-                    activityType: 'other',
+                  setNoteForm({
+                    content: '',
                     date: getTodayString()
                   })
-                  setCareLogModalOpen(true)
+                  setNoteModalOpen(true)
+                } else if (type === 'flowering') {
+                  setFloweringForm({
+                    cycleId: '',
+                    spatheEmergence: getTodayString(),
+                    femaleStart: '',
+                    femaleEnd: '',
+                    maleStart: '',
+                    maleEnd: '',
+                    spatheClose: '',
+                    pollenCollected: false,
+                    pollenQuality: '',
+                    pollenStored: false,
+                    pollenStorageDate: '',
+                    notes: ''
+                  })
+                  setFloweringModalOpen(true)
                 }
               }}
               onDeleteChatLog={async (logId) => {
@@ -1697,11 +1885,11 @@ export default function PlantDetailPage() {
         </div>
       </div>
 
-      {/* Measurement Modal */}
+      {/* Measurement Modal - Physical Dimensions */}
       <Modal
         isOpen={measurementModalOpen}
         onClose={() => setMeasurementModalOpen(false)}
-        title="Add Measurement"
+        title="Add Growth Measurement"
       >
         <div className="space-y-4">
           <div>
@@ -1714,41 +1902,97 @@ export default function PlantDetailPage() {
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-[var(--bark)] mb-1">EC Value</label>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Leaf Length (cm)</label>
               <input
                 type="number"
                 step="0.1"
-                value={measurementForm.ecValue}
-                onChange={(e) => setMeasurementForm({ ...measurementForm, ecValue: e.target.value })}
+                value={measurementForm.leafLength}
+                onChange={(e) => setMeasurementForm({ ...measurementForm, leafLength: e.target.value })}
                 className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
-                placeholder="1.2"
+                placeholder="25"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[var(--bark)] mb-1">pH Value</label>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Leaf Width (cm)</label>
               <input
                 type="number"
                 step="0.1"
-                value={measurementForm.phValue}
-                onChange={(e) => setMeasurementForm({ ...measurementForm, phValue: e.target.value })}
+                value={measurementForm.leafWidth}
+                onChange={(e) => setMeasurementForm({ ...measurementForm, leafWidth: e.target.value })}
                 className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
-                placeholder="6.5"
+                placeholder="18"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[var(--bark)] mb-1">TDS (ppm)</label>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Petiole Length (cm)</label>
               <input
                 type="number"
-                value={measurementForm.tdsValue}
-                onChange={(e) => setMeasurementForm({ ...measurementForm, tdsValue: e.target.value })}
+                step="0.1"
+                value={measurementForm.petioleLength}
+                onChange={(e) => setMeasurementForm({ ...measurementForm, petioleLength: e.target.value })}
                 className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
-                placeholder="500"
+                placeholder="30"
               />
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Plant Height (cm)</label>
+              <input
+                type="number"
+                step="0.1"
+                value={measurementForm.height}
+                onChange={(e) => setMeasurementForm({ ...measurementForm, height: e.target.value })}
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+                placeholder="45"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Leaf Count</label>
+              <input
+                type="number"
+                value={measurementForm.leafCount}
+                onChange={(e) => setMeasurementForm({ ...measurementForm, leafCount: e.target.value })}
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+                placeholder="5"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Vigor Score (1-5)</label>
+              <select
+                value={measurementForm.vigorScore}
+                onChange={(e) => setMeasurementForm({ ...measurementForm, vigorScore: e.target.value })}
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+              >
+                <option value="">Select...</option>
+                <option value="1">1 - Struggling</option>
+                <option value="2">2 - Weak</option>
+                <option value="3">3 - Average</option>
+                <option value="4">4 - Strong</option>
+                <option value="5">5 - Exceptional</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Leaf Texture</label>
+            <select
+              value={measurementForm.texture}
+              onChange={(e) => setMeasurementForm({ ...measurementForm, texture: e.target.value })}
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+            >
+              <option value="">Select...</option>
+              <option value="velvety">Velvety</option>
+              <option value="glossy">Glossy</option>
+              <option value="matte">Matte</option>
+              <option value="bullate">Bullate (puckered)</option>
+              <option value="corrugated">Corrugated</option>
+            </select>
           </div>
 
           <div>
@@ -1757,8 +2001,8 @@ export default function PlantDetailPage() {
               value={measurementForm.notes}
               onChange={(e) => setMeasurementForm({ ...measurementForm, notes: e.target.value })}
               className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
-              rows={3}
-              placeholder="Additional notes..."
+              rows={2}
+              placeholder="Measurement observations..."
             />
           </div>
 
@@ -1771,6 +2015,52 @@ export default function PlantDetailPage() {
             </button>
             <button
               onClick={() => setMeasurementModalOpen(false)}
+              className="flex-1 px-4 py-2 border border-black/[0.08] rounded text-[var(--bark)] hover:bg-[var(--parchment)]"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Note Modal */}
+      <Modal
+        isOpen={noteModalOpen}
+        onClose={() => setNoteModalOpen(false)}
+        title="Add Note"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Date</label>
+            <input
+              type="date"
+              value={noteForm.date}
+              onChange={(e) => setNoteForm({ ...noteForm, date: e.target.value })}
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Note</label>
+            <textarea
+              value={noteForm.content}
+              onChange={(e) => setNoteForm({ ...noteForm, content: e.target.value })}
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+              rows={6}
+              placeholder="Write your observation, thought, or note..."
+              autoFocus
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={handleAddNote}
+              className="flex-1 px-4 py-2 bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)]"
+            >
+              Save Note
+            </button>
+            <button
+              onClick={() => setNoteModalOpen(false)}
               className="flex-1 px-4 py-2 border border-black/[0.08] rounded text-[var(--bark)] hover:bg-[var(--parchment)]"
             >
               Cancel
