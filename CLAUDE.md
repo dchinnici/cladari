@@ -28,9 +28,9 @@ plantDB/
 │   │   │   ├── chat/          # AI chat endpoint (Claude Opus 4 + semantic search)
 │   │   │   ├── chat-logs/     # AI conversation persistence (HITL + auto-embedding)
 │   │   │   ├── ml/            # ML endpoints (semantic-search, diagnose, predict-care)
-│   │   │   ├── sensorpush/    # SensorPush API (sync, history)
+│   │   │   ├── sensorpush/    # SensorPush API (sync, history, sensors)
 │   │   │   ├── weather/       # Open-Meteo weather API
-│   │   │   └── print/         # QR/label print APIs (plant-tag, location-tag)
+│   │   │   └── print/         # Label print APIs (zebra, plant-tag, location-tag)
 │   │   ├── login/             # Supabase auth login page
 │   │   ├── q/                 # QR redirect handler (/q/p/{id}, /q/l/{loc})
 │   │   ├── plants/            # Plant management UI
@@ -222,6 +222,36 @@ Cross (CLX-YYYY-###) → Harvest → SeedBatch (SDB-YYYY-###) → Seedling (SDL-
 - Graduation workflow UI (API complete)
 - Batch print functionality (all plants in a location)
 - Standard 2"x1" label templates (need labels)
+
+### Queued Enhancements (Dec 17, 2025)
+
+**Location Sensor Management UI**
+- Location edit modal: Add sensor dropdown to link/unlink SensorPush sensors
+- API ready: `GET /api/sensorpush/sensors` returns all sensors with latest readings + linked status
+- Show sensor name + last reading in dropdown
+- Manual temp/humidity input as fallback when no sensor linked
+- "Unlink sensor" option to clear sensorPushId
+
+**Location History Tracking** (identified via HITL feedback)
+- Track when plants move between locations
+- Enable historical environmental correlation
+- Critical for: stress analysis, breeding performance, ML training
+
+Proposed schema:
+```prisma
+model LocationHistory {
+  id         String   @id @default(cuid())
+  plant      Plant    @relation(fields: [plantId], references: [id])
+  plantId    String
+  location   Location @relation(fields: [locationId], references: [id])
+  locationId String
+  movedAt    DateTime @default(now())
+  movedFrom  String?  // Previous location name for quick reference
+  notes      String?  // Reason for move
+}
+```
+
+Use case: "Where was ANT-2025-0016 from Dec 10-17?" → Query LocationHistory → Match to sensor data for each period → Calculate weighted environmental exposure
 
 ### Zebra Printer Setup (Dec 17, 2025)
 **Hardware**: Zebra ZD421CN-300dpi thermal printer via macOS CUPS (`lp` command)
