@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
 import prisma from '@/lib/prisma';
+import { getUser } from '@/lib/supabase/server';
 import { getSensors, getSamples, getAllLatestReadings, type SensorPushSample } from '@/lib/sensorpush';
 
 /**
@@ -8,10 +10,29 @@ import { getSensors, getSamples, getAllLatestReadings, type SensorPushSample } f
  * Fetch latest readings from all SensorPush sensors and update
  * environmental data for mapped locations.
  *
+ * Authentication: Requires either:
+ * - CRON_SECRET header (for automated cron jobs)
+ * - Valid user session (for manual triggers)
+ *
  * Returns current readings for all sensors.
  */
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    // Validate cron secret OR user auth
+    const headersList = await headers();
+    const cronSecret = headersList.get('x-cron-secret') || headersList.get('authorization')?.replace('Bearer ', '');
+    const expectedSecret = process.env.CRON_SECRET;
+
+    // If CRON_SECRET is configured, check it first
+    if (expectedSecret && cronSecret === expectedSecret) {
+      // Valid cron request - proceed
+    } else {
+      // Fall back to user authentication
+      const user = await getUser();
+      if (!user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+    }
     // Get all sensors from SensorPush
     const sensors = await getSensors();
 
@@ -113,6 +134,12 @@ export async function GET() {
  */
 export async function POST(request: Request) {
   try {
+    // Authenticate user
+    const user = await getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { locationId, sensorPushId } = body;
 
@@ -121,6 +148,14 @@ export async function POST(request: Request) {
         { error: 'locationId and sensorPushId are required' },
         { status: 400 }
       );
+    }
+
+    // Verify location ownership
+    const existingLocation = await prisma.location.findFirst({
+      where: { id: locationId, userId: user.id },
+    });
+    if (!existingLocation) {
+      return NextResponse.json({ error: 'Location not found' }, { status: 404 });
     }
 
     // Verify sensor exists
@@ -173,11 +208,25 @@ export async function POST(request: Request) {
  */
 export async function DELETE(request: Request) {
   try {
+    // Authenticate user
+    const user = await getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { locationId } = body;
 
     if (!locationId) {
       return NextResponse.json({ error: 'locationId is required' }, { status: 400 });
+    }
+
+    // Verify location ownership
+    const existingLocation = await prisma.location.findFirst({
+      where: { id: locationId, userId: user.id },
+    });
+    if (!existingLocation) {
+      return NextResponse.json({ error: 'Location not found' }, { status: 404 });
     }
 
     const location = await prisma.location.update({

@@ -1,8 +1,5 @@
 import { NextResponse } from 'next/server'
-import { exec } from 'child_process'
-import { promisify } from 'util'
-
-const execAsync = promisify(exec)
+import { spawn } from 'child_process'
 
 /**
  * POST /api/print/zebra
@@ -59,12 +56,35 @@ export async function POST(request: Request) {
       )
     }
 
-    // Send to Zebra printer via lp command
-    // Using echo with pipe to handle ZPL content safely
-    const { stdout, stderr } = await execAsync(
-      `echo '${zpl.replace(/'/g, "'\\''")}' | lp -d Zebra -o raw -`,
-      { timeout: 10000 }
-    )
+    // Send to Zebra printer via spawn (secure - no shell injection)
+    // ZPL is written to stdin, avoiding any shell interpolation
+    const { stdout } = await new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
+      const lp = spawn('lp', ['-d', 'Zebra', '-o', 'raw', '-'])
+      let stdout = ''
+      let stderr = ''
+
+      lp.stdout.on('data', (data) => { stdout += data.toString() })
+      lp.stderr.on('data', (data) => { stderr += data.toString() })
+
+      lp.on('error', (err) => reject(err))
+      lp.on('close', (code) => {
+        if (code === 0) {
+          resolve({ stdout, stderr })
+        } else {
+          reject(new Error(`lp exited with code ${code}: ${stderr}`))
+        }
+      })
+
+      // Write ZPL directly to stdin - safe from injection
+      lp.stdin.write(zpl)
+      lp.stdin.end()
+
+      // Timeout after 10 seconds
+      setTimeout(() => {
+        lp.kill()
+        reject(new Error('Print timeout after 10 seconds'))
+      }, 10000)
+    })
 
     // Extract job ID from stdout (e.g., "request id is Zebra-39 (0 file(s))")
     const jobMatch = stdout.match(/request id is ([\w-]+)/)

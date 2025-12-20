@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSensors, getSamples, fahrenheitToCelsius } from '@/lib/sensorpush'
 import prisma from '@/lib/prisma'
+import { getUser } from '@/lib/supabase/server'
 
 /**
  * GET /api/sensorpush/sensors
@@ -12,6 +13,11 @@ import prisma from '@/lib/prisma'
  */
 export async function GET() {
   try {
+    // Authenticate user
+    const user = await getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     // Fetch sensors from SensorPush API
     const sensors = await getSensors()
 

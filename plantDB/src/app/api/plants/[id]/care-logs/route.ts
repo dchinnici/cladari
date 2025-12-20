@@ -1,12 +1,28 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { getUser } from '@/lib/supabase/server'
 
 export async function POST(
   request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Authenticate user
+    const user = await getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const params = await context.params
+
+    // Verify plant ownership
+    const plant = await prisma.plant.findFirst({
+      where: { id: params.id, userId: user.id }
+    })
+    if (!plant) {
+      return NextResponse.json({ error: 'Plant not found' }, { status: 404 })
+    }
+
     const body = await request.json()
 
     // Build details JSON for non-EC/pH data (notes, pest discovery, substrate)
