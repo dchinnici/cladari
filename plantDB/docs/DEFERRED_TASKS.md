@@ -38,9 +38,9 @@
 
 | Task | File | Status | Effort | Notes |
 |------|------|--------|--------|-------|
-| Validate ownership in batch-care | `src/app/api/batch-care/route.ts` | 🟡 TODO | 30 min | Currently accepts any plantIds array without ownership check |
-| Add locationId ownership check | `src/app/api/chat/route.ts` | 🟡 TODO | 20 min | Verify locationId belongs to user before fetching env history |
-| Add auth to sensorpush sync POST | `src/app/api/sensorpush/sync/route.ts` | 🟡 TODO | 15 min | User A can map sensors to User B's locations |
+| Validate ownership in batch-care | `src/app/api/batch-care/route.ts` | ✅ DONE | 30 min | Added auth + ownership verification for all plantIds (Dec 20) |
+| Add locationId ownership check | `src/app/api/chat/route.ts` | ✅ DONE | 20 min | Added auth + locationId ownership check (Dec 20) |
+| Add auth to sensorpush sync POST | `src/app/api/sensorpush/sync/route.ts` | ✅ DONE | 15 min | Added auth + location ownership to POST/DELETE (Dec 20) |
 
 ### Multi-Tenant Infrastructure
 

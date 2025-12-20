@@ -1,8 +1,15 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { getUser } from '@/lib/supabase/server'
 
 export async function POST(request: Request) {
   try {
+    // Authenticate user
+    const user = await getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await request.json()
     const {
       plantIds,
@@ -30,6 +37,25 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: 'No plants selected' },
         { status: 400 }
+      )
+    }
+
+    // Verify ALL plants belong to this user (prevents cross-user care logging)
+    const ownedPlants = await prisma.plant.findMany({
+      where: {
+        id: { in: plantIds },
+        userId: user.id
+      },
+      select: { id: true }
+    })
+
+    const ownedIds = new Set(ownedPlants.map(p => p.id))
+    const unauthorizedIds = plantIds.filter((id: string) => !ownedIds.has(id))
+
+    if (unauthorizedIds.length > 0) {
+      return NextResponse.json(
+        { error: `Access denied to ${unauthorizedIds.length} plant(s)` },
+        { status: 403 }
       )
     }
 

@@ -3,6 +3,7 @@ import { streamText, convertToModelMessages } from 'ai';
 import { readFile } from 'fs/promises';
 import path from 'path';
 import prisma from '@/lib/prisma';
+import { getUser } from '@/lib/supabase/server';
 import { getSamples, getSensors } from '@/lib/sensorpush';
 import { getWeather, formatCurrentWeather, windDirectionToCompass } from '@/lib/weather';
 import { embedder, EmbeddingService } from '@/lib/ml/embeddings';
@@ -218,7 +219,30 @@ async function loadImageAsBase64(imageUrl: string): Promise<{ base64: string; mi
 }
 
 export async function POST(req: Request) {
+  // Authenticate user
+  const user = await getUser();
+  if (!user) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
   const { messages, plantContext, photoMode = 'recent' } = await req.json();
+
+  // Verify locationId ownership if provided (prevents cross-user data access)
+  if (plantContext?.locationId) {
+    const location = await prisma.location.findFirst({
+      where: { id: plantContext.locationId, userId: user.id },
+      select: { id: true }
+    });
+    if (!location) {
+      return new Response(JSON.stringify({ error: 'Location not found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+  }
 
   // NOTE: We must load and attach images on EVERY request because Claude's API is stateless.
   // The conversation history sent to Claude is just text - images aren't cached server-side.
