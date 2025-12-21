@@ -84,3 +84,8 @@ mcp-server/dist/
 
 # Backup folders (safety backups during migrations)
 cladari-backup-*/
+backups/
+
+# Legacy/stale folders from monorepo consolidation
+plantDB/
+
