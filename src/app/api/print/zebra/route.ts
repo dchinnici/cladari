@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 import { spawn } from 'child_process'
 
-// Print proxy URL - your Mac's Tailscale IP running print-proxy.ts
-const PRINT_PROXY_URL = process.env.PRINT_PROXY_URL || 'http://100.88.172.122:3001/print'
+// Print proxy URL - Tailscale Funnel exposes local print-proxy.ts to internet
+const PRINT_PROXY_URL = process.env.PRINT_PROXY_URL || 'https://f1.tail2ea078.ts.net/print'
 
 // Detect if running on Vercel (production) vs locally
 const IS_VERCEL = process.env.VERCEL === '1'
