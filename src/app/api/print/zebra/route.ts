@@ -1,11 +1,18 @@
 import { NextResponse } from 'next/server'
 import { spawn } from 'child_process'
 
+// Print proxy URL - your Mac's Tailscale IP running print-proxy.ts
+const PRINT_PROXY_URL = process.env.PRINT_PROXY_URL || 'http://100.88.172.122:3001/print'
+
+// Detect if running on Vercel (production) vs locally
+const IS_VERCEL = process.env.VERCEL === '1'
+
 /**
  * POST /api/print/zebra
  *
  * Sends ZPL directly to the Zebra printer.
- * One-click printing - no dialogs, no configuration.
+ * - On Vercel: forwards to local print proxy via Tailscale
+ * - Locally: uses lp command directly
  *
  * Body: { zpl: string } or { type: 'plant' | 'location', id: string }
  */
@@ -82,39 +89,60 @@ export async function POST(request: Request) {
       )
     }
 
-    // Send to Zebra printer via spawn (secure - no shell injection)
-    // ZPL is written to stdin, avoiding any shell interpolation
-    const { stdout } = await new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
-      const lp = spawn('lp', ['-d', 'Zebra', '-o', 'raw', '-'])
-      let stdout = ''
-      let stderr = ''
+    let jobId: string
 
-      lp.stdout.on('data', (data) => { stdout += data.toString() })
-      lp.stderr.on('data', (data) => { stderr += data.toString() })
+    if (IS_VERCEL) {
+      // Production: forward to local print proxy via Tailscale
+      console.log('[Print API] Forwarding to print proxy:', PRINT_PROXY_URL)
 
-      lp.on('error', (err) => reject(err))
-      lp.on('close', (code) => {
-        if (code === 0) {
-          resolve({ stdout, stderr })
-        } else {
-          reject(new Error(`lp exited with code ${code}: ${stderr}`))
-        }
+      const proxyResponse = await fetch(PRINT_PROXY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ zpl }),
       })
 
-      // Write ZPL directly to stdin - safe from injection
-      lp.stdin.write(zpl)
-      lp.stdin.end()
+      if (!proxyResponse.ok) {
+        const error = await proxyResponse.json().catch(() => ({ error: 'Proxy unreachable' }))
+        throw new Error(error.error || `Proxy returned ${proxyResponse.status}`)
+      }
 
-      // Timeout after 10 seconds
-      setTimeout(() => {
-        lp.kill()
-        reject(new Error('Print timeout after 10 seconds'))
-      }, 10000)
-    })
+      const result = await proxyResponse.json()
+      if (!result.success) {
+        throw new Error(result.error || 'Print proxy failed')
+      }
 
-    // Extract job ID from stdout (e.g., "request id is Zebra-39 (0 file(s))")
-    const jobMatch = stdout.match(/request id is ([\w-]+)/)
-    const jobId = jobMatch ? jobMatch[1] : 'unknown'
+      jobId = result.jobId || 'proxy'
+    } else {
+      // Local development: use lp command directly
+      const { stdout } = await new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
+        const lp = spawn('lp', ['-d', 'Zebra', '-o', 'raw', '-'])
+        let stdout = ''
+        let stderr = ''
+
+        lp.stdout.on('data', (data) => { stdout += data.toString() })
+        lp.stderr.on('data', (data) => { stderr += data.toString() })
+
+        lp.on('error', (err) => reject(err))
+        lp.on('close', (code) => {
+          if (code === 0) {
+            resolve({ stdout, stderr })
+          } else {
+            reject(new Error(`lp exited with code ${code}: ${stderr}`))
+          }
+        })
+
+        lp.stdin.write(zpl)
+        lp.stdin.end()
+
+        setTimeout(() => {
+          lp.kill()
+          reject(new Error('Print timeout after 10 seconds'))
+        }, 10000)
+      })
+
+      const jobMatch = stdout.match(/request id is ([\w-]+)/)
+      jobId = jobMatch ? jobMatch[1] : 'unknown'
+    }
 
     return NextResponse.json({
       success: true,
