@@ -18,23 +18,49 @@ export async function POST(request: Request) {
       // Raw ZPL provided
       zpl = body.zpl
     } else if (body.type === 'plant' && body.id) {
-      // Generate plant label ZPL
-      const { generateCompactPlantTagZPL } = await import('@/lib/zpl')
+      // Generate pot sticker ZPL (optimized for caretaker workflow)
+      const { generatePotStickerZPL } = await import('@/lib/zpl')
       const prisma = (await import('@/lib/prisma')).default
 
       const plant = await prisma.plant.findUnique({
         where: { id: body.id },
-        select: { id: true, plantId: true, hybridName: true, species: true }
+        select: {
+          id: true,
+          plantId: true,
+          hybridName: true,
+          species: true,
+          accessionDate: true,
+          careLogs: {
+            where: { action: 'repotting' },
+            orderBy: { date: 'desc' },
+            take: 1,
+            select: { date: true }
+          }
+        }
       })
 
       if (!plant) {
         return NextResponse.json({ error: 'Plant not found' }, { status: 404 })
       }
 
-      zpl = generateCompactPlantTagZPL({
+      // Get last repot date if available
+      const lastRepotDate = plant.careLogs[0]?.date?.toISOString() || undefined
+
+      // Build common name - prefer hybridName, fall back to species
+      const commonName = plant.hybridName || plant.species || 'Unknown'
+
+      // Build species/cross notation - show species if different from common name
+      const speciesOrCross = plant.hybridName && plant.species
+        ? `A. ${plant.species}`
+        : undefined
+
+      zpl = generatePotStickerZPL({
         databaseId: plant.id,
         plantId: plant.plantId,
-        name: plant.hybridName || plant.species || 'Unknown'
+        commonName,
+        speciesOrCross,
+        accessionDate: plant.accessionDate?.toISOString(),
+        repotDate: lastRepotDate
       })
     } else if (body.type === 'location' && body.name) {
       // Generate location label ZPL

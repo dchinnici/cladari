@@ -340,3 +340,177 @@ export function generateBatchCompactLocationTagsZPL(
 ): string {
   return locations.map(generateCompactLocationTagZPL).join('\n');
 }
+
+// ============================================================================
+// POT STICKER - Optimized for caretaker workflow
+// ============================================================================
+
+/**
+ * Pot Sticker Data - what a caretaker needs at a glance
+ */
+export interface PotStickerData {
+  databaseId: string;       // UUID for QR code URL
+  plantId: string;          // Display ID (e.g., ANT-2025-0053)
+  commonName: string;       // PRIMARY - what caretaker sees first (e.g., "NSE Dressleri")
+  speciesOrCross?: string;  // Species name or cross notation (e.g., "A. dressleri" or "CLX-2025-001")
+  accessionDate?: string;   // When acquired (ISO date or formatted)
+  repotDate?: string;       // Last repot (ISO date or formatted) - omit if null
+  baseUrl?: string;         // Defaults to production URL
+}
+
+/**
+ * Format date as "MMM YYYY" (e.g., "Jan 2025")
+ */
+function formatDateCompact(dateStr: string | undefined): string | null {
+  if (!dateStr) return null;
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return null;
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${months[date.getMonth()]} ${date.getFullYear()}`;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Calculate if text fits at given font size, return wrapped lines if needed
+ * Approximate: 1 char ≈ 0.6 * fontSize in dots at A0 font
+ */
+function wrapText(text: string, fontSize: number, maxWidthDots: number): { lines: string[], fontSize: number } {
+  const charsPerLine = Math.floor(maxWidthDots / (fontSize * 0.55));
+
+  if (text.length <= charsPerLine) {
+    // Fits on one line
+    return { lines: [text], fontSize };
+  }
+
+  // Try wrapping at smaller font
+  const smallerFont = Math.floor(fontSize * 0.75);
+  const smallerCharsPerLine = Math.floor(maxWidthDots / (smallerFont * 0.55));
+
+  // Split into words and wrap
+  const words = text.split(' ');
+  const lines: string[] = [];
+  let currentLine = '';
+
+  for (const word of words) {
+    const testLine = currentLine ? `${currentLine} ${word}` : word;
+    if (testLine.length <= smallerCharsPerLine) {
+      currentLine = testLine;
+    } else {
+      if (currentLine) lines.push(currentLine);
+      currentLine = word;
+    }
+  }
+  if (currentLine) lines.push(currentLine);
+
+  // Limit to 2 lines, truncate if needed
+  if (lines.length > 2) {
+    lines.length = 2;
+    lines[1] = truncate(lines[1], smallerCharsPerLine);
+  }
+
+  return { lines, fontSize: smallerFont };
+}
+
+/**
+ * Generate ZPL code for a POT STICKER (57mm x 32mm)
+ *
+ * Optimized for caretaker workflow:
+ * - QR code prominent on LEFT (instant scan access)
+ * - Common name LARGE next to QR (instant visual ID)
+ * - Species/cross, UID, dates are secondary info
+ *
+ * Layout (57mm x 32mm at 300 DPI = 672 x 378 dots):
+ * +----------------------------------+
+ * | [QR]    Common Name      (large) |
+ * | [QR]    (wrapped if needed)      |
+ * | [QR]    species/cross    (med)   |
+ * |         ANT-2025-0053    (small) |
+ * |         Acc: Jan 2024 Rep: Jun 25|
+ * +----------------------------------+
+ */
+export function generatePotStickerZPL(data: PotStickerData): string {
+  const {
+    databaseId,
+    plantId,
+    commonName,
+    speciesOrCross,
+    accessionDate,
+    repotDate,
+    baseUrl = 'https://www.cladari.ai'
+  } = data;
+
+  const qrUrl = `${baseUrl}/q/p/${databaseId}`;
+
+  // Label dimensions
+  const labelWidth = 672;
+  const labelHeight = 378;
+
+  // QR takes left side - mag 5 gives ~150px QR
+  const qrMag = 5;
+  const qrX = 20;
+  const qrY = 60;
+  const qrSize = qrMag * 29; // Approximate QR size at magnification
+
+  // Text area starts after QR
+  const textX = qrX + qrSize + 30; // 30px gap after QR
+  const textWidth = labelWidth - textX - 20; // 20px right margin
+
+  // Wrap common name if needed
+  const targetFontSize = 52;
+  const { lines: nameLines, fontSize: nameFontSize } = wrapText(commonName, targetFontSize, textWidth);
+
+  // Build text fields
+  let textZpl = '';
+  let yPos = 70;
+
+  // Common name (PRIMARY - large, possibly wrapped)
+  for (const line of nameLines) {
+    textZpl += `^FO${textX},${yPos}\n^A0N,${nameFontSize},${nameFontSize}\n^FD${escapeZPL(line)}^FS\n`;
+    yPos += nameFontSize + 8;
+  }
+
+  // Species or cross notation (secondary)
+  if (speciesOrCross) {
+    textZpl += `^FO${textX},${yPos}\n^A0N,32,32\n^FD${escapeZPL(truncate(speciesOrCross, 22))}^FS\n`;
+    yPos += 40;
+  }
+
+  // Plant ID / UID (small)
+  textZpl += `^FO${textX},${yPos}\n^A0N,26,26\n^FD${escapeZPL(plantId)}^FS\n`;
+  yPos += 34;
+
+  // Dates line (small, compact) - only if we have data
+  const accFormatted = formatDateCompact(accessionDate);
+  const repFormatted = formatDateCompact(repotDate);
+
+  if (accFormatted || repFormatted) {
+    let dateLine = '';
+    if (accFormatted) dateLine += `Acc: ${accFormatted}`;
+    if (accFormatted && repFormatted) dateLine += '  ';
+    if (repFormatted) dateLine += `Rep: ${repFormatted}`;
+
+    textZpl += `^FO${textX},${yPos}\n^A0N,22,22\n^FD${escapeZPL(dateLine)}^FS\n`;
+  }
+
+  const zpl = `^XA
+^MTT
+^MD20
+^PW${labelWidth}
+^LL${labelHeight}
+^FO${qrX},${qrY}
+^BQN,2,${qrMag}
+^FDQA,${qrUrl}^FS
+${textZpl}^XZ`;
+
+  return zpl;
+}
+
+/**
+ * Generate ZPL for multiple pot stickers (batch print)
+ */
+export function generateBatchPotStickersZPL(plants: PotStickerData[]): string {
+  return plants.map(generatePotStickerZPL).join('\n');
+}
