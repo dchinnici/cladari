@@ -31,7 +31,7 @@ export async function POST(request: Request) {
           species: true,
           accessionDate: true,
           careLogs: {
-            where: { action: 'repotting' },
+            where: { action: 'repot' },
             orderBy: { date: 'desc' },
             take: 1,
             select: { date: true }
