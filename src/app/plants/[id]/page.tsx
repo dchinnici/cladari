@@ -1,0 +1,3653 @@
+'use client'
+
+import { useEffect, useState, useCallback } from 'react'
+import Link from 'next/link'
+import { ArrowLeft, Camera, Activity, FileText, FlaskConical, Dna, Calendar, DollarSign, MapPin, Edit, Save, X, Plus, Trash2, Upload, Image as ImageIcon, Droplets, Star, QrCode, MoreVertical, History, Flower2, ChevronDown, ChevronRight, MessageSquare, Info, Thermometer, Wind, Download, Printer } from 'lucide-react'
+import Image from 'next/image'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
+import { useDropzone } from 'react-dropzone'
+import { Modal } from '@/components/modal'
+import { showToast } from '@/components/toast'
+import { getLastWateringEvent, getLastFertilizingEvent } from '@/lib/careLogUtils'
+import AIAssistant from '@/components/AIAssistant'
+import { getTodayString } from '@/lib/timezone'
+import { HealthMetrics } from '@/components/plant/HealthMetrics'
+import { TrendCharts } from '@/components/plant/TrendCharts'
+import { JournalTab, type JournalEntryType } from '@/components/plant/JournalTab'
+import { LineageTab } from '@/components/plant/LineageTab'
+
+// Maximum file size for Vercel Hobby tier (4.5MB, use 4MB with headroom)
+const MAX_UPLOAD_SIZE_MB = 4
+const MAX_UPLOAD_SIZE_BYTES = MAX_UPLOAD_SIZE_MB * 1024 * 1024
+
+/**
+ * Compress image client-side to stay under Vercel's 4.5MB body limit
+ * Uses Canvas API for browser-native compression
+ */
+async function compressImage(file: File, maxSizeMB: number = MAX_UPLOAD_SIZE_MB): Promise<File> {
+  // If already small enough, return as-is
+  if (file.size <= maxSizeMB * 1024 * 1024) {
+    return file
+  }
+
+  return new Promise((resolve, reject) => {
+    const img = new window.Image()
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+
+    img.onload = () => {
+      // Calculate new dimensions (max 2000px on longest side)
+      const maxDim = 2000
+      let { width, height } = img
+
+      if (width > maxDim || height > maxDim) {
+        if (width > height) {
+          height = Math.round((height * maxDim) / width)
+          width = maxDim
+        } else {
+          width = Math.round((width * maxDim) / height)
+          height = maxDim
+        }
+      }
+
+      canvas.width = width
+      canvas.height = height
+      ctx?.drawImage(img, 0, 0, width, height)
+
+      // Try different quality levels until under size limit
+      const tryCompress = (quality: number): void => {
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error('Failed to compress image'))
+              return
+            }
+
+            if (blob.size <= maxSizeMB * 1024 * 1024 || quality <= 0.5) {
+              // Success or minimum quality reached
+              const compressedFile = new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), {
+                type: 'image/jpeg',
+                lastModified: file.lastModified,
+              })
+              console.log(`Compressed ${file.name}: ${(file.size / 1024 / 1024).toFixed(2)}MB → ${(blob.size / 1024 / 1024).toFixed(2)}MB (${Math.round(quality * 100)}% quality)`)
+              resolve(compressedFile)
+            } else {
+              // Try lower quality
+              tryCompress(quality - 0.1)
+            }
+          },
+          'image/jpeg',
+          quality
+        )
+      }
+
+      tryCompress(0.85) // Start at 85% quality
+    }
+
+    img.onerror = () => reject(new Error('Failed to load image for compression'))
+    img.src = URL.createObjectURL(file)
+  })
+}
+
+export default function PlantDetailPage() {
+  const params = useParams()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const [plant, setPlant] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState('status')
+  const [editMode, setEditMode] = useState(false)
+  const [editedPlant, setEditedPlant] = useState<any>({})
+
+  // Modal states
+  const [careLogModalOpen, setCareLogModalOpen] = useState(false)
+  const [measurementModalOpen, setMeasurementModalOpen] = useState(false)
+  const [morphologyModalOpen, setMorphologyModalOpen] = useState(false)
+  const [photoUploadModalOpen, setPhotoUploadModalOpen] = useState(false)
+  const [overviewModalOpen, setOverviewModalOpen] = useState(false)
+  const [floweringModalOpen, setFloweringModalOpen] = useState(false)
+  const [noteModalOpen, setNoteModalOpen] = useState(false)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [archiveReason, setArchiveReason] = useState<string>('died')
+  const [journalEntryType, setJournalEntryType] = useState<JournalEntryType>('care')
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  // Collapsible section states (AI and Details collapsed by default)
+  const [aiExpanded, setAiExpanded] = useState(false)
+  const [detailsExpanded, setDetailsExpanded] = useState(false)
+
+  // Flowering cycle state
+  const [floweringCycles, setFloweringCycles] = useState<any[]>([])
+  const [currentCycle, setCurrentCycle] = useState<any>(null)
+
+  // Journal entries state (PlantJournal model - notes)
+  const [journalEntries, setJournalEntries] = useState<any[]>([])
+
+  // Locations state
+  const [locations, setLocations] = useState<any[]>([])
+  const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)
+
+  // Environment data from SensorPush
+  const [envData, setEnvData] = useState<{
+    temperature: number
+    humidity: number
+    vpd: number
+    observed: string
+    sensorName: string
+  } | null>(null)
+  const [envLoading, setEnvLoading] = useState(false)
+
+  // Form states
+  const [measurementForm, setMeasurementForm] = useState({
+    leafLength: '',
+    leafWidth: '',
+    petioleLength: '',
+    height: '',
+    leafCount: '',
+    vigorScore: '',
+    texture: '',
+    notes: '',
+    measurementDate: getTodayString()
+  })
+
+  const [careLogForm, setCareLogForm] = useState({
+    logId: '',
+    activityType: 'watering',
+    notes: '',
+    fertilizer: '',
+    pesticide: '',
+    fungicide: '',
+    dosage: '',
+    inputEC: '',
+    inputPH: '',
+    outputEC: '',
+    outputPH: '',
+    rainAmount: '',
+    rainDuration: '',
+    date: getTodayString(),
+    // Pest/disease discovery fields
+    pestType: '',
+    severity: '',
+    affectedArea: '',
+    // Repotting fields
+    fromPotSize: '',
+    toPotSize: '',
+    fromPotType: '',
+    toPotType: '',
+    substrateType: '',
+    drainageType: '',
+    substrateMix: ''
+  })
+
+  const [useBaselineFeed, setUseBaselineFeed] = useState(false)
+  const [careLogToDelete, setCareLogToDelete] = useState<string | null>(null)
+
+  const [morphologyForm, setMorphologyForm] = useState({
+    leafShape: '',
+    leafTexture: '',
+    leafColor: '',
+    leafSize: '',
+    spadixColor: '',
+    spatheColor: '',
+    spatheShape: '',
+    growthRate: '',
+    matureSize: '',
+    petioleColor: '',
+    cataphyllColor: '',
+    newLeafColor: ''
+  })
+
+  const [noteForm, setNoteForm] = useState({
+    content: '',
+    date: getTodayString(),
+    entryType: 'note' as 'note' | 'flowering' | 'morphology' | 'repotting'
+  })
+
+  // Flowering event modal (simple event picker)
+  const [floweringEventModalOpen, setFloweringEventModalOpen] = useState(false)
+  const [floweringEventForm, setFloweringEventForm] = useState({
+    eventType: '' as '' | 'bud_emerging' | 'spathe_opening' | 'female_receptive' | 'pollen_visible' | 'finished',
+    date: getTodayString(),
+    notes: ''
+  })
+
+  const [overviewForm, setOverviewForm] = useState({
+    name: '',
+    species: '',
+    crossNotation: '',
+    section: '',
+    acquisitionCost: '',
+    acquisitionDate: '',
+    healthStatus: '',
+    propagationType: '',
+    generation: '',
+    breeder: '',
+    breederCode: ''
+  })
+
+  const [photoForm, setPhotoForm] = useState({
+    photoId: '',
+    photoType: 'whole_plant',
+    growthStage: '',
+    notes: '',
+    dateTaken: getTodayString()
+  })
+
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+
+  const [floweringForm, setFloweringForm] = useState({
+    cycleId: '',
+    spatheEmergence: '',
+    femaleStart: '',
+    femaleEnd: '',
+    maleStart: '',
+    maleEnd: '',
+    spatheClose: '',
+    pollenCollected: false,
+    pollenQuality: '',
+    pollenStored: false,
+    pollenStorageDate: '',
+    notes: ''
+  })
+
+  useEffect(() => {
+    fetchPlant()
+    fetchFloweringCycles()
+    fetchJournalEntries()
+    fetchLocations()
+  }, [params.id])
+
+  // Scroll to top when plant data loads (fix scroll position issue)
+  useEffect(() => {
+    if (plant && !loading) {
+      // Use requestAnimationFrame to ensure DOM has rendered
+      requestAnimationFrame(() => {
+        window.scrollTo(0, 0)
+      })
+    }
+  }, [plant, loading])
+
+  // Fetch environment data when plant location is available
+  useEffect(() => {
+    async function fetchEnvData() {
+      if (!plant?.locationId) {
+        setEnvData(null)
+        return
+      }
+
+      setEnvLoading(true)
+      try {
+        const res = await fetch(`/api/sensorpush/history?locationId=${plant.locationId}&hours=1&limit=1`)
+        const data = await res.json()
+
+        if (data.success && data.history) {
+          // Get the first sensor's latest reading
+          const sensorIds = Object.keys(data.history)
+          if (sensorIds.length > 0) {
+            const sensor = data.history[sensorIds[0]]
+            if (sensor.samples?.length > 0) {
+              const latest = sensor.samples[0]
+              setEnvData({
+                temperature: latest.temperature,
+                humidity: latest.humidity,
+                vpd: latest.vpd,
+                observed: latest.observed,
+                sensorName: sensor.sensorName
+              })
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch env data:', error)
+      } finally {
+        setEnvLoading(false)
+      }
+    }
+
+    fetchEnvData()
+  }, [plant?.locationId])
+
+  // Handle quickcare URL param (from QR code scan)
+  useEffect(() => {
+    if (searchParams.get('quickcare') === 'true' && plant && !careLogModalOpen) {
+      // Open care log modal automatically
+      setCareLogModalOpen(true)
+      setCareLogForm({
+        logId: '',
+        activityType: 'watering',
+        notes: '',
+        fertilizer: '',
+        pesticide: '',
+        fungicide: '',
+        dosage: '',
+        inputEC: '',
+        inputPH: '',
+        outputEC: '',
+        outputPH: '',
+        rainAmount: '',
+        rainDuration: '',
+        date: getTodayString(),
+        pestType: '',
+        severity: '',
+        affectedArea: '',
+        fromPotSize: '',
+        toPotSize: '',
+        fromPotType: '',
+        toPotType: '',
+        substrateType: '',
+        drainageType: '',
+        substrateMix: ''
+      })
+      // Clear the quickcare param from URL
+      router.replace(`/plants/${params.id}`, { scroll: false })
+    }
+  }, [searchParams, plant, careLogModalOpen, router, params.id])
+
+  // Helper to preserve scroll position during data refresh
+  const preserveScrollPosition = async (callback: () => Promise<void>) => {
+    const scrollY = window.scrollY
+    await callback()
+    // Restore scroll after React re-renders
+    setTimeout(() => window.scrollTo(0, scrollY), 0)
+  }
+
+  const fetchPlant = async () => {
+    try {
+      const response = await fetch(`/api/plants/${params.id}`)
+      const data = await response.json()
+      setPlant(data)
+
+      // Parse care data from notes field if it's JSON
+      let careData = {}
+      if (data.notes) {
+        try {
+          const parsed = JSON.parse(data.notes)
+          if (typeof parsed === 'object' && parsed.generalNotes !== undefined) {
+            careData = {
+              notes: parsed.generalNotes || '',
+              soilMix: parsed.soilMix || '',
+              lightRequirements: parsed.lightRequirements || '',
+              wateringFrequency: parsed.wateringFrequency || '',
+              fertilizationSchedule: parsed.fertilizationSchedule || '',
+              temperatureRange: parsed.temperatureRange || '',
+              humidityPreference: parsed.humidityPreference || ''
+            }
+          } else {
+            // If it's not our JSON format, treat it as plain notes
+            careData = { notes: data.notes }
+          }
+        } catch {
+          // If parsing fails, treat as plain notes
+          careData = { notes: data.notes }
+        }
+      }
+
+      setEditedPlant({ ...data, ...careData })
+
+      // Initialize morphology form with existing data (from normalized traits)
+      if (data.traits && data.traits.length > 0) {
+        const getTrait = (category: string, traitName: string) =>
+          data.traits.find((t: any) => t.category === category && t.traitName === traitName)?.value || ''
+
+        setMorphologyForm({
+          leafShape: getTrait('leaf', 'shape'),
+          leafTexture: getTrait('leaf', 'texture'),
+          leafColor: getTrait('leaf', 'color'),
+          leafSize: getTrait('leaf', 'size'),
+          spadixColor: getTrait('spadix', 'color'),
+          spatheColor: getTrait('spathe', 'color'),
+          spatheShape: getTrait('spathe', 'shape'),
+          growthRate: getTrait('growth', 'rate'),
+          matureSize: getTrait('growth', 'matureSize'),
+          petioleColor: getTrait('leaf', 'petioleColor'),
+          cataphyllColor: getTrait('growth', 'cataphyllColor'),
+          newLeafColor: getTrait('leaf', 'newLeafColor')
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching plant:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSave = async () => {
+    try {
+      // Create a care object with all the care fields
+      const careData = {
+        generalNotes: editedPlant.notes || '',
+        soilMix: editedPlant.soilMix || '',
+        lightRequirements: editedPlant.lightRequirements || '',
+        wateringFrequency: editedPlant.wateringFrequency || '',
+        fertilizationSchedule: editedPlant.fertilizationSchedule || '',
+        temperatureRange: editedPlant.temperatureRange || '',
+        humidityPreference: editedPlant.humidityPreference || ''
+      }
+
+      const response = await fetch(`/api/plants/${params.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          notes: JSON.stringify(careData) // Store all care data as JSON in the notes field
+        })
+      })
+
+      if (response.ok) {
+        const updatedPlant = await response.json()
+        setPlant({ ...plant, ...updatedPlant })
+        setEditMode(false)
+        showToast({ type: 'success', title: 'Care notes saved' })
+      }
+    } catch (error) {
+      console.error('Error saving plant:', error)
+      showToast({ type: 'error', title: 'Failed to save care notes' })
+    }
+  }
+
+  const handleAddMeasurement = async () => {
+    try {
+      const response = await fetch(`/api/plants/${params.id}/measurements`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(measurementForm)
+      })
+
+      if (response.ok) {
+        const newMeasurement = await response.json()
+        // Refresh plant data to show new measurement
+        await preserveScrollPosition(fetchPlant)
+        setMeasurementModalOpen(false)
+        showToast({ type: 'success', title: 'Measurement added' })
+        // Reset form
+        setMeasurementForm({
+          leafLength: '',
+          leafWidth: '',
+          petioleLength: '',
+          height: '',
+          leafCount: '',
+          vigorScore: '',
+          texture: '',
+          notes: '',
+          measurementDate: getTodayString()
+        })
+      } else {
+        showToast({ type: 'error', title: 'Failed to add measurement' })
+      }
+    } catch (error) {
+      console.error('Error adding measurement:', error)
+      showToast({ type: 'error', title: 'Error adding measurement' })
+    }
+  }
+
+  const handleAddNote = async () => {
+    if (!noteForm.content.trim()) {
+      showToast({ type: 'error', title: 'Note content is required' })
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/plants/${params.id}/journal`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          entry: noteForm.content,
+          entryType: 'manual',
+          context: 'journal',
+          author: 'user',
+          timestamp: new Date(noteForm.date).toISOString()
+        })
+      })
+
+      if (response.ok) {
+        await fetchJournalEntries()
+        setNoteModalOpen(false)
+        showToast({ type: 'success', title: 'Note added' })
+        // Reset form
+        setNoteForm({
+          content: '',
+          date: getTodayString(),
+          entryType: 'note'
+        })
+      } else {
+        showToast({ type: 'error', title: 'Failed to add note' })
+      }
+    } catch (error) {
+      console.error('Error adding note:', error)
+      showToast({ type: 'error', title: 'Error adding note' })
+    }
+  }
+
+  // Flowering event labels
+  const floweringEventLabels: Record<string, string> = {
+    'bud_emerging': '🌱 Bud Emerging',
+    'spathe_opening': '🌸 Spathe Opening',
+    'female_receptive': '💧 Female Receptive',
+    'pollen_visible': '🌾 Pollen Visible',
+    'finished': '✂️ Finished/Cut'
+  }
+
+  const handleSaveFloweringEvent = async () => {
+    if (!floweringEventForm.eventType) {
+      showToast({ type: 'error', title: 'Select an event type' })
+      return
+    }
+
+    try {
+      // Save as a journal entry with flowering context
+      const eventLabel = floweringEventLabels[floweringEventForm.eventType] || floweringEventForm.eventType
+      const entry = floweringEventForm.notes
+        ? `${eventLabel}: ${floweringEventForm.notes}`
+        : eventLabel
+
+      const response = await fetch(`/api/plants/${params.id}/journal`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          entry,
+          entryType: 'flowering',
+          context: 'flowering_event',
+          author: 'user',
+          timestamp: new Date(floweringEventForm.date).toISOString(),
+          metadata: JSON.stringify({
+            eventType: floweringEventForm.eventType,
+            notes: floweringEventForm.notes
+          })
+        })
+      })
+
+      if (response.ok) {
+        await fetchJournalEntries()
+        setFloweringEventModalOpen(false)
+        showToast({ type: 'success', title: `Flowering event logged: ${eventLabel}` })
+        // Reset form
+        setFloweringEventForm({
+          eventType: '',
+          date: getTodayString(),
+          notes: ''
+        })
+      } else {
+        showToast({ type: 'error', title: 'Failed to log flowering event' })
+      }
+    } catch (error) {
+      console.error('Error logging flowering event:', error)
+      showToast({ type: 'error', title: 'Error logging flowering event' })
+    }
+  }
+
+  const handleDeleteNote = async (entryId: string) => {
+    if (!confirm('Delete this note?')) return
+
+    try {
+      const response = await fetch(`/api/plants/${params.id}/journal?entryId=${entryId}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        await fetchJournalEntries()
+        showToast({ type: 'success', title: 'Note deleted' })
+      } else {
+        showToast({ type: 'error', title: 'Failed to delete note' })
+      }
+    } catch (error) {
+      console.error('Error deleting note:', error)
+      showToast({ type: 'error', title: 'Error deleting note' })
+    }
+  }
+
+  const handleAddCareLog = async () => {
+    try {
+      const isEditing = !!careLogForm.logId
+      const url = isEditing
+        ? `/api/plants/${params.id}/care-logs/${careLogForm.logId}`
+        : `/api/plants/${params.id}/care-logs`
+
+      const response = await fetch(url, {
+        method: isEditing ? 'PATCH' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(careLogForm)
+      })
+
+      if (response.ok) {
+        // If this is a repotting action, update the plant's pot information
+        if (careLogForm.activityType === 'repotting' && careLogForm.toPotSize) {
+          await fetch(`/api/plants/${params.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              currentPotSize: parseFloat(careLogForm.toPotSize),
+              currentPotType: careLogForm.toPotType || null,
+              lastRepotDate: careLogForm.date
+            })
+          })
+        }
+
+        await preserveScrollPosition(fetchPlant)
+        setCareLogModalOpen(false)
+        showToast({ type: 'success', title: isEditing ? 'Care log updated' : 'Care log added' })
+        // Reset form
+        setCareLogForm({
+          logId: '',
+          activityType: 'watering',
+          notes: '',
+          fertilizer: '',
+          pesticide: '',
+          fungicide: '',
+          dosage: '',
+          inputEC: '',
+          inputPH: '',
+          outputEC: '',
+          outputPH: '',
+          rainAmount: '',
+          rainDuration: '',
+          date: getTodayString(),
+          pestType: '',
+          severity: '',
+          affectedArea: '',
+          fromPotSize: '',
+          toPotSize: '',
+          fromPotType: '',
+          toPotType: '',
+          substrateType: '',
+          drainageType: '',
+          substrateMix: ''
+        })
+      } else {
+        showToast({ type: 'error', title: isEditing ? 'Failed to update care log' : 'Failed to add care log' })
+      }
+    } catch (error) {
+      console.error('Error saving care log:', error)
+      showToast({ type: 'error', title: 'Error saving care log' })
+    }
+  }
+
+  const handleDeleteCareLog = async () => {
+    if (!careLogToDelete) return
+
+    try {
+      const response = await fetch(`/api/plants/${params.id}/care-logs/${careLogToDelete}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        await preserveScrollPosition(fetchPlant)
+        showToast({ type: 'success', title: 'Care log deleted' })
+        setCareLogToDelete(null)
+      } else {
+        showToast({ type: 'error', title: 'Failed to delete care log' })
+      }
+    } catch (error) {
+      console.error('Error deleting care log:', error)
+      showToast({ type: 'error', title: 'Error deleting care log' })
+    }
+  }
+
+  const handleCloseCareLogModal = () => {
+    setCareLogModalOpen(false)
+    setUseBaselineFeed(false)
+    // Reset form to prevent edit state from persisting
+    setCareLogForm({
+      logId: '',
+      activityType: 'watering',
+      notes: '',
+      fertilizer: '',
+      pesticide: '',
+      fungicide: '',
+      dosage: '',
+      inputEC: '',
+      inputPH: '',
+      outputEC: '',
+      outputPH: '',
+      rainAmount: '',
+      rainDuration: '',
+      date: getTodayString(),
+      pestType: '',
+      severity: '',
+      affectedArea: '',
+      fromPotSize: '',
+      toPotSize: '',
+      fromPotType: '',
+      toPotType: '',
+      substrateType: '',
+      drainageType: '',
+      substrateMix: ''
+    })
+  }
+
+  const handleUpdateMorphology = async () => {
+    try {
+      const response = await fetch(`/api/plants/${params.id}/traits`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(morphologyForm)
+      })
+
+      if (response.ok) {
+        await preserveScrollPosition(fetchPlant)
+        setMorphologyModalOpen(false)
+        showToast({ type: 'success', title: 'Morphology updated' })
+      }
+    } catch (error) {
+      console.error('Error updating morphology:', error)
+      showToast({ type: 'error', title: 'Failed to update morphology' })
+    }
+  }
+
+  const handleUpdateOverview = async () => {
+    try {
+      const response = await fetch(`/api/plants/${params.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          hybridName: overviewForm.name,
+          species: overviewForm.species,
+          crossNotation: overviewForm.crossNotation,
+          section: overviewForm.section,
+          acquisitionCost: overviewForm.acquisitionCost ? parseFloat(overviewForm.acquisitionCost) : null,
+          accessionDate: overviewForm.acquisitionDate ? new Date(overviewForm.acquisitionDate) : null,
+          healthStatus: overviewForm.healthStatus,
+          propagationType: overviewForm.propagationType || null,
+          generation: overviewForm.generation || null,
+          breeder: overviewForm.breeder || null,
+          breederCode: overviewForm.breederCode === 'custom' ? null : (overviewForm.breederCode || null)
+        })
+      })
+
+      if (response.ok) {
+        await preserveScrollPosition(fetchPlant)
+        setOverviewModalOpen(false)
+        showToast({ type: 'success', title: 'Overview updated' })
+      }
+    } catch (error) {
+      console.error('Error updating overview:', error)
+      showToast({ type: 'error', title: 'Failed to update overview' })
+    }
+  }
+
+  const handlePhotoUpload = async () => {
+    if (selectedFiles.length === 0) {
+      showToast({ type: 'error', title: 'Please select at least one photo' })
+      return
+    }
+
+    setUploadingPhoto(true)
+    let successCount = 0
+    let failCount = 0
+
+    try {
+      for (const file of selectedFiles) {
+        try {
+          // Compress large images to stay under Vercel's 4.5MB limit
+          let uploadFile = file
+          if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+            try {
+              uploadFile = await compressImage(file)
+              showToast({
+                type: 'info',
+                title: `Compressing ${file.name}...`
+              })
+            } catch (compressError) {
+              console.error('Compression failed, trying original:', compressError)
+            }
+          }
+
+          const formData = new FormData()
+          formData.append('file', uploadFile)
+          formData.append('plantId', plant.id)
+          formData.append('photoType', photoForm.photoType)
+          if (photoForm.growthStage) formData.append('growthStage', photoForm.growthStage)
+          if (photoForm.notes) formData.append('notes', photoForm.notes)
+          formData.append('dateTaken', photoForm.dateTaken)
+
+          const response = await fetch('/api/photos', {
+            method: 'POST',
+            body: formData
+          })
+
+          if (response.ok) {
+            successCount++
+          } else {
+            failCount++
+            console.error('Failed to upload:', file.name)
+          }
+        } catch (error) {
+          failCount++
+          console.error('Error uploading file:', file.name, error)
+        }
+      }
+
+      await preserveScrollPosition(fetchPlant)
+      setPhotoUploadModalOpen(false)
+      setSelectedFiles([])
+      setPhotoForm({
+        photoId: '',
+        photoType: 'whole_plant',
+        growthStage: '',
+        notes: '',
+        dateTaken: getTodayString()
+      })
+
+      if (failCount === 0) {
+        showToast({
+          type: 'success',
+          title: selectedFiles.length === 1 ? 'Photo uploaded' : `${successCount} photos uploaded`
+        })
+      } else {
+        showToast({
+          type: 'warning',
+          title: `Uploaded ${successCount}, failed ${failCount}`
+        })
+      }
+    } catch (error) {
+      console.error('Error uploading photos:', error)
+      showToast({ type: 'error', title: 'Failed to upload photos' })
+    } finally {
+      setUploadingPhoto(false)
+    }
+  }
+
+  const handleUpdatePhoto = async () => {
+    if (!photoForm.photoId) return
+
+    try {
+      const response = await fetch(`/api/photos?id=${photoForm.photoId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          photoType: photoForm.photoType,
+          growthStage: photoForm.growthStage || null,
+          notes: photoForm.notes || null,
+          dateTaken: photoForm.dateTaken
+        })
+      })
+
+      if (response.ok) {
+        await preserveScrollPosition(fetchPlant)
+        setPhotoUploadModalOpen(false)
+        setPhotoForm({
+          photoId: '',
+          photoType: 'whole_plant',
+          growthStage: '',
+          notes: '',
+          dateTaken: getTodayString()
+        })
+        showToast({ type: 'success', title: 'Photo updated' })
+      } else {
+        showToast({ type: 'error', title: 'Failed to update photo' })
+      }
+    } catch (error) {
+      console.error('Error updating photo:', error)
+      showToast({ type: 'error', title: 'Error updating photo' })
+    }
+  }
+
+  const handleDeletePhoto = async (photoId: string) => {
+    if (!confirm('Are you sure you want to delete this photo?')) return
+
+    try {
+      const response = await fetch(`/api/photos?id=${photoId}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        await preserveScrollPosition(fetchPlant)
+        showToast({ type: 'success', title: 'Photo deleted' })
+      } else {
+        showToast({ type: 'error', title: 'Failed to delete photo' })
+      }
+    } catch (error) {
+      console.error('Error deleting photo:', error)
+      showToast({ type: 'error', title: 'Error deleting photo' })
+    }
+  }
+
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    setSelectedFiles(prev => [...prev, ...acceptedFiles])
+  }, [])
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'image/*': ['.png', '.jpg', '.jpeg', '.webp', '.heic']
+    },
+    multiple: true
+  })
+
+  const fetchFloweringCycles = async () => {
+    try {
+      const response = await fetch(`/api/plants/${params.id}/flowering`)
+      if (response.ok) {
+        const cycles = await response.json()
+        setFloweringCycles(cycles)
+      }
+    } catch (error) {
+      console.error('Error fetching flowering cycles:', error)
+    }
+  }
+
+  const fetchJournalEntries = async () => {
+    try {
+      const response = await fetch(`/api/plants/${params.id}/journal`)
+      if (response.ok) {
+        const data = await response.json()
+        setJournalEntries(data.entries || [])
+      }
+    } catch (error) {
+      console.error('Error fetching journal entries:', error)
+    }
+  }
+
+  const fetchLocations = async () => {
+    try {
+      const response = await fetch('/api/locations')
+      if (response.ok) {
+        const data = await response.json()
+        setLocations(data)
+      }
+    } catch (error) {
+      console.error('Error fetching locations:', error)
+    }
+  }
+
+  const handleLocationChange = async (newLocationId: string) => {
+    const oldLocationId = plant.locationId
+
+    try {
+      const response = await fetch(`/api/plants/${params.id}/location`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          locationId: newLocationId || null,
+          oldLocationId: oldLocationId
+        })
+      })
+
+      if (response.ok) {
+        const updatedPlant = await response.json()
+        setPlant(updatedPlant)
+        setSelectedLocationId(newLocationId)
+        showToast({ type: 'success', title: 'Location updated' })
+      } else {
+        showToast({ type: 'error', title: 'Failed to update location' })
+      }
+    } catch (error) {
+      console.error('Error updating location:', error)
+      showToast({ type: 'error', title: 'Error updating location' })
+    }
+  }
+
+  const handleHealthStatusChange = async (newStatus: string) => {
+    try {
+      const response = await fetch(`/api/plants/${params.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ healthStatus: newStatus })
+      })
+
+      if (response.ok) {
+        await preserveScrollPosition(fetchPlant)
+        showToast({ type: 'success', title: 'Health status updated' })
+      } else {
+        showToast({ type: 'error', title: 'Failed to update health status' })
+      }
+    } catch (error) {
+      console.error('Error updating health status:', error)
+      showToast({ type: 'error', title: 'Error updating health status' })
+    }
+  }
+
+  const handleSaveFloweringCycle = async () => {
+    try {
+      const response = await fetch(`/api/plants/${params.id}/flowering`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(floweringForm)
+      })
+
+      if (response.ok) {
+        await preserveScrollPosition(fetchFloweringCycles)
+        setFloweringModalOpen(false)
+        showToast({ type: 'success', title: 'Flowering cycle saved' })
+        // Reset form
+        setFloweringForm({
+          cycleId: '',
+          spatheEmergence: '',
+          femaleStart: '',
+          femaleEnd: '',
+          maleStart: '',
+          maleEnd: '',
+          spatheClose: '',
+          pollenCollected: false,
+          pollenQuality: '',
+          pollenStored: false,
+          pollenStorageDate: '',
+          notes: ''
+        })
+      } else {
+        showToast({ type: 'error', title: 'Failed to save flowering cycle' })
+      }
+    } catch (error) {
+      console.error('Error saving flowering cycle:', error)
+      showToast({ type: 'error', title: 'Error saving flowering cycle' })
+    }
+  }
+
+  const handleArchivePlant = async () => {
+    try {
+      const response = await fetch(`/api/plants/${params.id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: archiveReason })
+      })
+
+      if (response.ok) {
+        showToast({ type: 'success', title: 'Plant archived', message: `Plant moved to graveyard (${archiveReason})` })
+        setDeleteConfirmOpen(false)
+        setArchiveReason('died')
+        // Redirect to plants list after archiving
+        router.push('/plants')
+      } else {
+        showToast({ type: 'error', title: 'Failed to archive plant' })
+      }
+    } catch (error) {
+      console.error('Error archiving plant:', error)
+      showToast({ type: 'error', title: 'Error archiving plant' })
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-[var(--clay)]">Loading plant details...</p>
+      </div>
+    )
+  }
+
+  if (!plant) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-[var(--clay)]">Plant not found</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Compact Header Bar */}
+        <div className="flex items-center justify-between py-3 mb-4">
+          <Link href="/plants" className="inline-flex items-center text-[var(--moss)] hover:text-[var(--forest)]">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            <span className="text-sm">Plants</span>
+          </Link>
+
+          {/* Menu Button */}
+          <div className="relative">
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="p-2 text-[var(--clay)] hover:text-[var(--bark)] hover:bg-[var(--parchment)] rounded-lg transition-colors"
+            >
+              <MoreVertical className="w-5 h-5" />
+            </button>
+
+            {menuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+                <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-black/[0.08] rounded-lg shadow-lg z-50 py-1">
+                  <button
+                    onClick={async () => {
+                      setMenuOpen(false)
+                      try {
+                        const res = await fetch('/api/print/zebra', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ type: 'plant', id: plant.id })
+                        })
+                        const data = await res.json()
+                        if (res.ok) {
+                          showToast({ type: 'success', title: `Label printed (${data.jobId})` })
+                        } else {
+                          showToast({ type: 'error', title: data.error || 'Print failed' })
+                        }
+                      } catch (err) {
+                        showToast({ type: 'error', title: 'Print failed' })
+                      }
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-[var(--bark)] hover:bg-[var(--parchment)] flex items-center gap-3"
+                  >
+                    <Printer className="w-4 h-4" />
+                    Print Label
+                  </button>
+                  <button
+                    onClick={async () => {
+                      setMenuOpen(false)
+                      try {
+                        showToast({ type: 'info', title: 'Generating export...' })
+                        const res = await fetch(`/api/plants/${plant.id}/export`)
+                        if (!res.ok) throw new Error('Export failed')
+                        const data = await res.json()
+
+                        // Create and download JSON file
+                        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+                        const url = URL.createObjectURL(blob)
+                        const a = document.createElement('a')
+                        a.href = url
+                        a.download = `${plant.plantId}-diary-${new Date().toISOString().split('T')[0]}.json`
+                        document.body.appendChild(a)
+                        a.click()
+                        document.body.removeChild(a)
+                        URL.revokeObjectURL(url)
+
+                        showToast({ type: 'success', title: 'Diary exported successfully' })
+                      } catch (err) {
+                        console.error('Export error:', err)
+                        showToast({ type: 'error', title: 'Failed to export diary' })
+                      }
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-[var(--bark)] hover:bg-[var(--parchment)] flex items-center gap-3"
+                  >
+                    <Download className="w-4 h-4" />
+                    Export Diary
+                  </button>
+                  <button
+                    onClick={() => {
+                      setOverviewModalOpen(true)
+                      setMenuOpen(false)
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-[var(--bark)] hover:bg-[var(--parchment)] flex items-center gap-3"
+                  >
+                    <Edit className="w-4 h-4" />
+                    Edit Details
+                  </button>
+                  <hr className="my-1 border-black/[0.08]" />
+                  <button
+                    onClick={() => {
+                      setDeleteConfirmOpen(true)
+                      setMenuOpen(false)
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-amber-600 hover:bg-amber-50 flex items-center gap-3"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Archive Plant
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Plant Identity Card */}
+        <div className="bg-white border border-black/[0.08] rounded-xl p-4 sm:p-6 mb-6">
+          <div className="flex gap-4 sm:gap-6">
+            {/* Cover Photo */}
+            <div className="flex-shrink-0">
+              {(() => {
+                const coverPhoto = plant.photos?.find((p: any) => p.id === plant.coverPhotoId) || plant.photos?.[0]
+                return coverPhoto ? (
+                  <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-lg overflow-hidden bg-[var(--parchment)]">
+                    <Image
+                      src={coverPhoto.url}
+                      alt={plant.hybridName || plant.species || 'Plant photo'}
+                      width={112}
+                      height={112}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-lg bg-[var(--parchment)] flex items-center justify-center">
+                    <Camera className="w-8 h-8 text-[var(--clay)]" />
+                  </div>
+                )
+              })()}
+            </div>
+
+            {/* Plant Info */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-mono text-[var(--clay)] mb-0.5">{plant.plantId}</p>
+                  <h1 className="text-xl sm:text-2xl font-semibold text-[var(--forest)] truncate">
+                    {plant.hybridName || plant.species || 'Unknown Species'}
+                  </h1>
+                  {plant.crossNotation && (
+                    <p className="text-sm text-[var(--clay)] mt-0.5 truncate">{plant.crossNotation}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Meta Row */}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-sm">
+                {plant.currentLocation && (
+                  <span className="inline-flex items-center gap-1.5 text-[var(--bark)]">
+                    <MapPin className="w-3.5 h-3.5 text-[var(--clay)]" />
+                    {plant.currentLocation.name}
+                  </span>
+                )}
+                {plant.breederCode && (
+                  <span className="px-2 py-0.5 bg-[var(--spadix-yellow)]/15 text-[var(--spadix-yellow)] rounded text-xs font-medium">
+                    {plant.breederCode}
+                  </span>
+                )}
+                {plant.section && (
+                  <span className="text-[var(--clay)]">{plant.section}</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Actions - Integrated into card */}
+          <div className="grid grid-cols-4 gap-2 mt-4 pt-4 border-t border-black/[0.06]">
+            <button
+              onClick={() => {
+                setCareLogForm({
+                  ...careLogForm,
+                  logId: '',
+                  activityType: 'watering',
+                  date: getTodayString()
+                })
+                setUseBaselineFeed(true) // Default to baseline feed with watering
+                setCareLogModalOpen(true)
+              }}
+              className="flex flex-col items-center gap-1 py-2 px-1 rounded-lg text-[var(--water-blue)] hover:bg-[var(--water-blue)]/10 transition-colors"
+            >
+              <Droplets className="w-5 h-5" />
+              <span className="text-xs font-medium">Care</span>
+            </button>
+            <button
+              onClick={() => setFloweringEventModalOpen(true)}
+              className="flex flex-col items-center gap-1 py-2 px-1 rounded-lg text-[var(--moss)] hover:bg-[var(--moss)]/10 transition-colors"
+            >
+              <Flower2 className="w-5 h-5" />
+              <span className="text-xs font-medium">Flower</span>
+            </button>
+            <button
+              onClick={() => {
+                setNoteForm({ content: '', entryType: 'note', date: getTodayString() })
+                setNoteModalOpen(true)
+              }}
+              className="flex flex-col items-center gap-1 py-2 px-1 rounded-lg text-[var(--bark)] hover:bg-[var(--bark)]/10 transition-colors"
+            >
+              <FileText className="w-5 h-5" />
+              <span className="text-xs font-medium">Note</span>
+            </button>
+            <button
+              onClick={() => setPhotoUploadModalOpen(true)}
+              className="flex flex-col items-center gap-1 py-2 px-1 rounded-lg text-[var(--spadix-yellow)] hover:bg-[var(--spadix-yellow)]/10 transition-colors"
+            >
+              <Camera className="w-5 h-5" />
+              <span className="text-xs font-medium">Photo</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="flex gap-1 mb-4 overflow-x-auto pb-1">
+          {[
+            { id: 'status', name: 'Status', icon: Activity },
+            { id: 'history', name: 'History', icon: History },
+            { id: 'photos', name: 'Photos', icon: Camera },
+            { id: 'genetics', name: 'Genetics', icon: Dna },
+          ].map(tab => {
+            const Icon = tab.icon
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors ${
+                  activeTab === tab.id
+                    ? 'bg-[var(--forest)] text-white'
+                    : 'text-[var(--bark)] hover:bg-white hover:shadow-sm'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                {tab.name}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Tab Content */}
+        <div className="bg-white border border-black/[0.08] rounded-lg p-6">
+          {/* STATUS TAB - Health metrics + AI assistant */}
+          {activeTab === 'status' && (
+            <div className="space-y-6">
+              {/* Current Environment - Only show if location has sensor */}
+              {(envData || envLoading) && (
+                <section className="bg-gradient-to-r from-[var(--water-blue)]/10 to-[var(--sage)]/10 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold text-[var(--bark)] flex items-center gap-2">
+                      <Wind className="w-4 h-4 text-[var(--water-blue)]" />
+                      Current Environment
+                    </h3>
+                    {envData && (
+                      <span className="text-xs text-[var(--clay)]">
+                        {new Date(envData.observed).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    )}
+                  </div>
+                  {envLoading ? (
+                    <div className="text-sm text-[var(--clay)]">Loading...</div>
+                  ) : envData ? (
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-1 mb-1">
+                          <Thermometer className="w-4 h-4 text-[var(--alert-red)]" />
+                          <span className="text-2xl font-bold text-[var(--bark)]">{envData.temperature.toFixed(1)}°</span>
+                        </div>
+                        <span className="text-xs text-[var(--clay)]">Temp</span>
+                      </div>
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-1 mb-1">
+                          <Droplets className="w-4 h-4 text-[var(--water-blue)]" />
+                          <span className="text-2xl font-bold text-[var(--bark)]">{envData.humidity.toFixed(0)}%</span>
+                        </div>
+                        <span className="text-xs text-[var(--clay)]">Humidity</span>
+                      </div>
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-1 mb-1">
+                          <span className="text-2xl font-bold text-[var(--bark)]">{envData.vpd.toFixed(2)}</span>
+                        </div>
+                        <span className="text-xs text-[var(--clay)]">VPD (kPa)</span>
+                      </div>
+                    </div>
+                  ) : null}
+                </section>
+              )}
+
+              {/* Health Metrics Section */}
+              <section>
+                <h3 className="text-lg font-semibold text-[var(--bark)] mb-3">Health & Care</h3>
+                <HealthMetrics plantId={params.id as string} />
+              </section>
+
+              {/* Trend Charts Section */}
+              {plant.careLogs && plant.careLogs.length > 0 && (
+                <section>
+                  <h3 className="text-lg font-semibold text-[var(--bark)] mb-3">Trends & Analytics</h3>
+                  <TrendCharts
+                    careLogs={plant.careLogs}
+                    measurements={plant.measurements || []}
+                  />
+                </section>
+              )}
+
+              {/* AI Assistant - Collapsible */}
+              <section className="border border-black/[0.08] rounded-lg overflow-hidden">
+                <button
+                  onClick={() => setAiExpanded(!aiExpanded)}
+                  className="w-full flex items-center justify-between p-4 bg-[var(--parchment)] hover:bg-[var(--parchment)]/80 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="w-5 h-5 text-[var(--forest)]" />
+                    <h3 className="text-lg font-semibold text-[var(--bark)]">AI Assistant</h3>
+                  </div>
+                  {aiExpanded ? (
+                    <ChevronDown className="w-5 h-5 text-[var(--clay)]" />
+                  ) : (
+                    <ChevronRight className="w-5 h-5 text-[var(--clay)]" />
+                  )}
+                </button>
+                {aiExpanded && (
+                  <div className="p-4 bg-white">
+                    <AIAssistant
+                      plantId={plant.id}
+                      plantData={{
+                        id: plant.id,
+                        plantId: plant.plantId,
+                        catalogId: plant.catalogId,
+                        genus: plant.genus,
+                        species: plant.species,
+                        hybridName: plant.hybridName,
+                        section: plant.section,
+                        healthStatus: plant.healthStatus,
+                        breederCode: plant.breederCode,
+                        location: plant.currentLocation?.name,
+                        locationId: plant.currentLocation?.id,
+                        careLogs: plant.careLogs,
+                        lastWatered: plant.careLogs ? getLastWateringEvent(plant.careLogs) : null,
+                        lastFertilized: plant.careLogs ? getLastFertilizingEvent(plant.careLogs) : null,
+                        notes: plant.notes,
+                        photos: plant.photos?.map((p: any) => ({
+                          url: p.url,
+                          photoType: p.photoType,
+                          dateTaken: p.dateTaken,
+                          notes: p.notes
+                        }))
+                      }}
+                      embedded={true}
+                    />
+                  </div>
+                )}
+              </section>
+
+              {/* Plant Details - Collapsible */}
+              <section className="border border-black/[0.08] rounded-lg overflow-hidden">
+                <div
+                  className="flex items-center justify-between p-4 bg-[var(--parchment)]"
+                >
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <button
+                      onClick={() => setDetailsExpanded(!detailsExpanded)}
+                      className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                    >
+                      <Info className="w-5 h-5 text-[var(--forest)]" />
+                      <h3 className="text-lg font-semibold text-[var(--bark)]">Plant Details</h3>
+                    </button>
+                    {!detailsExpanded && (
+                      <div className="flex items-center gap-2 ml-2 flex-wrap">
+                        {/* Quick Location Dropdown */}
+                        <select
+                          value={plant.locationId || ''}
+                          onChange={(e) => {
+                            e.stopPropagation()
+                            handleLocationChange(e.target.value)
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-xs px-2 py-1 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)] bg-white text-[var(--bark)] max-w-[120px]"
+                        >
+                          <option value="">No location</option>
+                          {locations.map((location: any) => (
+                            <option key={location.id} value={location.id}>
+                              {location.name}
+                            </option>
+                          ))}
+                        </select>
+                        {/* Quick Health Dropdown */}
+                        <select
+                          value={plant.healthStatus || ''}
+                          onChange={(e) => {
+                            e.stopPropagation()
+                            handleHealthStatusChange(e.target.value)
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className={`text-xs px-2 py-1 rounded border focus:outline-none focus:border-[var(--moss)] ${
+                            plant.healthStatus === 'healthy'
+                              ? 'bg-green-50 border-green-200 text-[var(--moss)]'
+                              : plant.healthStatus === 'struggling'
+                              ? 'bg-yellow-50 border-yellow-200 text-[var(--spadix-yellow)]'
+                              : plant.healthStatus === 'critical'
+                              ? 'bg-red-50 border-red-200 text-[var(--alert-red)]'
+                              : 'bg-white border-black/[0.08] text-[var(--bark)]'
+                          }`}
+                        >
+                          <option value="">Unknown</option>
+                          <option value="healthy">Healthy</option>
+                          <option value="recovering">Recovering</option>
+                          <option value="struggling">Struggling</option>
+                          <option value="critical">Critical</option>
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {detailsExpanded && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setOverviewForm({
+                            name: plant.hybridName || '',
+                            species: plant.species || '',
+                            crossNotation: plant.crossNotation || '',
+                            section: plant.section || '',
+                            acquisitionCost: plant.acquisitionCost?.toString() || '',
+                            acquisitionDate: plant.accessionDate ? new Date(plant.accessionDate).toISOString().split('T')[0] : '',
+                            healthStatus: plant.healthStatus || '',
+                            propagationType: plant.propagationType || '',
+                            generation: plant.generation || '',
+                            breeder: plant.breeder || '',
+                            breederCode: plant.breederCode || ''
+                          })
+                          setOverviewModalOpen(true)
+                        }}
+                        className="px-2 py-1 text-xs bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)] flex items-center gap-1"
+                      >
+                        <Edit className="w-3 h-3" />
+                        Edit
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setDetailsExpanded(!detailsExpanded)}
+                      className="p-1 hover:bg-black/5 rounded transition-colors"
+                    >
+                      {detailsExpanded ? (
+                        <ChevronDown className="w-5 h-5 text-[var(--clay)]" />
+                      ) : (
+                        <ChevronRight className="w-5 h-5 text-[var(--clay)]" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+                {detailsExpanded && (
+                  <div className="p-4 bg-white">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-4 h-4 text-[var(--clay)]" />
+                          <span className="text-sm font-medium">Location:</span>
+                          <select
+                            value={plant.locationId || ''}
+                            onChange={(e) => handleLocationChange(e.target.value)}
+                            className="text-sm px-2 py-1 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)] bg-white"
+                          >
+                            <option value="">No location</option>
+                            {locations.map((location: any) => (
+                              <option key={location.id} value={location.id}>
+                                {location.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <DollarSign className="w-4 h-4 text-[var(--clay)]" />
+                          <span className="font-medium">Cost:</span>
+                          <span>${plant.acquisitionCost || 'N/A'}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Calendar className="w-4 h-4 text-[var(--clay)]" />
+                          <span className="font-medium">Acquired:</span>
+                          <span>{plant.accessionDate ? new Date(plant.accessionDate).toLocaleDateString() : 'N/A'}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="font-medium">Section:</span>
+                          <span>{plant.section || 'N/A'}</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="font-medium">Health:</span>
+                          <span className={`px-2 py-0.5 rounded-full text-xs ${
+                            plant.healthStatus === 'healthy'
+                              ? 'bg-green-100 text-[var(--moss)]'
+                              : plant.healthStatus === 'struggling'
+                              ? 'bg-[var(--spadix-yellow)]/20 text-[var(--spadix-yellow)]'
+                              : 'bg-gray-100 text-[var(--bark)]'
+                          }`}>
+                            {plant.healthStatus || 'Unknown'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="font-medium">Vendor:</span>
+                          <span>{plant.vendor?.name || 'N/A'}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="font-medium">Breeder:</span>
+                          <span>{plant.breeder || 'N/A'}</span>
+                        </div>
+                        <label className="flex items-center gap-2 cursor-pointer text-sm">
+                          <input
+                            type="checkbox"
+                            checked={plant.isEliteGenetics || false}
+                            onChange={async (e) => {
+                              const newValue = e.target.checked
+                              try {
+                                const response = await fetch(`/api/plants/${params.id}`, {
+                                  method: 'PATCH',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ isEliteGenetics: newValue })
+                                })
+                                if (response.ok) {
+                                  await preserveScrollPosition(fetchPlant)
+                                  showToast({ type: 'success', title: newValue ? 'Marked as elite' : 'Unmarked as elite' })
+                                }
+                              } catch (error) {
+                                showToast({ type: 'error', title: 'Failed to update' })
+                              }
+                            }}
+                            className="w-3.5 h-3.5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                          />
+                          <span className="font-medium text-[var(--forest)]">Elite Genetics</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Care Notes */}
+                    {editedPlant.notes && (
+                      <div className="mt-4 pt-4 border-t border-black/[0.08]">
+                        <p className="text-sm font-medium text-[var(--bark)] mb-1">Notes</p>
+                        <p className="text-sm text-[var(--clay)]">{editedPlant.notes}</p>
+                      </div>
+                    )}
+
+                    {/* Genetic Info */}
+                    {plant.genetics && (
+                      <div className="mt-4 pt-4 border-t border-black/[0.08]">
+                        <p className="text-sm font-medium text-[var(--bark)] mb-1">Genetic Info</p>
+                        <p className="text-sm text-[var(--clay)]">
+                          Ploidy: {plant.genetics.ploidy || 'Unknown'} |
+                          RA: {plant.genetics.raNumber || 'N/A'} |
+                          OG: {plant.genetics.ogNumber || 'N/A'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </section>
+            </div>
+          )}
+
+          {/* JOURNAL TAB - Unified timeline */}
+          {activeTab === 'history' && (
+            <JournalTab
+              careLogs={plant.careLogs || []}
+              traits={plant.traits || []}
+              measurements={plant.measurements || []}
+              chatLogs={plant.chatLogs || []}
+              journalEntries={journalEntries}
+              floweringCycles={floweringCycles}
+              notes={editedPlant.notes}
+              onDeleteNote={handleDeleteNote}
+              onEditFlowering={(cycle) => {
+                setFloweringForm({
+                  cycleId: cycle.id,
+                  spatheEmergence: cycle.spatheEmergence ? new Date(cycle.spatheEmergence).toISOString().split('T')[0] : '',
+                  femaleStart: cycle.femaleStart ? new Date(cycle.femaleStart).toISOString().split('T')[0] : '',
+                  femaleEnd: cycle.femaleEnd ? new Date(cycle.femaleEnd).toISOString().split('T')[0] : '',
+                  maleStart: cycle.maleStart ? new Date(cycle.maleStart).toISOString().split('T')[0] : '',
+                  maleEnd: cycle.maleEnd ? new Date(cycle.maleEnd).toISOString().split('T')[0] : '',
+                  spatheClose: cycle.spatheClose ? new Date(cycle.spatheClose).toISOString().split('T')[0] : '',
+                  pollenCollected: cycle.pollenCollected || false,
+                  pollenQuality: cycle.pollenQuality || '',
+                  pollenStored: cycle.pollenStored || false,
+                  pollenStorageDate: '',
+                  notes: cycle.notes || ''
+                })
+                setFloweringModalOpen(true)
+              }}
+              onDeleteFlowering={async (cycleId) => {
+                if (!confirm('Delete this flowering cycle?')) return
+                try {
+                  const res = await fetch(`/api/plants/${params.id}/flowering/${cycleId}`, { method: 'DELETE' })
+                  if (!res.ok) throw new Error('Failed to delete')
+                  await fetchFloweringCycles()
+                  showToast({ type: 'success', title: 'Flowering cycle deleted' })
+                } catch (error) {
+                  console.error('Error deleting flowering cycle:', error)
+                  showToast({ type: 'error', title: 'Failed to delete flowering cycle' })
+                }
+              }}
+              onEditCareLog={(log) => {
+                const details = log.details ? (typeof log.details === 'string' ? JSON.parse(log.details) : log.details) : {}
+                setCareLogForm({
+                  logId: log.id,
+                  activityType: log.action || log.activityType || 'watering',
+                  notes: details.notes || '',
+                  fertilizer: details.fertilizer || '',
+                  pesticide: details.pesticide || '',
+                  fungicide: details.fungicide || '',
+                  dosage: details.dosage || '',
+                  inputEC: log.inputEC?.toString() || details.inputEC?.toString() || '',
+                  inputPH: log.inputPH?.toString() || details.inputPH?.toString() || '',
+                  outputEC: log.outputEC?.toString() || details.outputEC?.toString() || '',
+                  outputPH: log.outputPH?.toString() || details.outputPH?.toString() || '',
+                  rainAmount: details.rainAmount || '',
+                  rainDuration: details.rainDuration || '',
+                  date: new Date(log.date).toISOString().split('T')[0],
+                  pestType: details.pestType || '',
+                  severity: details.severity || '',
+                  affectedArea: details.affectedArea || '',
+                  fromPotSize: details.fromPotSize || '',
+                  toPotSize: details.toPotSize || '',
+                  fromPotType: details.fromPotType || '',
+                  toPotType: details.toPotType || '',
+                  substrateType: details.substrateType || '',
+                  drainageType: details.drainageType || '',
+                  substrateMix: details.substrateMix || ''
+                })
+                setCareLogModalOpen(true)
+              }}
+              onDeleteCareLog={(logId) => setCareLogToDelete(logId)}
+              onAddEntry={(type) => {
+                if (type === 'care') {
+                  setCareLogForm({
+                    ...careLogForm,
+                    logId: '',
+                    activityType: 'watering',
+                    date: getTodayString()
+                  })
+                  setCareLogModalOpen(true)
+                } else if (type === 'morphology') {
+                  setMorphologyModalOpen(true)
+                } else if (type === 'measurement') {
+                  setMeasurementModalOpen(true)
+                } else if (type === 'note') {
+                  setNoteForm({
+                    content: '',
+                    date: getTodayString(),
+                    entryType: 'note'
+                  })
+                  setNoteModalOpen(true)
+                } else if (type === 'flowering') {
+                  setFloweringForm({
+                    cycleId: '',
+                    spatheEmergence: getTodayString(),
+                    femaleStart: '',
+                    femaleEnd: '',
+                    maleStart: '',
+                    maleEnd: '',
+                    spatheClose: '',
+                    pollenCollected: false,
+                    pollenQuality: '',
+                    pollenStored: false,
+                    pollenStorageDate: '',
+                    notes: ''
+                  })
+                  setFloweringModalOpen(true)
+                }
+              }}
+              onDeleteChatLog={async (logId) => {
+                if (!confirm('Delete this AI consultation?')) return
+                try {
+                  const res = await fetch(`/api/chat-logs/${logId}`, { method: 'DELETE' })
+                  if (!res.ok) throw new Error('Failed to delete')
+                  showToast({ type: 'success', title: 'Consultation deleted' })
+                  fetchPlant()
+                } catch {
+                  showToast({ type: 'error', title: 'Failed to delete consultation' })
+                }
+              }}
+              onEditTrait={(trait) => {
+                const newValue = prompt(`Edit "${trait.traitName}" value:`, trait.value)
+                if (newValue === null || newValue === trait.value) return
+                fetch(`/api/plants/${params.id}/traits/${trait.id}`, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ value: newValue })
+                }).then(res => {
+                  if (res.ok) {
+                    showToast({ type: 'success', title: 'Trait updated' })
+                    fetchPlant()
+                  } else {
+                    showToast({ type: 'error', title: 'Failed to update trait' })
+                  }
+                })
+              }}
+              onDeleteTrait={async (traitId) => {
+                if (!confirm('Delete this trait observation?')) return
+                try {
+                  const res = await fetch(`/api/plants/${params.id}/traits/${traitId}`, { method: 'DELETE' })
+                  if (!res.ok) throw new Error('Failed to delete')
+                  showToast({ type: 'success', title: 'Trait deleted' })
+                  fetchPlant()
+                } catch {
+                  showToast({ type: 'error', title: 'Failed to delete trait' })
+                }
+              }}
+              onEditMeasurement={(measurement) => {
+                // For simplicity, open measurement modal pre-populated
+                // This will need a dedicated edit flow - for now, show a message
+                showToast({ type: 'info', title: 'Use the form to re-enter measurement data' })
+                setMeasurementModalOpen(true)
+              }}
+              onDeleteMeasurement={async (measurementId) => {
+                if (!confirm('Delete this measurement?')) return
+                try {
+                  const res = await fetch(`/api/plants/${params.id}/measurements/${measurementId}`, { method: 'DELETE' })
+                  if (!res.ok) throw new Error('Failed to delete')
+                  showToast({ type: 'success', title: 'Measurement deleted' })
+                  fetchPlant()
+                } catch {
+                  showToast({ type: 'error', title: 'Failed to delete measurement' })
+                }
+              }}
+            />
+          )}
+
+          {activeTab === 'photos' && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold">Photos</h3>
+                <button
+                  onClick={() => setPhotoUploadModalOpen(true)}
+                  className="px-4 py-2 bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)] flex items-center gap-2">
+                  <Camera className="w-4 h-4" />
+                  Upload Photos
+                </button>
+              </div>
+
+              {plant.photos && plant.photos.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {plant.photos.map((photo: any) => (
+                    <div key={photo.id} className="group relative bg-[var(--parchment)] rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-all">
+                      <div className="aspect-[2/3] relative bg-gray-100">
+                        <img
+                          src={photo.url}
+                          alt={photo.notes || 'Plant photo'}
+                          className="w-full h-full object-contain"
+                        />
+                        {/* Cover Photo Indicator */}
+                        {plant.coverPhotoId === photo.id && (
+                          <div className="absolute top-2 left-2 bg-yellow-500 text-white px-2 py-1 rounded-lg flex items-center gap-1">
+                            <Star className="w-4 h-4 fill-current" />
+                            <span className="text-xs font-medium">Cover</span>
+                          </div>
+                        )}
+                        <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {/* Set as Cover Button */}
+                          {plant.coverPhotoId !== photo.id && (
+                            <button
+                              onClick={async () => {
+                                try {
+                                  const response = await fetch(`/api/plants/${params.id}`, {
+                                    method: 'PUT',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ coverPhotoId: photo.id })
+                                  })
+                                  if (response.ok) {
+                                    showToast({ type: 'success', title: 'Cover photo updated' })
+                                    fetchPlant()
+                                  }
+                                } catch (error) {
+                                  showToast({ type: 'error', title: 'Failed to update cover photo' })
+                                }
+                              }}
+                              className="p-2 bg-yellow-500/90 text-white rounded-lg hover:bg-yellow-600"
+                              title="Set as cover photo"
+                            >
+                              <Star className="w-4 h-4" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => {
+                              setPhotoForm({
+                                photoId: photo.id,
+                                photoType: photo.photoType || 'whole_plant',
+                                growthStage: photo.growthStage || '',
+                                notes: photo.notes || '',
+                                dateTaken: photo.dateTaken ? new Date(photo.dateTaken).toLocaleDateString('en-CA') : getTodayString()
+                              })
+                              setPhotoUploadModalOpen(true)
+                            }}
+                            className="p-2 bg-blue-500/90 text-white rounded-lg hover:bg-blue-600"
+                            title="Edit photo details"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeletePhoto(photo.id)}
+                            className="p-2 bg-red-500/90 text-white rounded-lg hover:bg-red-600"
+                            title="Delete photo"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="p-3">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs px-2 py-1 bg-[var(--moss)]/20 text-[var(--moss)] rounded-full font-medium">
+                            {photo.photoType?.replace('_', ' ')}
+                          </span>
+                          {photo.growthStage && (
+                            <span className="text-xs px-2 py-1 bg-blue-100 text-[var(--water-blue)] rounded-full font-medium">
+                              {photo.growthStage}
+                            </span>
+                          )}
+                        </div>
+                        {photo.notes && (
+                          <p className="text-xs text-[var(--clay)] truncate mb-1">{photo.notes}</p>
+                        )}
+                        <p className="text-xs text-[var(--clay)]">
+                          {photo.dateTaken ? new Date(photo.dateTaken).toLocaleDateString() : ''}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Camera className="w-12 h-12 text-[var(--clay)] mx-auto mb-3" />
+                  <p className="text-[var(--clay)]">No photos uploaded yet</p>
+                  <button
+                    onClick={() => setPhotoUploadModalOpen(true)}
+                    className="mt-4 px-6 py-2 bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)] flex items-center gap-2 mx-auto"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Upload Your First Photo
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* GENETICS TAB - Lineage + Flowering */}
+          {activeTab === 'genetics' && (
+            <div className="space-y-8">
+              {/* Lineage Section */}
+              <section>
+                <h3 className="text-lg font-semibold text-[var(--bark)] mb-4">Lineage</h3>
+                <LineageTab plant={plant} />
+              </section>
+
+              {/* Flowering Section */}
+              <section>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold text-[var(--bark)]">Flowering Cycles</h3>
+                  <button
+                    onClick={() => {
+                      setFloweringForm({
+                        cycleId: '',
+                        spatheEmergence: getTodayString(),
+                        femaleStart: '',
+                        femaleEnd: '',
+                        maleStart: '',
+                        maleEnd: '',
+                        spatheClose: '',
+                        pollenCollected: false,
+                        pollenQuality: '',
+                        pollenStored: false,
+                        pollenStorageDate: '',
+                        notes: ''
+                      })
+                      setFloweringModalOpen(true)
+                    }}
+                    className="px-3 py-1.5 text-sm bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)] flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Log Cycle
+                  </button>
+                </div>
+
+                {floweringCycles && floweringCycles.length > 0 ? (
+                  <div className="space-y-3">
+                    {floweringCycles.map((cycle: any) => (
+                      <div key={cycle.id} className="bg-[var(--parchment)] rounded-lg p-4">
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <p className="font-medium">
+                              {cycle.spatheEmergence ? new Date(cycle.spatheEmergence).toLocaleDateString() : 'Unknown Date'}
+                            </p>
+                            <p className="text-xs text-[var(--clay)]">ID: {cycle.id.slice(0, 8)}</p>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setFloweringForm({
+                                cycleId: cycle.id,
+                                spatheEmergence: cycle.spatheEmergence ? new Date(cycle.spatheEmergence).toISOString().split('T')[0] : '',
+                                femaleStart: cycle.femaleStart ? new Date(cycle.femaleStart).toISOString().split('T')[0] : '',
+                                femaleEnd: cycle.femaleEnd ? new Date(cycle.femaleEnd).toISOString().split('T')[0] : '',
+                                maleStart: cycle.maleStart ? new Date(cycle.maleStart).toISOString().split('T')[0] : '',
+                                maleEnd: cycle.maleEnd ? new Date(cycle.maleEnd).toISOString().split('T')[0] : '',
+                                spatheClose: cycle.spatheClose ? new Date(cycle.spatheClose).toISOString().split('T')[0] : '',
+                                pollenCollected: cycle.pollenCollected || false,
+                                pollenQuality: cycle.pollenQuality || '',
+                                pollenStored: cycle.pollenStored || false,
+                                pollenStorageDate: cycle.pollenStorageDate ? new Date(cycle.pollenStorageDate).toISOString().split('T')[0] : '',
+                                notes: cycle.notes || ''
+                              })
+                              setFloweringModalOpen(true)
+                            }}
+                            className="px-2 py-1 text-xs bg-white hover:bg-[var(--sage)]/20 rounded border border-black/[0.08]"
+                          >
+                            Edit
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <p className="text-xs text-[var(--clay)] mb-0.5">Female Phase</p>
+                            {cycle.femaleStart ? (
+                              <p className="text-green-700">
+                                {new Date(cycle.femaleStart).toLocaleDateString()}
+                                {cycle.femaleEnd && ` → ${new Date(cycle.femaleEnd).toLocaleDateString()}`}
+                              </p>
+                            ) : (
+                              <p className="text-[var(--clay)]">—</p>
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-xs text-[var(--clay)] mb-0.5">Male Phase</p>
+                            {cycle.maleStart ? (
+                              <p className="text-blue-700">
+                                {new Date(cycle.maleStart).toLocaleDateString()}
+                                {cycle.maleEnd && ` → ${new Date(cycle.maleEnd).toLocaleDateString()}`}
+                              </p>
+                            ) : (
+                              <p className="text-[var(--clay)]">—</p>
+                            )}
+                          </div>
+                        </div>
+
+                        {(cycle.pollenCollected || cycle.notes) && (
+                          <div className="mt-2 pt-2 border-t border-black/[0.06] text-sm">
+                            {cycle.pollenCollected && (
+                              <span className="inline-flex items-center gap-1 text-purple-700 mr-3">
+                                <Flower2 className="w-3 h-3" />
+                                Pollen: {cycle.pollenQuality || 'collected'}{cycle.pollenStored && ' (stored)'}
+                              </span>
+                            )}
+                            {cycle.notes && <span className="text-[var(--clay)]">{cycle.notes}</span>}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-[var(--clay)]">
+                    <Flower2 className="w-10 h-10 mx-auto mb-2 opacity-40" />
+                    <p className="text-sm">No flowering cycles recorded</p>
+                  </div>
+                )}
+              </section>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Measurement Modal - Physical Dimensions */}
+      <Modal
+        isOpen={measurementModalOpen}
+        onClose={() => setMeasurementModalOpen(false)}
+        title="Add Growth Measurement"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Date</label>
+            <input
+              type="date"
+              value={measurementForm.measurementDate}
+              onChange={(e) => setMeasurementForm({ ...measurementForm, measurementDate: e.target.value })}
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Leaf Length (cm)</label>
+              <input
+                type="number"
+                step="0.1"
+                value={measurementForm.leafLength}
+                onChange={(e) => setMeasurementForm({ ...measurementForm, leafLength: e.target.value })}
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+                placeholder="25"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Leaf Width (cm)</label>
+              <input
+                type="number"
+                step="0.1"
+                value={measurementForm.leafWidth}
+                onChange={(e) => setMeasurementForm({ ...measurementForm, leafWidth: e.target.value })}
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+                placeholder="18"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Petiole Length (cm)</label>
+              <input
+                type="number"
+                step="0.1"
+                value={measurementForm.petioleLength}
+                onChange={(e) => setMeasurementForm({ ...measurementForm, petioleLength: e.target.value })}
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+                placeholder="30"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Plant Height (cm)</label>
+              <input
+                type="number"
+                step="0.1"
+                value={measurementForm.height}
+                onChange={(e) => setMeasurementForm({ ...measurementForm, height: e.target.value })}
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+                placeholder="45"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Leaf Count</label>
+              <input
+                type="number"
+                value={measurementForm.leafCount}
+                onChange={(e) => setMeasurementForm({ ...measurementForm, leafCount: e.target.value })}
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+                placeholder="5"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Vigor Score (1-5)</label>
+              <select
+                value={measurementForm.vigorScore}
+                onChange={(e) => setMeasurementForm({ ...measurementForm, vigorScore: e.target.value })}
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+              >
+                <option value="">Select...</option>
+                <option value="1">1 - Struggling</option>
+                <option value="2">2 - Weak</option>
+                <option value="3">3 - Average</option>
+                <option value="4">4 - Strong</option>
+                <option value="5">5 - Exceptional</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Leaf Texture</label>
+            <select
+              value={measurementForm.texture}
+              onChange={(e) => setMeasurementForm({ ...measurementForm, texture: e.target.value })}
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+            >
+              <option value="">Select...</option>
+              <option value="velvety">Velvety</option>
+              <option value="glossy">Glossy</option>
+              <option value="matte">Matte</option>
+              <option value="bullate">Bullate (puckered)</option>
+              <option value="corrugated">Corrugated</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Notes</label>
+            <textarea
+              value={measurementForm.notes}
+              onChange={(e) => setMeasurementForm({ ...measurementForm, notes: e.target.value })}
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+              rows={2}
+              placeholder="Measurement observations..."
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={handleAddMeasurement}
+              className="flex-1 px-4 py-2 bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)]"
+            >
+              Save Measurement
+            </button>
+            <button
+              onClick={() => setMeasurementModalOpen(false)}
+              className="flex-1 px-4 py-2 border border-black/[0.08] rounded text-[var(--bark)] hover:bg-[var(--parchment)]"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Note Modal */}
+      <Modal
+        isOpen={noteModalOpen}
+        onClose={() => setNoteModalOpen(false)}
+        title="Add Note"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Date</label>
+            <input
+              type="date"
+              value={noteForm.date}
+              onChange={(e) => setNoteForm({ ...noteForm, date: e.target.value })}
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Note</label>
+            <textarea
+              value={noteForm.content}
+              onChange={(e) => setNoteForm({ ...noteForm, content: e.target.value })}
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+              rows={6}
+              placeholder="Write your observation, thought, or note..."
+              autoFocus
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={handleAddNote}
+              className="flex-1 px-4 py-2 bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)]"
+            >
+              Save Note
+            </button>
+            <button
+              onClick={() => setNoteModalOpen(false)}
+              className="flex-1 px-4 py-2 border border-black/[0.08] rounded text-[var(--bark)] hover:bg-[var(--parchment)]"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Flowering Event Modal - Simple event picker */}
+      <Modal
+        isOpen={floweringEventModalOpen}
+        onClose={() => setFloweringEventModalOpen(false)}
+        title="Log Flowering Event"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-[var(--clay)]">What did you notice?</p>
+
+          {/* Event type buttons */}
+          <div className="grid grid-cols-1 gap-2">
+            {Object.entries(floweringEventLabels).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setFloweringEventForm({ ...floweringEventForm, eventType: key as typeof floweringEventForm.eventType })}
+                className={`p-3 rounded-lg border text-left transition-colors ${
+                  floweringEventForm.eventType === key
+                    ? 'border-[var(--forest)] bg-[var(--forest)]/10 text-[var(--forest)]'
+                    : 'border-black/[0.08] hover:border-[var(--moss)] text-[var(--bark)]'
+                }`}
+              >
+                <span className="text-lg">{label}</span>
+              </button>
+            ))}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Date</label>
+            <input
+              type="date"
+              value={floweringEventForm.date}
+              onChange={(e) => setFloweringEventForm({ ...floweringEventForm, date: e.target.value })}
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Notes (optional)</label>
+            <textarea
+              value={floweringEventForm.notes}
+              onChange={(e) => setFloweringEventForm({ ...floweringEventForm, notes: e.target.value })}
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+              rows={2}
+              placeholder="Any additional observations..."
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={handleSaveFloweringEvent}
+              disabled={!floweringEventForm.eventType}
+              className="flex-1 px-4 py-2 bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Log Event
+            </button>
+            <button
+              onClick={() => setFloweringEventModalOpen(false)}
+              className="flex-1 px-4 py-2 border border-black/[0.08] rounded text-[var(--bark)] hover:bg-[var(--parchment)]"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Care Log Modal */}
+      <Modal
+        isOpen={careLogModalOpen}
+        onClose={handleCloseCareLogModal}
+        title={careLogForm.logId ? "Edit Care Log" : "Add Care Log"}
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Date</label>
+            <input
+              type="date"
+              value={careLogForm.date}
+              onChange={(e) => setCareLogForm({ ...careLogForm, date: e.target.value })}
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Activity Type</label>
+            <select
+              value={careLogForm.activityType}
+              onChange={(e) => {
+                const newActivityType = e.target.value
+                const updates: any = { activityType: newActivityType }
+
+                // Reset baseline feed when changing activity type
+                if (newActivityType !== 'watering') {
+                  setUseBaselineFeed(false)
+                }
+
+                // Auto-populate repotting fields from current plant data
+                if (newActivityType === 'repotting' && plant) {
+                  updates.fromPotSize = plant.currentPotSize?.toString() || ''
+                  updates.fromPotType = plant.currentPotType || ''
+                }
+
+                setCareLogForm({ ...careLogForm, ...updates })
+              }}
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+            >
+              <option value="watering">Watering (with baseline feed)</option>
+              <option value="rain">Rain</option>
+              <option value="fertilizing">Incremental Feed (deviation from baseline)</option>
+              <option value="repotting">Repotting</option>
+              <option value="pruning">Pruning</option>
+              <option value="pest_discovery">Pest/Disease Discovery</option>
+              <option value="pest_treatment">Pest Treatment</option>
+              <option value="fungicide">Fungicide Application</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          {/* Baseline Feed Checkbox - Only show for watering */}
+          {careLogForm.activityType === 'watering' && (
+            <div className="bg-[var(--moss)]/10 border border-[var(--moss)]/20 rounded-lg p-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={useBaselineFeed}
+                  onChange={(e) => {
+                    const checked = e.target.checked
+                    setUseBaselineFeed(checked)
+                    if (checked) {
+                      // Auto-populate baseline feed values
+                      setCareLogForm({
+                        ...careLogForm,
+                        inputPH: '5.7',
+                        inputEC: '1.15',
+                        notes: careLogForm.notes + (careLogForm.notes ? '\n\n' : '') + 'Baseline feed: CalMag 1ml/L, TPS One 2ml/L'
+                      })
+                    }
+                  }}
+                  className="w-4 h-4 text-[var(--moss)] rounded focus:ring-[var(--moss)]"
+                />
+                <div className="flex-1">
+                  <span className="font-medium text-[var(--bark)]">Include baseline feed</span>
+                  <p className="text-xs text-[var(--clay)] mt-0.5">
+                    Auto-fills: pH 5.7, EC 1.15 (CalMag + TPS One)
+                  </p>
+                </div>
+              </label>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Notes</label>
+            <textarea
+              value={careLogForm.notes}
+              onChange={(e) => setCareLogForm({ ...careLogForm, notes: e.target.value })}
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+              rows={3}
+              placeholder="Describe the activity..."
+            />
+          </div>
+
+          {careLogForm.activityType === 'rain' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-[var(--bark)] mb-1">
+                  Rainfall Amount
+                </label>
+                <select
+                  value={careLogForm.rainAmount}
+                  onChange={(e) => setCareLogForm({ ...careLogForm, rainAmount: e.target.value })}
+                  className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+                >
+                  <option value="">-- Select amount --</option>
+                  <option value="light">Light (drizzle)</option>
+                  <option value="medium">Medium (steady rain)</option>
+                  <option value="heavy">Heavy (downpour)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[var(--bark)] mb-1">
+                  Duration
+                </label>
+                <select
+                  value={careLogForm.rainDuration}
+                  onChange={(e) => setCareLogForm({ ...careLogForm, rainDuration: e.target.value })}
+                  className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+                >
+                  <option value="">-- Select duration --</option>
+                  <option value="brief">Brief (&lt;15 min)</option>
+                  <option value="short">Short (15-30 min)</option>
+                  <option value="medium">Medium (30-60 min)</option>
+                  <option value="long">Long (1-2 hrs)</option>
+                  <option value="extended">Extended (2+ hrs)</option>
+                </select>
+              </div>
+            </>
+          )}
+
+          {(careLogForm.activityType === 'watering' || careLogForm.activityType === 'fertilizing') && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">Input pH</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={careLogForm.inputPH}
+                    onChange={(e) => setCareLogForm({ ...careLogForm, inputPH: e.target.value })}
+                    className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+                    placeholder="e.g., 6.1"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">Input EC</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={careLogForm.inputEC}
+                    onChange={(e) => setCareLogForm({ ...careLogForm, inputEC: e.target.value })}
+                    className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+                    placeholder="e.g., 1.0"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">Output/Leachate pH (Optional)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={careLogForm.outputPH}
+                    onChange={(e) => setCareLogForm({ ...careLogForm, outputPH: e.target.value })}
+                    className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+                    placeholder="e.g., 5.8"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">Output/Leachate EC (Optional)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={careLogForm.outputEC}
+                    onChange={(e) => setCareLogForm({ ...careLogForm, outputEC: e.target.value })}
+                    className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+                    placeholder="e.g., 1.5"
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Pest/Disease Discovery Fields */}
+          {careLogForm.activityType === 'pest_discovery' && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-3">
+              <div className="flex items-start gap-2 mb-2">
+                <span className="text-2xl">🔍</span>
+                <div>
+                  <h4 className="font-semibold text-red-900">Pest or Disease Discovery</h4>
+                  <p className="text-xs text-red-700">Document what you found and where. Log treatments separately.</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[var(--bark)] mb-1">Pest/Disease Type *</label>
+                <select
+                  value={careLogForm.pestType}
+                  onChange={(e) => setCareLogForm({ ...careLogForm, pestType: e.target.value })}
+                  className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:ring-2 focus:ring-red-500"
+                  required
+                >
+                  <option value="">Select type...</option>
+                  <optgroup label="Common Pests">
+                    <option value="spider_mites">Spider Mites</option>
+                    <option value="thrips">Thrips</option>
+                    <option value="aphids">Aphids</option>
+                    <option value="mealybugs">Mealybugs</option>
+                    <option value="scale">Scale Insects</option>
+                    <option value="fungus_gnats">Fungus Gnats</option>
+                    <option value="whiteflies">Whiteflies</option>
+                  </optgroup>
+                  <optgroup label="Diseases">
+                    <option value="root_rot">Root Rot</option>
+                    <option value="powdery_mildew">Powdery Mildew</option>
+                    <option value="bacterial_blight">Bacterial Blight</option>
+                    <option value="anthracnose">Anthracnose</option>
+                    <option value="rust">Rust</option>
+                    <option value="botrytis">Botrytis (Gray Mold)</option>
+                  </optgroup>
+                  <optgroup label="Symptoms">
+                    <option value="yellowing">Yellowing Leaves</option>
+                    <option value="brown_spots">Brown Spots</option>
+                    <option value="wilting">Wilting</option>
+                    <option value="stunted_growth">Stunted Growth</option>
+                  </optgroup>
+                  <option value="other">Other (describe in notes)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[var(--bark)] mb-1">Severity</label>
+                <select
+                  value={careLogForm.severity}
+                  onChange={(e) => setCareLogForm({ ...careLogForm, severity: e.target.value })}
+                  className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="">Select severity...</option>
+                  <option value="mild">Mild - Early detection, isolated</option>
+                  <option value="moderate">Moderate - Spreading, visible damage</option>
+                  <option value="severe">Severe - Widespread, significant damage</option>
+                  <option value="critical">Critical - Plant health at risk</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[var(--bark)] mb-1">Affected Area</label>
+                <input
+                  type="text"
+                  value={careLogForm.affectedArea}
+                  onChange={(e) => setCareLogForm({ ...careLogForm, affectedArea: e.target.value })}
+                  className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:ring-2 focus:ring-red-500"
+                  placeholder="e.g., Lower leaves, new growth, roots"
+                />
+              </div>
+            </div>
+          )}
+
+          {(careLogForm.activityType === 'fertilizing' || careLogForm.activityType === 'pest_treatment' || careLogForm.activityType === 'fungicide') && (
+            <>
+              {careLogForm.activityType === 'fertilizing' && (
+                <div>
+                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">Fertilizer Used</label>
+                  <input
+                    type="text"
+                    value={careLogForm.fertilizer}
+                    onChange={(e) => setCareLogForm({ ...careLogForm, fertilizer: e.target.value })}
+                    className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+                    placeholder="e.g., 20-20-20 NPK"
+                  />
+                </div>
+              )}
+
+              {careLogForm.activityType === 'pest_treatment' && (
+                <div>
+                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">Pesticide Used</label>
+                  <input
+                    type="text"
+                    value={careLogForm.pesticide}
+                    onChange={(e) => setCareLogForm({ ...careLogForm, pesticide: e.target.value })}
+                    className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+                    placeholder="e.g., Neem oil"
+                  />
+                </div>
+              )}
+
+              {careLogForm.activityType === 'fungicide' && (
+                <div>
+                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">Fungicide Used</label>
+                  <input
+                    type="text"
+                    value={careLogForm.fungicide}
+                    onChange={(e) => setCareLogForm({ ...careLogForm, fungicide: e.target.value })}
+                    className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+                    placeholder="e.g., Copper fungicide"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-[var(--bark)] mb-1">Dosage</label>
+                <input
+                  type="text"
+                  value={careLogForm.dosage}
+                  onChange={(e) => setCareLogForm({ ...careLogForm, dosage: e.target.value })}
+                  className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+                  placeholder="e.g., 1 tbsp per gallon"
+                />
+              </div>
+            </>
+          )}
+
+          {/* Repotting Fields */}
+          {careLogForm.activityType === 'repotting' && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+              <div className="flex items-start gap-2 mb-2">
+                <span className="text-2xl">🪴</span>
+                <div>
+                  <h4 className="font-semibold text-blue-900">Repotting Details</h4>
+                  <p className="text-xs text-[var(--water-blue)]">Track pot size and type changes</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">From Pot Size (inches)</label>
+                  <input
+                    type="number"
+                    step="0.5"
+                    value={careLogForm.fromPotSize}
+                    onChange={(e) => setCareLogForm({ ...careLogForm, fromPotSize: e.target.value })}
+                    className={`w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:ring-2 focus:ring-blue-500 ${careLogForm.fromPotSize ? 'bg-[var(--parchment)]' : ''}`}
+                    placeholder="e.g., 4"
+                    readOnly={!!careLogForm.fromPotSize}
+                    title={careLogForm.fromPotSize ? "Auto-populated from current pot size" : "Enter current pot size"}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">To Pot Size (inches) *</label>
+                  <input
+                    type="number"
+                    step="0.5"
+                    value={careLogForm.toPotSize}
+                    onChange={(e) => setCareLogForm({ ...careLogForm, toPotSize: e.target.value })}
+                    className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., 6"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">From Pot Type</label>
+                  <select
+                    value={careLogForm.fromPotType}
+                    onChange={(e) => setCareLogForm({ ...careLogForm, fromPotType: e.target.value })}
+                    className={`w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:ring-2 focus:ring-blue-500 ${careLogForm.fromPotType && plant?.currentPotType ? 'bg-[var(--parchment)]' : ''}`}
+                    disabled={!!careLogForm.fromPotType && !!plant?.currentPotType}
+                    title={careLogForm.fromPotType ? "Auto-populated from current pot type" : "Select current pot type"}
+                  >
+                    <option value="">Select pot type...</option>
+                    <option value="plastic">Plastic</option>
+                    <option value="terracotta">Terracotta</option>
+                    <option value="ceramic">Ceramic</option>
+                    <option value="net_pot">Net Pot</option>
+                    <option value="fabric">Fabric Pot</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">To Pot Type</label>
+                  <select
+                    value={careLogForm.toPotType}
+                    onChange={(e) => setCareLogForm({ ...careLogForm, toPotType: e.target.value })}
+                    className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select pot type...</option>
+                    <option value="plastic">Plastic</option>
+                    <option value="terracotta">Terracotta</option>
+                    <option value="ceramic">Ceramic</option>
+                    <option value="net_pot">Net Pot</option>
+                    <option value="fabric">Fabric Pot</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Substrate Details - New fields for repotting */}
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <h4 className="text-sm font-semibold text-blue-900 mb-3">
+                  New Substrate Details
+                </h4>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--bark)] mb-1">Substrate Type</label>
+                    <select
+                      value={careLogForm.substrateType || ''}
+                      onChange={(e) => setCareLogForm({ ...careLogForm, substrateType: e.target.value })}
+                      className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select substrate...</option>
+                      <option value="pon">PON (Passive Hydro)</option>
+                      <option value="leca">LECA</option>
+                      <option value="perlite">Perlite</option>
+                      <option value="pumice">Pumice</option>
+                      <option value="soil_mix">Soil Mix</option>
+                      <option value="sphagnum">Sphagnum Moss</option>
+                      <option value="coco_coir">Coco Coir</option>
+                      <option value="bark_mix">Bark Mix</option>
+                      <option value="custom">Custom Mix</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--bark)] mb-1">Drainage Type</label>
+                    <select
+                      value={careLogForm.drainageType || ''}
+                      onChange={(e) => setCareLogForm({ ...careLogForm, drainageType: e.target.value })}
+                      className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select drainage...</option>
+                      <option value="swp">SWP (Self-Watering Pot)</option>
+                      <option value="standard">Standard Drainage</option>
+                      <option value="cache">Cache Pot (No Drainage)</option>
+                      <option value="net_pot">Net Pot (Full Drainage)</option>
+                      <option value="double_pot">Double Pot System</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="mt-3">
+                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">Substrate Mix Details</label>
+                  <input
+                    type="text"
+                    value={careLogForm.substrateMix || ''}
+                    onChange={(e) => setCareLogForm({ ...careLogForm, substrateMix: e.target.value })}
+                    className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., 4.0 size PON, 70% perlite 30% coco, etc."
+                  />
+                  <p className="text-xs text-[var(--clay)] mt-1">Specify particle size, ratios, or any special amendments</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={handleAddCareLog}
+              className="flex-1 px-4 py-2 bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)]"
+            >
+              Save Log Entry
+            </button>
+            <button
+              onClick={handleCloseCareLogModal}
+              className="flex-1 px-4 py-2 border border-black/[0.08] rounded text-[var(--bark)] hover:bg-[var(--parchment)]"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Morphology Modal */}
+      <Modal
+        isOpen={morphologyModalOpen}
+        onClose={() => setMorphologyModalOpen(false)}
+        title="Edit Morphology"
+      >
+        <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Leaf Shape</label>
+              <select
+                value={morphologyForm.leafShape}
+                onChange={(e) => setMorphologyForm({ ...morphologyForm, leafShape: e.target.value })}
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+              >
+                <option value="">Select shape...</option>
+                <option value="Cordate">Cordate (heart-shaped)</option>
+                <option value="Sagittate">Sagittate (arrow-shaped)</option>
+                <option value="Ovate">Ovate (egg-shaped)</option>
+                <option value="Lanceolate">Lanceolate (lance-shaped)</option>
+                <option value="Hastate">Hastate (halberd-shaped)</option>
+                <option value="Reniform">Reniform (kidney-shaped)</option>
+                <option value="Peltate">Peltate (shield-shaped)</option>
+                <option value="Orbicular">Orbicular (circular)</option>
+                <option value="Elliptic">Elliptic (ellipse)</option>
+                <option value="Oblanceolate">Oblanceolate (reverse lance)</option>
+                <option value="Obovate">Obovate (reverse egg)</option>
+                <option value="Linear">Linear (narrow, parallel sides)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Leaf Texture</label>
+              <select
+                value={morphologyForm.leafTexture}
+                onChange={(e) => setMorphologyForm({ ...morphologyForm, leafTexture: e.target.value })}
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+              >
+                <option value="">Select texture...</option>
+                <option value="Velvety">Velvety</option>
+                <option value="Coriaceous">Coriaceous (leathery)</option>
+                <option value="Chartaceous">Chartaceous (papery)</option>
+                <option value="Glabrous">Glabrous (smooth, hairless)</option>
+                <option value="Pubescent">Pubescent (short hairs)</option>
+                <option value="Hirsute">Hirsute (stiff hairs)</option>
+                <option value="Tomentose">Tomentose (woolly)</option>
+                <option value="Bullate">Bullate (puckered)</option>
+                <option value="Rugose">Rugose (wrinkled)</option>
+                <option value="Glossy">Glossy</option>
+                <option value="Matte">Matte</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Leaf Color</label>
+              <input
+                type="text"
+                value={morphologyForm.leafColor}
+                onChange={(e) => setMorphologyForm({ ...morphologyForm, leafColor: e.target.value })}
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+                placeholder="e.g., Dark green"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Leaf Size</label>
+              <select
+                value={morphologyForm.leafSize}
+                onChange={(e) => setMorphologyForm({ ...morphologyForm, leafSize: e.target.value })}
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+              >
+                <option value="">Select size...</option>
+                <option value="Very Small">Very Small (&lt;10cm / &lt;4in)</option>
+                <option value="Small">Small (10-20cm / 4-8in)</option>
+                <option value="Medium">Medium (20-40cm / 8-16in)</option>
+                <option value="Large">Large (40-60cm / 16-24in)</option>
+                <option value="Very Large">Very Large (60-100cm / 24-40in)</option>
+                <option value="Giant">Giant (&gt;100cm / &gt;40in)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Spadix Color</label>
+              <input
+                type="text"
+                value={morphologyForm.spadixColor}
+                onChange={(e) => setMorphologyForm({ ...morphologyForm, spadixColor: e.target.value })}
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+                placeholder="e.g., Yellow"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Spathe Color</label>
+              <input
+                type="text"
+                value={morphologyForm.spatheColor}
+                onChange={(e) => setMorphologyForm({ ...morphologyForm, spatheColor: e.target.value })}
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+                placeholder="e.g., Pink"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Spathe Shape</label>
+              <select
+                value={morphologyForm.spatheShape}
+                onChange={(e) => setMorphologyForm({ ...morphologyForm, spatheShape: e.target.value })}
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+              >
+                <option value="">Select shape...</option>
+                <option value="Reflexed">Reflexed (bent backward)</option>
+                <option value="Cucullate">Cucullate (hooded)</option>
+                <option value="Convolute">Convolute (rolled)</option>
+                <option value="Lanceolate">Lanceolate (lance-shaped)</option>
+                <option value="Ovate">Ovate (egg-shaped)</option>
+                <option value="Cordate">Cordate (heart-shaped)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Growth Rate</label>
+              <select
+                value={morphologyForm.growthRate}
+                onChange={(e) => setMorphologyForm({ ...morphologyForm, growthRate: e.target.value })}
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+              >
+                <option value="">Select rate...</option>
+                <option value="Very Slow">Very Slow (1-2 leaves/year)</option>
+                <option value="Slow">Slow (2-3 leaves/year)</option>
+                <option value="Moderate">Moderate (3-5 leaves/year)</option>
+                <option value="Fast">Fast (6-10 leaves/year)</option>
+                <option value="Very Fast">Very Fast (10+ leaves/year)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Mature Size</label>
+              <select
+                value={morphologyForm.matureSize}
+                onChange={(e) => setMorphologyForm({ ...morphologyForm, matureSize: e.target.value })}
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+              >
+                <option value="">Select size...</option>
+                <option value="Miniature">Miniature (&lt;30cm / &lt;1ft)</option>
+                <option value="Small">Small (30-60cm / 1-2ft)</option>
+                <option value="Medium">Medium (60-120cm / 2-4ft)</option>
+                <option value="Large">Large (120-180cm / 4-6ft)</option>
+                <option value="Very Large">Very Large (180-250cm / 6-8ft)</option>
+                <option value="Giant">Giant (&gt;250cm / &gt;8ft)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Petiole Color</label>
+              <input
+                type="text"
+                value={morphologyForm.petioleColor}
+                onChange={(e) => setMorphologyForm({ ...morphologyForm, petioleColor: e.target.value })}
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+                placeholder="e.g., Green"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Cataphyll Color</label>
+              <input
+                type="text"
+                value={morphologyForm.cataphyllColor}
+                onChange={(e) => setMorphologyForm({ ...morphologyForm, cataphyllColor: e.target.value })}
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+                placeholder="e.g., Red"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">New Leaf Color</label>
+              <input
+                type="text"
+                value={morphologyForm.newLeafColor}
+                onChange={(e) => setMorphologyForm({ ...morphologyForm, newLeafColor: e.target.value })}
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+                placeholder="e.g., Bronze"
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={handleUpdateMorphology}
+              className="flex-1 px-4 py-2 bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)]"
+            >
+              Save Morphology
+            </button>
+            <button
+              onClick={() => setMorphologyModalOpen(false)}
+              className="flex-1 px-4 py-2 border border-black/[0.08] rounded text-[var(--bark)] hover:bg-[var(--parchment)]"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Photo Upload Modal */}
+      <Modal
+        isOpen={photoUploadModalOpen}
+        onClose={() => setPhotoUploadModalOpen(false)}
+        title="Upload Photo"
+      >
+        <div className="space-y-4">
+          <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center">
+            <Camera className="w-12 h-12 text-[var(--clay)] mx-auto mb-3" />
+            <p className="text-[var(--clay)] mb-2">Click to select photo or drag and drop</p>
+            <p className="text-sm text-[var(--clay)]">PNG, JPG, HEIC up to 10MB</p>
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              id="photo-upload"
+              onChange={() => {
+                // Photo upload will be implemented later
+                alert('Photo upload functionality will be implemented soon!')
+                setPhotoUploadModalOpen(false)
+              }}
+            />
+            <label
+              htmlFor="photo-upload"
+              className="mt-4 inline-block px-4 py-2 bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)] cursor-pointer"
+            >
+              Select Photo
+            </label>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Caption (optional)</label>
+            <input
+              type="text"
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+              placeholder="Add a caption for this photo..."
+            />
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => setPhotoUploadModalOpen(false)}
+              className="flex-1 px-4 py-2 border border-black/[0.08] rounded text-[var(--bark)] hover:bg-[var(--parchment)]"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Overview Edit Modal */}
+      <Modal
+        isOpen={overviewModalOpen}
+        onClose={() => setOverviewModalOpen(false)}
+        title="Edit Plant Overview"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Plant Name</label>
+            <input
+              type="text"
+              value={overviewForm.name}
+              onChange={(e) => setOverviewForm({ ...overviewForm, name: e.target.value })}
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+              placeholder="e.g., Hybrid #1 (Crystallinum x Magnificum)"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Species</label>
+            <input
+              type="text"
+              value={overviewForm.species}
+              onChange={(e) => setOverviewForm({ ...overviewForm, species: e.target.value })}
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+              placeholder="e.g., A. crystallinum x A. magnificum"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Cross Notation</label>
+            <input
+              type="text"
+              value={overviewForm.crossNotation}
+              onChange={(e) => setOverviewForm({ ...overviewForm, crossNotation: e.target.value })}
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+              placeholder="e.g., (RA8×RA5)², F1, Silver Veins"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Section</label>
+            <select
+              value={overviewForm.section}
+              onChange={(e) => setOverviewForm({ ...overviewForm, section: e.target.value })}
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+            >
+              <option value="">Select section...</option>
+              <option value="Cardiolonchium">Cardiolonchium</option>
+              <option value="Belolonchium">Belolonchium</option>
+              <option value="Pachyneurium">Pachyneurium</option>
+              <option value="Chamaerepium">Chamaerepium</option>
+              <option value="Tetraspermium">Tetraspermium</option>
+              <option value="Calomystrium">Calomystrium</option>
+              <option value="Digitinervium">Digitinervium</option>
+              <option value="Leptanthurium">Leptanthurium</option>
+              <option value="Porphyrochitonium">Porphyrochitonium</option>
+              <option value="Xialophyllum">Xialophyllum</option>
+              <option value="Semaeophyllum">Semaeophyllum</option>
+              <option value="Urospadix">Urospadix</option>
+              <option value="Dactylophyllum">Dactylophyllum</option>
+              <option value="Polyneurium">Polyneurium</option>
+              <option value="cross-section hybrid">cross-section hybrid</option>
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Acquisition Cost</label>
+              <input
+                type="number"
+                value={overviewForm.acquisitionCost}
+                onChange={(e) => setOverviewForm({ ...overviewForm, acquisitionCost: e.target.value })}
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+                placeholder="0.00"
+                step="0.01"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Acquisition Date</label>
+              <input
+                type="date"
+                value={overviewForm.acquisitionDate}
+                onChange={(e) => setOverviewForm({ ...overviewForm, acquisitionDate: e.target.value })}
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Health Status</label>
+            <select
+              value={overviewForm.healthStatus}
+              onChange={(e) => setOverviewForm({ ...overviewForm, healthStatus: e.target.value })}
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+            >
+              <option value="">Select status</option>
+              <option value="healthy">Healthy</option>
+              <option value="recovering">Recovering</option>
+              <option value="struggling">Struggling</option>
+              <option value="critical">Critical</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Propagation Type</label>
+            <select
+              value={overviewForm.propagationType}
+              onChange={(e) => setOverviewForm({ ...overviewForm, propagationType: e.target.value })}
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+            >
+              <option value="">Select type...</option>
+              <option value="seed">Seed - Grown from seed</option>
+              <option value="cutting">Cutting - Stem/leaf cutting</option>
+              <option value="tissue_culture">Tissue Culture - Lab propagated</option>
+              <option value="division">Division - Offset/clone from mother plant</option>
+              <option value="purchase">Purchase - Acquired as established plant</option>
+            </select>
+            <p className="text-xs text-[var(--clay)] mt-1">
+              💡 Division = genetically identical clone of parent plant
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Generation</label>
+              <select
+                value={overviewForm.generation}
+                onChange={(e) => setOverviewForm({ ...overviewForm, generation: e.target.value })}
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+              >
+                <option value="">Select generation...</option>
+                <optgroup label="Cross-Pollinated (F-series)">
+                  <option value="F1">F1 - First filial generation</option>
+                  <option value="F2">F2 - Second filial generation</option>
+                  <option value="F3">F3 - Third filial generation</option>
+                  <option value="F4">F4 - Fourth filial generation</option>
+                  <option value="F5">F5 - Fifth filial generation</option>
+                  <option value="F6">F6 - Sixth filial generation</option>
+                </optgroup>
+                <optgroup label="Self-Pollinated (S-series)">
+                  <option value="S1">S1 - First selfed generation</option>
+                  <option value="S2">S2 - Second selfed generation</option>
+                  <option value="S3">S3 - Third selfed generation</option>
+                  <option value="S4">S4 - Fourth selfed generation</option>
+                  <option value="S5">S5 - Fifth selfed generation</option>
+                </optgroup>
+                <optgroup label="Other">
+                  <option value="P1">P1 - Parent/Foundation</option>
+                  <option value="BC1">BC1 - Backcross</option>
+                  <option value="Clone">Clone/Division (same as parent)</option>
+                </optgroup>
+              </select>
+              <p className="text-xs text-[var(--clay)] mt-1">
+                💡 For divisions/clones: Use "Clone" or same generation as mother plant
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Breeder Code</label>
+              <select
+                value={overviewForm.breederCode}
+                onChange={(e) => setOverviewForm({ ...overviewForm, breederCode: e.target.value })}
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+              >
+                <option value="">Select code...</option>
+                <option value="RA">RA</option>
+                <option value="OG">OG</option>
+                <option value="NSE">NSE</option>
+                <option value="TZ">TZ</option>
+                <option value="SKG">SKG</option>
+                <option value="Wu">Wu</option>
+                <option value="EPP">EPP</option>
+                <option value="SC">SC</option>
+                <option value="DF">DF</option>
+                <option value="FP">FP</option>
+                <option value="custom">Custom (enter below)</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Breeder</label>
+            <input
+              type="text"
+              value={overviewForm.breeder}
+              onChange={(e) => setOverviewForm({ ...overviewForm, breeder: e.target.value })}
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+              placeholder="e.g., NSE Tropicals"
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={handleUpdateOverview}
+              className="flex-1 px-4 py-2 bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)]"
+            >
+              Save Changes
+            </button>
+            <button
+              onClick={() => setOverviewModalOpen(false)}
+              className="flex-1 px-4 py-2 border border-black/[0.08] rounded text-[var(--bark)] hover:bg-[var(--parchment)]"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Flowering Cycle Modal */}
+      <Modal
+        isOpen={floweringModalOpen}
+        onClose={() => setFloweringModalOpen(false)}
+        title={floweringForm.cycleId ? "Edit Flowering Cycle" : "Log Flowering Event"}
+      >
+        <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+          <div>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Spathe Emergence Date</label>
+            <input
+              type="date"
+              value={floweringForm.spatheEmergence}
+              onChange={(e) => setFloweringForm({ ...floweringForm, spatheEmergence: e.target.value })}
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+            />
+            <p className="text-xs text-[var(--clay)] mt-1">When the spathe first emerged</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Female Phase Start</label>
+              <input
+                type="date"
+                value={floweringForm.femaleStart}
+                onChange={(e) => setFloweringForm({ ...floweringForm, femaleStart: e.target.value })}
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+              />
+              <p className="text-xs text-[var(--clay)] mt-1">Stigmas receptive</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Female Phase End</label>
+              <input
+                type="date"
+                value={floweringForm.femaleEnd}
+                onChange={(e) => setFloweringForm({ ...floweringForm, femaleEnd: e.target.value })}
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Male Phase Start</label>
+              <input
+                type="date"
+                value={floweringForm.maleStart}
+                onChange={(e) => setFloweringForm({ ...floweringForm, maleStart: e.target.value })}
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+              />
+              <p className="text-xs text-[var(--clay)] mt-1">Pollen production begins</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Male Phase End</label>
+              <input
+                type="date"
+                value={floweringForm.maleEnd}
+                onChange={(e) => setFloweringForm({ ...floweringForm, maleEnd: e.target.value })}
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Spathe Closed</label>
+            <input
+              type="date"
+              value={floweringForm.spatheClose}
+              onChange={(e) => setFloweringForm({ ...floweringForm, spatheClose: e.target.value })}
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+            />
+            <p className="text-xs text-[var(--clay)] mt-1">When the flowering cycle completed</p>
+          </div>
+
+          <div className="border-t border-black/[0.04] pt-4">
+            <h4 className="font-medium text-gray-900 mb-3">Pollen Management</h4>
+
+            <div className="flex items-center gap-2 mb-3">
+              <input
+                type="checkbox"
+                id="pollenCollected"
+                checked={floweringForm.pollenCollected}
+                onChange={(e) => setFloweringForm({ ...floweringForm, pollenCollected: e.target.checked })}
+                className="rounded border-gray-300"
+              />
+              <label htmlFor="pollenCollected" className="text-sm text-[var(--bark)]">Pollen Collected</label>
+            </div>
+
+            {floweringForm.pollenCollected && (
+              <>
+                <div className="mb-3">
+                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">Pollen Quality</label>
+                  <select
+                    value={floweringForm.pollenQuality}
+                    onChange={(e) => setFloweringForm({ ...floweringForm, pollenQuality: e.target.value })}
+                    className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+                  >
+                    <option value="">Select quality...</option>
+                    <option value="abundant">Abundant</option>
+                    <option value="moderate">Moderate</option>
+                    <option value="sparse">Sparse</option>
+                    <option value="poor">Poor</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-2 mb-3">
+                  <input
+                    type="checkbox"
+                    id="pollenStored"
+                    checked={floweringForm.pollenStored}
+                    onChange={(e) => setFloweringForm({ ...floweringForm, pollenStored: e.target.checked })}
+                    className="rounded border-gray-300"
+                  />
+                  <label htmlFor="pollenStored" className="text-sm text-[var(--bark)]">Pollen Stored (refrigerated)</label>
+                </div>
+
+                {floweringForm.pollenStored && (
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--bark)] mb-1">Storage Date</label>
+                    <input
+                      type="date"
+                      value={floweringForm.pollenStorageDate}
+                      onChange={(e) => setFloweringForm({ ...floweringForm, pollenStorageDate: e.target.value })}
+                      className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+                    />
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Notes</label>
+            <textarea
+              value={floweringForm.notes}
+              onChange={(e) => setFloweringForm({ ...floweringForm, notes: e.target.value })}
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+              rows={3}
+              placeholder="Notes about this flowering cycle..."
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={handleSaveFloweringCycle}
+              className="flex-1 px-4 py-2 bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)]"
+            >
+              {floweringForm.cycleId ? 'Update Cycle' : 'Save Cycle'}
+            </button>
+            <button
+              onClick={() => setFloweringModalOpen(false)}
+              className="flex-1 px-4 py-2 border border-black/[0.08] rounded text-[var(--bark)] hover:bg-[var(--parchment)]"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal isOpen={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} title="Archive Plant">
+        <div className="space-y-4">
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <p className="text-amber-800 font-medium mb-2">Moving to Graveyard</p>
+            <p className="text-amber-700 text-sm">
+              This will archive the plant and hide it from your active collection. All data is preserved for future ML insights and breeding records.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-2">
+              Reason for archiving <span className="font-bold">{plant?.plantId}</span>
+              {plant?.hybridName && <span> ({plant.hybridName})</span>}
+            </label>
+            <select
+              value={archiveReason}
+              onChange={(e) => setArchiveReason(e.target.value)}
+              className="w-full p-3 rounded-lg border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+            >
+              <option value="died">Died</option>
+              <option value="sold">Sold</option>
+              <option value="gifted">Gifted</option>
+              <option value="culled">Culled (poor genetics)</option>
+              <option value="divided">Divided into other plants</option>
+              <option value="lost">Lost / Unknown</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={() => { setDeleteConfirmOpen(false); setArchiveReason('died'); }}
+              className="flex-1 px-4 py-2 border border-black/[0.08] rounded text-[var(--bark)] hover:bg-[var(--parchment)]"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleArchivePlant}
+              className="flex-1 px-4 py-2 bg-amber-600 text-white rounded-xl hover:bg-amber-700"
+            >
+              Archive Plant
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Care Log Confirmation Modal */}
+      <Modal
+        isOpen={!!careLogToDelete}
+        onClose={() => setCareLogToDelete(null)}
+        title="Delete Care Log"
+      >
+        <div className="space-y-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-red-800 font-medium mb-2">⚠️ Warning: This action cannot be undone!</p>
+            <p className="text-red-700 text-sm">
+              This care log entry will be permanently deleted from the plant's history.
+            </p>
+          </div>
+
+          <p className="text-[var(--bark)]">
+            Are you sure you want to delete this care log entry?
+          </p>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={() => setCareLogToDelete(null)}
+              className="flex-1 px-4 py-2 border border-black/[0.08] rounded text-[var(--bark)] hover:bg-[var(--parchment)]"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDeleteCareLog}
+              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Photo Upload Modal */}
+      <Modal
+        isOpen={photoUploadModalOpen}
+        onClose={() => {
+          setPhotoUploadModalOpen(false)
+          setSelectedFiles([])
+          setPhotoForm({
+            photoId: '',
+            photoType: 'whole_plant',
+            growthStage: '',
+            notes: '',
+            dateTaken: getTodayString()
+          })
+        }}
+        title={photoForm.photoId ? "Edit Photo Details" : "Upload Photos"}
+      >
+        <div className="space-y-4">
+          {/* Drag and Drop Area - Only show when uploading new photos */}
+          {!photoForm.photoId && (
+            <div
+              {...getRootProps()}
+              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                isDragActive
+                  ? 'border-[var(--moss)] bg-[var(--moss)]/10'
+                  : 'border-black/[0.15] hover:border-[var(--moss)] hover:bg-[var(--parchment)]'
+              }`}
+            >
+              <input {...getInputProps()} />
+              <Upload className="w-12 h-12 text-[var(--clay)] mx-auto mb-3" />
+              {isDragActive ? (
+                <p className="text-[var(--moss)] font-medium">Drop photos here...</p>
+              ) : (
+                <>
+                  <p className="text-[var(--bark)] font-medium mb-1">
+                    Drag & drop photos here, or click to select
+                  </p>
+                  <p className="text-sm text-[var(--clay)]">
+                    Supports: JPG, PNG, WEBP, HEIC (iOS photos)
+                  </p>
+                  <p className="text-xs text-[var(--clay)] mt-2">
+                    Multiple files supported for batch upload
+                  </p>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Selected Files Preview */}
+          {selectedFiles.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-[var(--bark)]">
+                Selected: {selectedFiles.length} {selectedFiles.length === 1 ? 'photo' : 'photos'}
+              </p>
+              <div className="max-h-40 overflow-y-auto space-y-1">
+                {selectedFiles.map((file, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-2 bg-[var(--parchment)] rounded-lg"
+                  >
+                    <div className="flex items-center gap-2">
+                      <ImageIcon className="w-4 h-4 text-[var(--moss)]" />
+                      <span className="text-sm text-[var(--bark)] truncate max-w-xs">
+                        {file.name}
+                      </span>
+                      <span className="text-xs text-[var(--clay)]">
+                        ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                      </span>
+                    </div>
+                    <button
+                      onClick={() =>
+                        setSelectedFiles(prev => prev.filter((_, i) => i !== index))
+                      }
+                      className="p-1 hover:bg-gray-200 rounded"
+                    >
+                      <X className="w-4 h-4 text-[var(--clay)]" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Photo Metadata */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">
+                Photo Type
+              </label>
+              <select
+                value={photoForm.photoType}
+                onChange={(e) => setPhotoForm({ ...photoForm, photoType: e.target.value })}
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+              >
+                <option value="whole_plant">Whole Plant</option>
+                <option value="leaf">Leaf Detail</option>
+                <option value="spathe">Spathe</option>
+                <option value="spadix">Spadix</option>
+                <option value="stem">Stem</option>
+                <option value="catophyl">Catophyl</option>
+                <option value="base">Base/Petiole</option>
+                <option value="roots">Roots</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">
+                Growth Stage
+              </label>
+              <select
+                value={photoForm.growthStage}
+                onChange={(e) => setPhotoForm({ ...photoForm, growthStage: e.target.value })}
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+              >
+                <option value="">Not specified</option>
+                <option value="seedling">Seedling</option>
+                <option value="juvenile">Juvenile</option>
+                <option value="mature">Mature</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">
+              Date Taken (optional)
+            </label>
+            <input
+              type="date"
+              value={photoForm.dateTaken}
+              onChange={(e) => setPhotoForm({ ...photoForm, dateTaken: e.target.value })}
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+            />
+            <p className="text-xs text-[var(--clay)] mt-1">
+              📸 Date will be automatically extracted from photo EXIF data if available
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">
+              Notes (optional)
+            </label>
+            <textarea
+              value={photoForm.notes}
+              onChange={(e) => setPhotoForm({ ...photoForm, notes: e.target.value })}
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+              rows={2}
+              placeholder="Add any notes about these photos..."
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={() => {
+                setPhotoUploadModalOpen(false)
+                setSelectedFiles([])
+                setPhotoForm({
+                  photoId: '',
+                  photoType: 'whole_plant',
+                  growthStage: '',
+                  notes: '',
+                  dateTaken: getTodayString()
+                })
+              }}
+              className="flex-1 px-4 py-2 border border-black/[0.08] rounded text-[var(--bark)] hover:bg-[var(--parchment)]"
+              disabled={uploadingPhoto}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={photoForm.photoId ? handleUpdatePhoto : handlePhotoUpload}
+              disabled={uploadingPhoto || (!photoForm.photoId && selectedFiles.length === 0)}
+              className="flex-1 px-4 py-2 bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {uploadingPhoto ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  {photoForm.photoId ? 'Updating...' : 'Uploading...'}
+                </>
+              ) : (
+                <>
+                  {photoForm.photoId ? (
+                    <>
+                      <Save className="w-4 h-4" />
+                      Save Changes
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4" />
+                      Upload {selectedFiles.length > 0 && `(${selectedFiles.length})`}
+                    </>
+                  )}
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </Modal>
+    </div>
+  )
+}

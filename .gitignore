@@ -1,28 +1,65 @@
-# macOS
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+.next-dev.log
+
+# production
+/build
+
+# misc
 .DS_Store
-.AppleDouble
-.LSOverride
+*.pem
 
-# Development
-.cladari_dev.pid
-
-# PlantDB Next.js
-plantDB/node_modules/
-plantDB/.next/
-plantDB/out/
-plantDB/.env
-plantDB/.env*.local
-
-# Database (don't commit local database)
-plantDB/prisma/dev.db
-plantDB/prisma/dev.db-journal
-
-# Logs
-*.log
+# debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-plantDB/.pnpm-debug.log*
+
+# local env files
+.env
+.env*.local
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# prisma
+prisma/*.db-journal
+prisma/*.db-shm
+prisma/*.db-wal
+
+# Database files (DO NOT commit live database)
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+dev.db*
+prisma/dev.db*
+
+# BUT allow text snapshots for AI assistant visibility
+!docs/db-snapshots/*.sql
+!docs/db-snapshots/*.json
+!docs/db-snapshots/*.txt
+
+# backups
+prisma/backups/
+
+# User uploaded photos - use external storage for production
+public/uploads/photos/
+public/uploads/thumbnails/
 
 # IDE
 .vscode/
@@ -31,25 +68,19 @@ plantDB/.pnpm-debug.log*
 *.swo
 *~
 
-# Temporary files
-*.tmp
-.cache/
+# Mac
+.DS_Store
 
-# Build artifacts
-plantDB/dist/
-plantDB/build/
+# Logs
+*.log
+public/uploads
 
-# Testing
-plantDB/coverage/
+# Training data exports
+exports/
 
-# Misc
-*.orig
+# MCP server
+mcp-server/node_modules/
+mcp-server/dist/
 
-# Database backups (keep local, don't commit)
-backups/
-
-# Personal context docs (not for git)
-CLAUDE READ/
-
-# Separate website repo (has its own git)
-cladari-website/
+# Backup folders (safety backups during migrations)
+cladari-backup-*/

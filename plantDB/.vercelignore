@@ -1,3 +1,0 @@
-# Exclude large upload folders from serverless function bundles
-public/uploads/photos
-public/uploads/thumbnails

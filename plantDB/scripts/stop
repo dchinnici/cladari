@@ -1,6 +1,0 @@
-#!/bin/bash
-# Stop the development server
-
-echo "🛑 Stopping Cladari server..."
-pkill -f "next dev"
-echo "✓ Server stopped"
