@@ -548,7 +548,7 @@ When the user asks questions, assume they're asking about this specific plant un
   }
 
   const result = streamText({
-    model: anthropic('claude-opus-4-20250514'),
+    model: anthropic('claude-sonnet-4-20250514'),
     system: systemPrompt,
     messages: modelMessages,
     providerOptions: {
