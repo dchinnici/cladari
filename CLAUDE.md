@@ -6,8 +6,9 @@ Cladari is a production plant database for managing a high-value Anthurium breed
 ## Tech Stack
 - **Framework**: Next.js 15.5.6 (App Router)
 - **Database**: Supabase Postgres + Prisma ORM
-- **Auth**: Supabase Auth (email/password)
+- **Auth**: Supabase Auth (Google OAuth + email/password)
 - **Storage**: Supabase Storage (photos)
+- **Hosting**: Vercel (production: www.cladari.ai)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
 - **Location**: `plantDB/` is the app root
@@ -69,9 +70,38 @@ plantDB/
 - **API routes**: kebab-case paths
 - **ID Generation**: `src/lib/breeding-ids.ts` for all ID generation
 
-## Current Version: v1.7.3 (Dec 17, 2025)
+## Current Version: v1.7.5 (Dec 21, 2025)
 
 ### Recently Completed
+- **Unified Breed UI + Flowering Events** (v1.7.5)
+  - **Unified "Breed" Navigation**: Combined Breeding + Batches under single "Breed" entry point
+    - Tab-style navigation between Crosses (sexual) and Batches (asexual) pages
+    - Mobile nav shows "Breed" with GitBranch icon (replaced separate entries)
+    - Desktop nav consolidated under "Breed" link
+  - **Flowering Event Picker**: Simple event-log approach for tracking flowering cycles
+    - Quick Actions reorganized: Care/Flower/Note/Photo (replaced Water/Feed/Note/Photo)
+    - One-tap events: 🌱 Bud Emerging, 🌸 Spathe Opening, 💧 Female Receptive, 🌾 Pollen Visible, ✂️ Finished
+    - Events save to Journal with 'flowering' entryType and metadata
+  - **Lineage Tab Clone Batch Support**: Graduated plants now show "Graduated From Batch" section
+    - Links back to source batch with propagation type, cultivar name, external source
+    - Batch origin visible in family tree visualization
+  - **Multi-Plant Graduation Fix**: Fixed duplicate ID and partial commit bugs
+    - Sequential ID generation (query once, increment locally)
+    - Transaction wrapper for atomic all-or-nothing commits
+    - Fixed propagationType mapping: OFFSET→division, TC→tissue_culture
+  - **Clone Batch Photos**: Photo upload UI on batch detail pages
+  - **Polymorphic Photo Support**: Photos can attach to breeding records and batches
+- **Production Deployment + OAuth** (v1.7.4)
+  - **Vercel Production**: Live at https://www.cladari.ai
+  - **Google OAuth**: Sign in with Google (account picker enabled)
+  - **Apple OAuth**: Button ready (needs Apple Developer setup)
+  - **UserMenu Component**: Logout in desktop nav + mobile bottom nav
+  - **Multi-tenant Dashboard Fix**: Stats now filtered by userId
+  - **Orphaned Photos Cleanup**: Removed 11 broken photo records
+  - **Training Data Export**: `scripts/export-training-data.ts` for ML fine-tuning
+    - Exports HITL-scored ChatLogs (quality ≥ 3) as JSONL
+    - Exports NegativeExamples for DPO/RLHF training
+    - Weekly delta exports with `--since` flag
 - **Plant Diary Export + Zebra Printer Integration** (v1.7.3)
   - **Plant Diary Export**: `/api/plants/[id]/export` endpoint with multi-format output
     - Structured JSON with identity, status, statistics for blockchain/verification
@@ -144,6 +174,24 @@ plantDB/
 - Hardware: RTX 4090 on F2
 - Purpose: Rigorous morphological analysis, not "good enough" similarity search
 
+**Voice Memo Import** (MEDIUM PRIORITY - Quality of life)
+- See `plantDB/docs/VOICE_MEMO_IMPORT.md` for full spec
+- **Calm tech vision**: Speak while doing care, data appears in PlantDB
+- Pipeline: Audio capture → F2 Whisper transcription → LLM parsing → Care log API
+- Infrastructure exists: Whisper on F2:8085, Care Log APIs, Opus4 for parsing
+- **Phase 1**: Batch processing (end-of-day review) — 4-6 hours
+- **Phase 2**: PWA voice button (real-time) — 8-12 hours
+- **Phase 3**: Ambient lav mic mode — 20-30 hours
+- Start with Phase 1 to validate Whisper quality on botanical vocabulary
+
+**Sovria Component Harvest** (MEDIUM PRIORITY - ML infrastructure)
+- Extract reusable ML components from ~/f1sovria for Cladari batch pipelines
+- **embedding_strategy.py** (506 lines) — Multi-modal embedding engine
+- **ingestion_pipeline.py** (836 lines) — Multi-source data adapters
+- **realtime_query_api.py** (700 lines) — Semantic search patterns
+- **LoRA training framework** — For plant-specific model fine-tuning
+- Purpose: Offline batch ML pipeline on F2, reports back to Supabase
+
 **pgvector Semantic Search** (IMPLEMENTED v1.7.1)
 Full semantic search infrastructure:
 - **Embedding service**: BGE-base-en-v1.5 via @xenova/transformers (768 dimensions)
@@ -171,8 +219,9 @@ POST /api/ml/semantic-search
 
 ## Current State (Dec 2025)
 ### Working Well
+- **Production Live** (v1.7.4) - www.cladari.ai on Vercel, Google OAuth, multi-tenant
 - **Mobile PWA** (v1.7.2) - Viewport locked, safe area padding, scroll containment
-- **Photo Upload** (v1.7.2) - All uploads go to Supabase Storage, EXIF rotation handling
+- **Photo Upload** (v1.7.2) - All uploads go to Supabase Storage, EXIF rotation handling (~696 photos)
 - **Semantic Search** (v1.7.1) - pgvector embeddings, quality-weighted retrieval, auto-chunking
 - **Supabase Infrastructure** (v1.7.0) - Postgres, Auth, Storage all operational
 - **HITL Quality Scoring** (v1.6.3) - 0-4 scoring, negative examples, retrieval weights
@@ -219,9 +268,14 @@ Cross (CLX-YYYY-###) → Harvest → SeedBatch (SDB-YYYY-###) → Seedling (SDL-
 - Harvest modal UI (API complete)
 - Seed batch modal UI (API complete)
 - Seedling modal UI (API complete)
-- Graduation workflow UI (API complete)
+- Graduation workflow UI for seedlings (clone batch graduation DONE)
 - Batch print functionality (all plants in a location)
 - Standard 2"x1" label templates (need labels)
+- Multi-tenant printing strategy (different printers per user)
+- Tag label redesign (pot stickers vs plant tags)
+- SWP vs top watering care method tracking per plant
+- Autocomplete/search to prevent text field misspellings
+- Future event alerts/reminders system
 
 ### Queued Enhancements (Dec 17, 2025)
 
@@ -325,10 +379,10 @@ echo '^XA~WC^XZ' | lp -d Zebra -o raw -
 
 **New Components:**
 - `HealthMetrics.tsx` - ML predictions, substrate health, EC/pH trends
-- `QuickActions.tsx` - One-click Water, Feed, Note, Photo buttons
+- `QuickActions.tsx` - One-click Care, Flower, Note, Photo buttons (v1.7.5 reorganization)
 - `JournalTab.tsx` - Unified timeline with type filters
 - `JournalEntryModal.tsx` - Single modal with type selector
-- `LineageTab.tsx` - Family tree display
+- `LineageTab.tsx` - Family tree display with clone batch origin support (v1.7.5)
 
 ### Previously (v1.5.1)
 
@@ -466,11 +520,50 @@ npm run build          # Verify no TypeScript errors
 3. Verify UI still renders
 4. Check for TypeScript errors
 
-## Getting Help
-- OPERATOR_MANUAL.md - User guide
-- INSTRUCTION_MANUAL.md - Day-to-day operations  
-- DB_QUICK_REFERENCE.md - Database commands
-- CHANGELOG.md - Version history and recent changes
+## Documentation Index
+
+**When updating documentation after commits, update these files:**
+
+### Root Level (plantDB/)
+| File | Purpose | Update When |
+|------|---------|-------------|
+| `CLAUDE.md` | AI context, version history, architecture | Every version bump, major features |
+| `OPERATOR_MANUAL.md` | End-user guide | UI changes, new features |
+| `CHANGELOG.md` | Version history | Every release |
+| `INTEGRATION.md` | Sovria/MCP integration | API changes, infrastructure |
+| `README.md` | Project overview | Major milestones |
+
+### docs/ Folder
+| File | Purpose | Update When |
+|------|---------|-------------|
+| `CLADARI_ENGINEER_MANUAL.md` | Developer reference | Technical changes, API updates |
+| `DEFERRED_TASKS.md` | Security/deployment roadmap | Tasks completed or added |
+| `DB_QUICK_REFERENCE.md` | Database commands | Schema changes |
+| `REPRODUCTIVE_PHENOLOGY.md` | Flowering tracking spec | Flowering feature changes |
+| `UNIFIED_JOURNAL_DESIGN.md` | Journal system architecture | Journal/Quick Actions changes |
+| `LOCATION_MANAGEMENT.md` | Location features | Location/sensor changes |
+| `ML_VISION_PIPELINE.md` | ML vision spec | ML feature changes |
+| `ML_INTEGRATION_ROADMAP.md` | ML roadmap | ML progress |
+| `AI_DATA_STRATEGY.md` | AI/HITL data strategy | Training data changes |
+| `BACKUP_SETUP.md` | Backup configuration | Backup procedure changes |
+| `VISION_AND_PIPELINE.md` | Product roadmap | Strategic direction changes |
+| `TEMPORAL_MORPHOLOGY.md` | Trait tracking spec | Morphology feature changes |
+| `MODULAR_DOMAIN_EXPERT_STACK.md` | AI architecture spec | AI system changes |
+| `TESTING_NOTES.md` | Testing procedures | Test changes |
+| `NEXT_SESSION_BUGS.md` | Bug tracking | Bug discovery/fixes |
+
+### Archive
+| File | Purpose |
+|------|---------|
+| `docs/archive/` | Completed session plans, historical context |
+
+### Quick Update Checklist
+After significant commits:
+1. ✅ Update version in `CLAUDE.md` header
+2. ✅ Add to "Recently Completed" section in `CLAUDE.md`
+3. ✅ Update `OPERATOR_MANUAL.md` if UI changed
+4. ✅ Update relevant `docs/*.md` file for feature area
+5. ✅ Consider `CHANGELOG.md` for release notes
 
 ## Strategic Direction (Dec 2025)
 
@@ -511,10 +604,13 @@ Each step in this chain is documented with timestamps, photos, and environmental
 **Phase 1: Pro Web Tool (Now → 6 months)**
 - ✅ Supabase Postgres + Auth (multi-tenant ready)
 - ✅ Photo storage migration to Supabase Storage
+- ✅ pgvector semantic search for AI context retrieval
+- ✅ QR code scanning → quick care logging
+- ✅ PWA for mobile access
+- ✅ **Production deployment** (www.cladari.ai on Vercel)
+- ✅ **Google OAuth** (one-click sign in)
+- ✅ **Training data pipeline** (HITL export for fine-tuning)
 - Finish breeding pipeline UI (harvest/seedling modals, graduation)
-- pgvector semantic search for AI context retrieval
-- QR code scanning → quick care logging (key mobile feature)
-- PWA for mobile access (add to homescreen works now)
 - Alpha test with 5-10 serious breeders
 
 **Phase 2: ML Layer (6-12 months)**
@@ -535,8 +631,8 @@ The mobile unlock isn't an app - it's frictionless data entry:
 - **Location QR**: Scan "BALCONY" → batch care page with location pre-selected + all plants in that location auto-selected
 - Walk past a bench, notice something, log it in 5 seconds
 - Makes one-off VALUABLE data entry possible in real-time
-- **Network**: Uses Tailscale IP (100.88.172.122) for phone → dev machine access
-- **Printing**: Zebra ZD421CN connected via QZ Tray, 57x32mm holographic labels tested
+- **Network**: Production URL (www.cladari.ai) works from anywhere; Tailscale for local dev
+- **Printing**: Zebra ZD421CN via server-side `lp` command, 57x32mm holographic labels tested
 
 ### Why Not Consumer App
 - Red ocean market (Planta, Greg, etc.)
