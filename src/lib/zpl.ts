@@ -448,42 +448,41 @@ export function generatePotStickerZPL(data: PotStickerData): string {
   const labelWidth = 672;
   const labelHeight = 378;
 
-  // QR code on left - mag 4 keeps it compact
-  // URL creates ~33 module QR, at mag 4 = ~132 dots + quiet zone (~160 total)
-  const qrMag = 4;
-  const qrX = 15;
-  const qrY = 75; // Vertically centered
+  // QR code on left - mag 6 for good scanability
+  // Large QR takes ~220 dots, positioned to fill left side
+  const qrMag = 6;
+  const qrX = 20;
+  const qrY = 45;
 
-  // Text area starts at fixed position to avoid QR overlap
-  // QR with quiet zone is ~180 dots wide, start text at 200
-  const textX = 200;
-  const textWidth = labelWidth - textX - 15; // ~457 dots for text
+  // Text area starts after QR with comfortable margin
+  const textX = 270;
+  const textWidth = labelWidth - textX - 20; // ~382 dots for text
 
-  // Wrap common name if needed - smaller font for this label size
-  const targetFontSize = 42;
+  // Wrap common name if needed - large readable font
+  const targetFontSize = 56;
   const { lines: nameLines, fontSize: nameFontSize } = wrapText(commonName, targetFontSize, textWidth);
 
-  // Build text fields - vertically centered
+  // Build text fields
   let textZpl = '';
-  let yPos = 50;
+  let yPos = 40;
 
-  // Common name (PRIMARY - largest text)
+  // Common name (PRIMARY - BIG and readable)
   for (const line of nameLines) {
     textZpl += `^FO${textX},${yPos}\n^A0N,${nameFontSize},${nameFontSize}\n^FD${escapeZPL(line)}^FS\n`;
-    yPos += nameFontSize + 6;
+    yPos += nameFontSize + 8;
   }
 
-  // Species or cross notation (secondary - smaller)
+  // Species or cross notation (secondary)
   if (speciesOrCross) {
-    textZpl += `^FO${textX},${yPos}\n^A0N,24,24\n^FD${escapeZPL(truncate(speciesOrCross, 28))}^FS\n`;
-    yPos += 30;
+    textZpl += `^FO${textX},${yPos}\n^A0N,32,32\n^FD${escapeZPL(truncate(speciesOrCross, 20))}^FS\n`;
+    yPos += 40;
   }
 
-  // Plant ID (small)
-  textZpl += `^FO${textX},${yPos}\n^A0N,22,22\n^FD${escapeZPL(plantId)}^FS\n`;
-  yPos += 28;
+  // Plant ID
+  textZpl += `^FO${textX},${yPos}\n^A0N,28,28\n^FD${escapeZPL(plantId)}^FS\n`;
+  yPos += 36;
 
-  // Dates line (smallest) - only if we have data
+  // Dates line - only if we have data
   const accFormatted = formatDateCompact(accessionDate);
   const repFormatted = formatDateCompact(repotDate);
 
@@ -493,7 +492,7 @@ export function generatePotStickerZPL(data: PotStickerData): string {
     if (accFormatted && repFormatted) dateLine += '  ';
     if (repFormatted) dateLine += `Rep: ${repFormatted}`;
 
-    textZpl += `^FO${textX},${yPos}\n^A0N,20,20\n^FD${escapeZPL(dateLine)}^FS\n`;
+    textZpl += `^FO${textX},${yPos}\n^A0N,24,24\n^FD${escapeZPL(dateLine)}^FS\n`;
   }
 
   const zpl = `^XA
