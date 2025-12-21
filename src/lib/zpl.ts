@@ -449,40 +449,39 @@ export function generatePotStickerZPL(data: PotStickerData): string {
   const labelHeight = 378;
 
   // QR code on left - mag 6 for good scanability
-  // Large QR takes ~220 dots, positioned to fill left side
   const qrMag = 6;
   const qrX = 20;
   const qrY = 45;
 
-  // Text area starts after QR with comfortable margin
-  const textX = 270;
-  const textWidth = labelWidth - textX - 20; // ~382 dots for text
+  // Text area - start closer to QR to maximize text space
+  const textX = 250;
+  const textWidth = labelWidth - textX - 15; // ~407 dots for text
 
-  // Wrap common name if needed - large readable font
-  const targetFontSize = 56;
+  // Large fonts to fill the label
+  const targetFontSize = 72;
   const { lines: nameLines, fontSize: nameFontSize } = wrapText(commonName, targetFontSize, textWidth);
 
-  // Build text fields
+  // Build text fields - start near top
   let textZpl = '';
-  let yPos = 40;
+  let yPos = 30;
 
-  // Common name (PRIMARY - BIG and readable)
+  // Common name (PRIMARY - BIG)
   for (const line of nameLines) {
     textZpl += `^FO${textX},${yPos}\n^A0N,${nameFontSize},${nameFontSize}\n^FD${escapeZPL(line)}^FS\n`;
-    yPos += nameFontSize + 8;
+    yPos += nameFontSize + 10;
   }
 
-  // Species or cross notation (secondary)
+  // Species or cross notation
   if (speciesOrCross) {
-    textZpl += `^FO${textX},${yPos}\n^A0N,32,32\n^FD${escapeZPL(truncate(speciesOrCross, 20))}^FS\n`;
-    yPos += 40;
+    textZpl += `^FO${textX},${yPos}\n^A0N,40,40\n^FD${escapeZPL(truncate(speciesOrCross, 18))}^FS\n`;
+    yPos += 50;
   }
 
   // Plant ID
-  textZpl += `^FO${textX},${yPos}\n^A0N,28,28\n^FD${escapeZPL(plantId)}^FS\n`;
-  yPos += 36;
+  textZpl += `^FO${textX},${yPos}\n^A0N,36,36\n^FD${escapeZPL(plantId)}^FS\n`;
+  yPos += 44;
 
-  // Dates line - only if we have data
+  // Dates line
   const accFormatted = formatDateCompact(accessionDate);
   const repFormatted = formatDateCompact(repotDate);
 
@@ -492,7 +491,7 @@ export function generatePotStickerZPL(data: PotStickerData): string {
     if (accFormatted && repFormatted) dateLine += '  ';
     if (repFormatted) dateLine += `Rep: ${repFormatted}`;
 
-    textZpl += `^FO${textX},${yPos}\n^A0N,24,24\n^FD${escapeZPL(dateLine)}^FS\n`;
+    textZpl += `^FO${textX},${yPos}\n^A0N,30,30\n^FD${escapeZPL(dateLine)}^FS\n`;
   }
 
   const zpl = `^XA
