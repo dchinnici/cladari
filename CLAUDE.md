@@ -33,7 +33,7 @@ cladari/                          # Monorepo root
 │   │   │   ├── breeding/      # Breeding record API
 │   │   │   ├── seed-batches/  # Seed batch API
 │   │   │   ├── seedlings/     # Seedling API
-│   │   │   ├── chat/          # AI chat endpoint (Claude Sonnet 4 + extended thinking)
+│   │   │   ├── chat/          # AI chat endpoint (Sonnet 4 + semantic search + extended thinking)
 │   │   │   ├── chat-logs/     # AI conversation persistence (HITL + auto-embedding)
 │   │   │   ├── ml/            # ML endpoints (semantic-search, diagnose, predict-care)
 │   │   │   ├── sensorpush/    # SensorPush API (sync, history, sensors)
