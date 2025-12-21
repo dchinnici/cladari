@@ -33,7 +33,7 @@ cladari/                          # Monorepo root
 │   │   │   ├── breeding/      # Breeding record API
 │   │   │   ├── seed-batches/  # Seed batch API
 │   │   │   ├── seedlings/     # Seedling API
-│   │   │   ├── chat/          # AI chat endpoint (Claude Opus 4 + semantic search)
+│   │   │   ├── chat/          # AI chat endpoint (Claude Sonnet 4 + extended thinking)
 │   │   │   ├── chat-logs/     # AI conversation persistence (HITL + auto-embedding)
 │   │   │   ├── ml/            # ML endpoints (semantic-search, diagnose, predict-care)
 │   │   │   ├── sensorpush/    # SensorPush API (sync, history, sensors)
@@ -63,6 +63,7 @@ cladari/                          # Monorepo root
 ├── scripts/                   # Migration and automation scripts
 │   ├── migrate-to-supabase.ts      # Data migration script
 │   ├── migrate-photos-to-supabase.ts # Photo storage migration
+│   ├── print-proxy.ts              # Local print proxy (Tailscale Funnel)
 │   └── setup-rls-policies.sql      # Row Level Security policies
 └── middleware.ts              # Auth middleware (protects routes)
 ```
@@ -77,9 +78,24 @@ cladari/                          # Monorepo root
 - **API routes**: kebab-case paths
 - **ID Generation**: `src/lib/breeding-ids.ts` for all ID generation
 
-## Current Version: v1.7.5 (Dec 21, 2025)
+## Current Version: v1.7.6 (Dec 21, 2025)
 
 ### Recently Completed
+- **Monorepo Consolidation + Print Proxy** (v1.7.6)
+  - **Monorepo**: Merged `cladari-website/` into parent `cladari/` repo
+    - Single repo structure, app at root
+    - Backup at `/Users/davidchinnici/cladari-backup-20251221/`
+  - **Print Proxy via Tailscale Funnel**: Production can now print to local Zebra
+    - `scripts/print-proxy.ts` runs locally, receives print jobs
+    - Funnel URL: `https://f1.tail2ea078.ts.net/print`
+    - Vercel detects `VERCEL=1` and forwards to proxy
+  - **AI Chat Cost Optimization**: Switched Opus → Sonnet 4 with extended thinking
+    - ~5x cost reduction ($0.45 → $0.09 per 30K query)
+    - Same 16K thinking budget, quality testing in progress
+  - **Pot Sticker Layout**: Redesigned for 57x32mm labels
+    - QR code mag 6 on left, text fills right side
+    - Common name 72pt, species 40pt, ID 36pt, date 30pt
+    - Text wrapping for long names
 - **Unified Breed UI + Flowering Events** (v1.7.5)
   - **Unified "Breed" Navigation**: Combined Breeding + Batches under single "Breed" entry point
     - Tab-style navigation between Crosses (sexual) and Batches (asexual) pages
@@ -314,13 +330,22 @@ model LocationHistory {
 
 Use case: "Where was ANT-2025-0016 from Dec 10-17?" → Query LocationHistory → Match to sensor data for each period → Calculate weighted environmental exposure
 
-### Zebra Printer Setup (Dec 17, 2025)
+### Zebra Printer Setup (Updated Dec 21, 2025)
 **Hardware**: Zebra ZD421CN-300dpi thermal printer via macOS CUPS (`lp` command)
 
 **Architecture**: Server-side printing via `/api/print/zebra` endpoint
-- UI click → API call → server executes `lp -d Zebra -o raw` → label prints
-- No browser plugins needed (not using QZ Tray)
-- Works from any device on network (phone, tablet, etc.)
+- **Local dev**: API calls `lp` directly
+- **Production (Vercel)**: API forwards to local print proxy via Tailscale Funnel
+
+**Print Proxy for Production** (required for www.cladari.ai printing):
+```bash
+# Terminal 1: Start print proxy
+npx tsx scripts/print-proxy.ts
+
+# Terminal 2: Expose via Tailscale Funnel
+/Applications/Tailscale.app/Contents/MacOS/Tailscale funnel 3001
+```
+Funnel URL: `https://f1.tail2ea078.ts.net/print`
 
 **One-Click Printing UI**:
 - **Plant detail page**: Menu → "Print Label" → instant print
@@ -340,13 +365,14 @@ Use case: "Where was ANT-2025-0016 from Dec 10-17?" → Query LocationHistory �
 ```
 
 **Working Label Sizes**:
-1. **Compact Sticker (57mm x 32mm)** - PRODUCTION READY
+1. **Pot Sticker (57mm x 32mm)** - PRODUCTION READY
    - 672 x 378 dots at 300 DPI
    - Thermal transfer mode (`^MTT`) with ribbon
    - Darkness: 20 (`^MD20`)
-   - QR code magnification: 6
-   - Templates: `generateCompactPlantTagZPL()`, `generateCompactLocationTagZPL()`
-   - Great for holographic/foil "Cladari Verified" stickers
+   - QR code magnification: 6 (left side)
+   - Text: Common name 72pt, species 40pt, ID 36pt, date 30pt
+   - Template: `generatePotStickerZPL()` - optimized for caretaker workflow
+   - Great for holographic/foil stickers
 
 2. **Standard Plant Tag (2" x 1")** - TEMPLATES READY, NEED LABELS
    - 600 x 300 dots at 300 DPI
