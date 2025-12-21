@@ -425,4 +425,4 @@ curl http://localhost:3000/api/plants/export > plants.csv
 
 **Happy Growing! 🌱**
 
-*Last Updated: December 4, 2025*
+*Last Updated: December 4, 2025*# Trigger Vercel deploy
