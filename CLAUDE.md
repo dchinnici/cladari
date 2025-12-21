@@ -11,11 +11,18 @@ Cladari is a production plant database for managing a high-value Anthurium breed
 - **Hosting**: Vercel (production: www.cladari.ai)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
-- **Location**: `plantDB/` is the app root
+- **Structure**: Monorepo (consolidated Dec 21, 2025)
+
+## Emergency Recovery
+**Monorepo consolidation backup (Dec 21, 2025):**
+```
+/Users/davidchinnici/cladari-backup-20251221/
+```
+Contains full pre-merge state if rollback needed.
 
 ## Key Paths
 ```
-plantDB/
+cladari/                          # Monorepo root
 ├── prisma/
 │   ├── schema.prisma          # ACTIVE SCHEMA (Postgres) - read this first
 │   ├── schema.sqlite.backup   # Archived SQLite schema
