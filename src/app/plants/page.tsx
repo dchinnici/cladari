@@ -9,6 +9,17 @@ import { useEffect, useState, useRef } from 'react'
 import { getTodayString } from '@/lib/timezone'
 import { isPlantStale, getWateringStatus, type CareStatus } from '@/lib/care-thresholds'
 
+/**
+ * Resolve photo URL from either storagePath (Supabase) or legacy url field
+ */
+function getPhotoUrl(photo: { storagePath?: string | null; url?: string | null }): string {
+  if (photo.storagePath) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    return `${supabaseUrl}/storage/v1/object/public/photos/${photo.storagePath}`
+  }
+  return photo.url || ''
+}
+
 export default function PlantsPage() {
   // Helper to check if plant needs attention - now uses dynamic thresholds
   const isStale = (plant: any) => {
@@ -401,7 +412,7 @@ export default function PlantsPage() {
                 {plant.photos && plant.photos.length > 0 ? (
                   <div className="aspect-[2/3] bg-[var(--parchment)]">
                     <img
-                      src={plant.photos[0].url}
+                      src={getPhotoUrl(plant.photos[0])}
                       alt={plant.hybridName || plant.species || 'Plant'}
                       className="w-full h-full object-cover"
                     />

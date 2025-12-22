@@ -21,6 +21,19 @@ const MAX_UPLOAD_SIZE_MB = 4
 const MAX_UPLOAD_SIZE_BYTES = MAX_UPLOAD_SIZE_MB * 1024 * 1024
 
 /**
+ * Resolve photo URL from either storagePath (Supabase) or legacy url field
+ */
+function getPhotoUrl(photo: { storagePath?: string | null; url?: string | null }): string {
+  // Supabase Storage - construct public URL
+  if (photo.storagePath) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    return `${supabaseUrl}/storage/v1/object/public/photos/${photo.storagePath}`
+  }
+  // Legacy local URL
+  return photo.url || ''
+}
+
+/**
  * Compress image client-side to stay under Vercel's 4.5MB body limit
  * Uses Canvas API for browser-native compression
  */
@@ -1186,7 +1199,7 @@ export default function PlantDetailPage() {
                 return coverPhoto ? (
                   <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-lg overflow-hidden bg-[var(--parchment)]">
                     <Image
-                      src={coverPhoto.url}
+                      src={getPhotoUrl(coverPhoto)}
                       alt={plant.hybridName || plant.species || 'Plant photo'}
                       width={112}
                       height={112}
@@ -1811,7 +1824,7 @@ export default function PlantDetailPage() {
                     <div key={photo.id} className="group relative bg-[var(--parchment)] rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-all">
                       <div className="aspect-[2/3] relative bg-gray-100">
                         <img
-                          src={photo.url}
+                          src={getPhotoUrl(photo)}
                           alt={photo.notes || 'Plant photo'}
                           className="w-full h-full object-contain"
                         />

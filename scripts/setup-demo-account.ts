@@ -191,7 +191,10 @@ async function clonePhotos(plantMap: Map<string, string>): Promise<Map<string, s
       data: {
         id: newId,
         plantId: plantMap.get(photo.plantId)!,
-        url: photo.url, // Same Supabase Storage URLs work
+        url: photo.url,
+        // Copy storagePath - demo will use same Supabase Storage files (bucket is public)
+        storagePath: photo.storagePath,
+        thumbnailPath: photo.thumbnailPath,
         originalFilename: photo.originalFilename,
         photoType: photo.photoType,
         dateTaken: photo.dateTaken,
