@@ -132,6 +132,42 @@ b. Want different designs for different use cases:
 - Email notifications (requires email service)
 - Dashboard "upcoming" section
 
+### 13. SensorPush API Missing Extreme Readings (CRITICAL for AI Analysis)
+**Discovered:** 2025-12-22
+**Context:** During leaf damage analysis on ANT-2025-0024 (FTG Crystallinum)
+
+**Problem:**
+The SensorPush API `/samples` endpoint returns **sampled data points**, not true min/max values. This causes the AI to miss critical stress events:
+
+| Metric | SensorPush App (Truth) | API Data (3500 samples) |
+|--------|------------------------|------------------------|
+| RH Minimum | **49.5%** | 57.2% |
+| VPD Maximum | **1.35 kPa** | 1.24 kPa |
+
+The app calculates true min/max from ALL readings (~1440/day at 1-min intervals). The API with 500 samples/window only captures ~17% of readings, missing the valleys.
+
+**Impact:**
+- AI incorrectly reports "No stress events detected" when plant experienced 49.5% RH dips
+- AI says "environment was excellent" when VPD spiked to 1.35 kPa
+- Leads to wrong diagnoses (attributed damage to guttation instead of desiccation)
+
+**Current workaround (v1.7.7):**
+- Windowed queries (2-day chunks, 7 parallel requests)
+- Gets 3500 samples instead of 500
+- Still misses extremes due to sampling
+
+**Potential fixes (investigate):**
+1. Check if SensorPush has a stats/summary endpoint that returns min/max per period
+2. Dramatically increase sample density (more windows, higher limits)
+3. Calculate and cache daily min/max via scheduled job
+4. Use SensorPush webhook for real-time extreme detection
+
+**Files:**
+- `src/app/api/chat/route.ts` - `getEnvironmentalHistory()` function
+- `src/lib/sensorpush.ts` - API client
+
+**Priority:** HIGH - This causes fundamental diagnostic errors in AI analysis
+
 ---
 
 ## Architectural Decisions Made This Session
