@@ -168,6 +168,38 @@ The app calculates true min/max from ALL readings (~1440/day at 1-min intervals)
 
 **Priority:** HIGH - This causes fundamental diagnostic errors in AI analysis
 
+### 14. Supabase Image Transformations (DEFERRED)
+**Discovered:** 2025-12-22
+**Status:** Disabled - using original images for now
+
+**Background:**
+Upgraded to Supabase Pro to fix egress overages (10GB on 5GB limit). Attempted to implement image transformations via the `/render/` endpoint to serve optimized thumbnails.
+
+**What went wrong:**
+1. **Bucket was private** - render endpoint requires public bucket (fixed by toggling public in dashboard)
+2. **Invalid `format=webp` parameter** - Supabase auto-optimizes format, doesn't accept explicit format param
+3. **Display issues** - Even after fixing the above, thumbnails appeared either:
+   - Cropped/zoomed when using `object-cover`
+   - Tiny slivers with letterboxing when using `object-contain`
+   - The transformation seemed to affect aspect ratio unexpectedly
+
+**Current state:**
+- Transformations disabled in `/src/lib/photo-url.ts`
+- Using object endpoint (original images) which works correctly
+- Bucket is now public
+
+**To revisit:**
+1. Test transformations in isolation (curl requests) to understand exact behavior
+2. Check if `resize` parameter (cover/contain/fill) affects output
+3. Consider if original images are acceptable (bandwidth vs complexity trade-off)
+4. May need to generate actual thumbnails server-side during upload instead of on-the-fly
+
+**Files:**
+- `src/lib/photo-url.ts` - Photo URL utility with disabled transformation code
+- Supabase dashboard: Storage → cladari-photos bucket settings
+
+**Priority:** LOW - Original images work fine, bandwidth optimization can wait
+
 ---
 
 ## Architectural Decisions Made This Session
