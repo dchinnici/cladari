@@ -398,18 +398,18 @@ export default function PlantsPage() {
                 }}
                 className="card-interactive overflow-hidden block"
               >
-                {/* Photo - 2:3 portrait aspect ratio */}
+                {/* Photo - square for minimal cropping from any orientation */}
                 {plant.photos && plant.photos.length > 0 ? (
-                  <div className="aspect-[2/3] bg-[var(--parchment)] flex items-center justify-center">
+                  <div className="aspect-square bg-[var(--parchment)]">
                     <img
                       src={getPhotoUrl(plant.photos[0], 'card')}
                       alt={plant.hybridName || plant.species || 'Plant'}
-                      className="max-w-full max-h-full object-contain"
+                      className="w-full h-full object-cover"
                       loading="lazy"
                     />
                   </div>
                 ) : (
-                  <div className="aspect-[2/3] bg-[var(--parchment)] flex items-center justify-center">
+                  <div className="aspect-square bg-[var(--parchment)] flex items-center justify-center">
                     <span className="text-3xl text-[var(--sage)]">🌿</span>
                   </div>
                 )}
