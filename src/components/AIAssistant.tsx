@@ -264,6 +264,9 @@ export default function AIAssistant({ plantId, plantData, embedded = false }: AI
   // Check if there's a saveable conversation (more than just the context message)
   const hasSaveableConversation = messages.length > 1 && messages.some(m => m.role === 'user');
 
+  // Check if user has started a conversation (sent at least one message)
+  const hasUserMessages = messages.some(m => m.role === 'user');
+
   // Convert messages to ChatMessage format for the save modal
   const getChatMessages = (): ChatMessage[] => {
     return messages
@@ -398,7 +401,7 @@ export default function AIAssistant({ plantId, plantData, embedded = false }: AI
           onScroll={handleScroll}
           className="flex-1 overflow-y-auto p-4 space-y-4 relative"
         >
-          {messages.length === 0 && (
+          {!hasUserMessages && (
             <div className="text-center text-[var(--clay)] mt-4">
               <Bot size={32} className="mx-auto mb-2 text-[var(--moss)] opacity-50" />
               <p className="text-sm font-medium text-[var(--bark)]">
@@ -587,7 +590,7 @@ export default function AIAssistant({ plantId, plantData, embedded = false }: AI
         </div>
 
         {/* Input - show when freestyle mode or conversation in progress */}
-        {(freestyleMode || messages.length > 1) && (
+        {(freestyleMode || hasUserMessages) && (
         <form onSubmit={handleSubmit} className="p-3 border-t border-black/[0.08]">
           {/* Photo mode selector - only in freestyle mode */}
           {freestyleMode && photoCount > 0 && (
