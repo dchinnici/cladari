@@ -89,3 +89,20 @@ export const RAIN_THRESHOLDS = {
   /** Additional days to add for sustained rain */
   SUSTAINED_BONUS: 0.5,
 } as const
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Demo/Sandbox Account
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Demo account user ID - data from this user should be excluded from:
+ * - ML training data exports
+ * - Vector embeddings / semantic search corpus
+ * - HITL quality scoring aggregations
+ * - Any analytics that inform production decisions
+ */
+export const DEMO_USER_ID = '8073760b-13dd-4019-b4a2-3506cd222e7e'
+
+/** Check if a userId belongs to the demo account */
+export const isDemoUser = (userId: string | null | undefined): boolean =>
+  userId === DEMO_USER_ID
