@@ -17,6 +17,14 @@ const anthropic = createAnthropic({
 // Balcony sensor ID (outdoor, has barometric pressure)
 const OUTDOOR_SENSOR_ID = '16938503.1326776003983611910';
 
+// Stress thresholds for Anthurium (especially Cardiolonchium)
+const STRESS_THRESHOLDS = {
+  LOW_RH: 55,        // Below this = desiccation stress
+  HIGH_VPD: 1.3,     // Above this = transpiration stress
+  LOW_TEMP: 65,      // Below this = cold stress
+  HIGH_TEMP: 85,     // Above this = heat stress
+};
+
 // Helper to fetch environmental history from SensorPush
 async function getEnvironmentalHistory(locationId: string | undefined) {
   if (!locationId) return null;
@@ -30,21 +38,60 @@ async function getEnvironmentalHistory(locationId: string | undefined) {
 
     if (!location?.sensorPushId) return null;
 
-    // Fetch last 7 days of data (168 hours), limit 200 samples
+    // Fetch last 14 days of data for better trend analysis, limit 500 samples
     const stopTime = new Date();
-    const startTime = new Date(stopTime.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const startTime = new Date(stopTime.getTime() - 14 * 24 * 60 * 60 * 1000);
 
-    const samplesResponse = await getSamples([location.sensorPushId], 200, startTime, stopTime);
+    const samplesResponse = await getSamples([location.sensorPushId], 500, startTime, stopTime);
     const samples = samplesResponse.sensors[location.sensorPushId];
 
     if (!samples || samples.length === 0) return null;
 
-    // Calculate stats
+    // Calculate overall stats
     const temps = samples.map(s => s.temperature);
     const humidities = samples.map(s => s.humidity);
     const vpds = samples.map(s => s.vpd);
 
-    // Get daily averages for the last 7 days
+    // Detect stress events
+    const stressEvents: { time: string; type: string; value: string; severity: 'warning' | 'critical' }[] = [];
+    for (const sample of samples) {
+      const time = new Date(sample.observed).toLocaleString();
+
+      if (sample.humidity < STRESS_THRESHOLDS.LOW_RH) {
+        stressEvents.push({
+          time,
+          type: 'LOW_RH',
+          value: `${sample.humidity.toFixed(1)}%`,
+          severity: sample.humidity < 50 ? 'critical' : 'warning'
+        });
+      }
+      if (sample.vpd > STRESS_THRESHOLDS.HIGH_VPD) {
+        stressEvents.push({
+          time,
+          type: 'HIGH_VPD',
+          value: `${sample.vpd.toFixed(2)} kPa`,
+          severity: sample.vpd > 1.5 ? 'critical' : 'warning'
+        });
+      }
+      if (sample.temperature < STRESS_THRESHOLDS.LOW_TEMP) {
+        stressEvents.push({
+          time,
+          type: 'LOW_TEMP',
+          value: `${sample.temperature.toFixed(1)}°F`,
+          severity: sample.temperature < 60 ? 'critical' : 'warning'
+        });
+      }
+      if (sample.temperature > STRESS_THRESHOLDS.HIGH_TEMP) {
+        stressEvents.push({
+          time,
+          type: 'HIGH_TEMP',
+          value: `${sample.temperature.toFixed(1)}°F`,
+          severity: sample.temperature > 90 ? 'critical' : 'warning'
+        });
+      }
+    }
+
+    // Get daily stats with min/max (not just averages)
     const dailyStats: Record<string, { temps: number[], humidities: number[], vpds: number[] }> = {};
     for (const sample of samples) {
       const day = new Date(sample.observed).toISOString().split('T')[0];
@@ -56,16 +103,49 @@ async function getEnvironmentalHistory(locationId: string | undefined) {
       dailyStats[day].vpds.push(sample.vpd);
     }
 
-    const dailySummary = Object.entries(dailyStats)
-      .sort(([a], [b]) => b.localeCompare(a))
-      .slice(0, 7)
+    // Enhanced daily summary with min/max ranges
+    const sortedDays = Object.entries(dailyStats).sort(([a], [b]) => b.localeCompare(a));
+    const dailySummary = sortedDays
+      .slice(0, 14)
       .map(([date, data]) => {
-        const avgTemp = data.temps.reduce((a, b) => a + b, 0) / data.temps.length;
-        const avgHum = data.humidities.reduce((a, b) => a + b, 0) / data.humidities.length;
-        const avgVpd = data.vpds.reduce((a, b) => a + b, 0) / data.vpds.length;
-        return `  ${date}: Temp ${avgTemp.toFixed(1)}°F, RH ${avgHum.toFixed(1)}%, VPD ${avgVpd.toFixed(2)} kPa`;
+        const tempMin = Math.min(...data.temps).toFixed(1);
+        const tempMax = Math.max(...data.temps).toFixed(1);
+        const rhMin = Math.min(...data.humidities).toFixed(1);
+        const rhMax = Math.max(...data.humidities).toFixed(1);
+        const vpdMin = Math.min(...data.vpds).toFixed(2);
+        const vpdMax = Math.max(...data.vpds).toFixed(2);
+
+        // Flag days with stress events
+        const hasStress = parseFloat(rhMin) < STRESS_THRESHOLDS.LOW_RH ||
+                         parseFloat(vpdMax) > STRESS_THRESHOLDS.HIGH_VPD;
+        const stressFlag = hasStress ? ' ⚠️' : '';
+
+        return `  ${date}: T ${tempMin}-${tempMax}°F | RH ${rhMin}-${rhMax}% | VPD ${vpdMin}-${vpdMax}${stressFlag}`;
       })
       .join('\n');
+
+    // Calculate trend direction (compare first half vs second half of period)
+    const midpoint = Math.floor(samples.length / 2);
+    const recentSamples = samples.slice(0, midpoint);
+    const olderSamples = samples.slice(midpoint);
+
+    const recentRhAvg = recentSamples.reduce((sum, s) => sum + s.humidity, 0) / recentSamples.length;
+    const olderRhAvg = olderSamples.reduce((sum, s) => sum + s.humidity, 0) / olderSamples.length;
+    const rhTrend = recentRhAvg - olderRhAvg;
+
+    const recentVpdAvg = recentSamples.reduce((sum, s) => sum + s.vpd, 0) / recentSamples.length;
+    const olderVpdAvg = olderSamples.reduce((sum, s) => sum + s.vpd, 0) / olderSamples.length;
+    const vpdTrend = recentVpdAvg - olderVpdAvg;
+
+    // Format stress event summary
+    const stressEventsByType: Record<string, number> = {};
+    for (const event of stressEvents) {
+      stressEventsByType[event.type] = (stressEventsByType[event.type] || 0) + 1;
+    }
+
+    // Get worst readings
+    const worstRh = samples.reduce((min, s) => s.humidity < min.humidity ? s : min, samples[0]);
+    const worstVpd = samples.reduce((max, s) => s.vpd > max.vpd ? s : max, samples[0]);
 
     return {
       locationName: location.name,
@@ -82,6 +162,26 @@ async function getEnvironmentalHistory(locationId: string | undefined) {
         vpdMin: Math.min(...vpds).toFixed(2),
         vpdMax: Math.max(...vpds).toFixed(2),
         vpdAvg: (vpds.reduce((a, b) => a + b, 0) / vpds.length).toFixed(2)
+      },
+      trends: {
+        rhDirection: rhTrend > 1 ? 'rising' : rhTrend < -1 ? 'falling' : 'stable',
+        rhChange: rhTrend.toFixed(1),
+        vpdDirection: vpdTrend > 0.05 ? 'rising' : vpdTrend < -0.05 ? 'falling' : 'stable',
+        vpdChange: vpdTrend.toFixed(2)
+      },
+      stressAnalysis: {
+        totalEvents: stressEvents.length,
+        eventsByType: stressEventsByType,
+        criticalCount: stressEvents.filter(e => e.severity === 'critical').length,
+        worstRhReading: {
+          value: worstRh.humidity.toFixed(1),
+          time: new Date(worstRh.observed).toLocaleString()
+        },
+        worstVpdReading: {
+          value: worstVpd.vpd.toFixed(2),
+          time: new Date(worstVpd.observed).toLocaleString()
+        },
+        recentStressEvents: stressEvents.slice(0, 10) // Most recent 10
       },
       dailySummary
     };
@@ -479,15 +579,25 @@ Current Reading (${new Date(envHistory.currentReading.observed).toLocaleString()
   Humidity: ${envHistory.currentReading.humidity.toFixed(1)}%
   VPD: ${envHistory.currentReading.vpd.toFixed(2)} kPa
 
-7-Day Summary (${envHistory.sampleCount} readings):
+14-Day Summary (${envHistory.sampleCount} readings):
   Temp Range: ${envHistory.stats.tempMin}°F - ${envHistory.stats.tempMax}°F (avg ${envHistory.stats.tempAvg}°F)
   RH Range: ${envHistory.stats.humidityMin}% - ${envHistory.stats.humidityMax}% (avg ${envHistory.stats.humidityAvg}%)
   VPD Range: ${envHistory.stats.vpdMin} - ${envHistory.stats.vpdMax} kPa (avg ${envHistory.stats.vpdAvg} kPa)
 
-Daily Averages:
+TREND ANALYSIS:
+  Humidity: ${envHistory.trends.rhDirection} (${parseFloat(envHistory.trends.rhChange) > 0 ? '+' : ''}${envHistory.trends.rhChange}% recent vs older period)
+  VPD: ${envHistory.trends.vpdDirection} (${parseFloat(envHistory.trends.vpdChange) > 0 ? '+' : ''}${envHistory.trends.vpdChange} kPa recent vs older period)
+
+${envHistory.stressAnalysis.totalEvents > 0 ? `⚠️ STRESS EVENTS DETECTED (${envHistory.stressAnalysis.totalEvents} total, ${envHistory.stressAnalysis.criticalCount} critical):
+  Event breakdown: ${Object.entries(envHistory.stressAnalysis.eventsByType).map(([type, count]) => `${type}: ${count}`).join(', ')}
+  Worst RH: ${envHistory.stressAnalysis.worstRhReading.value}% at ${envHistory.stressAnalysis.worstRhReading.time}
+  Worst VPD: ${envHistory.stressAnalysis.worstVpdReading.value} kPa at ${envHistory.stressAnalysis.worstVpdReading.time}
+${envHistory.stressAnalysis.recentStressEvents.length > 0 ? `  Recent stress events:\n${envHistory.stressAnalysis.recentStressEvents.slice(0, 5).map(e => `    ${e.time}: ${e.type} ${e.value} (${e.severity})`).join('\n')}` : ''}
+` : 'No stress events detected in monitoring period.'}
+Daily Summary (⚠️ = stress day):
 ${envHistory.dailySummary}
 
-Use this environmental data to contextualize growth patterns in photos and correlate with care log timestamps.` : ''}
+IMPORTANT: When analyzing leaf damage or developmental issues, correlate with stress events and trends above. Overnight humidity drops and VPD spikes are critical for emerging leaves.` : ''}
 
 ${outdoor ? `OUTDOOR CONDITIONS & WEATHER (Fort Lauderdale):
 Current Weather: ${outdoor.weather.weatherDescription}, ${outdoor.weather.temperature.toFixed(0)}°F (feels ${outdoor.weather.apparentTemperature.toFixed(0)}°F)
@@ -548,7 +658,7 @@ When the user asks questions, assume they're asking about this specific plant un
   }
 
   const result = streamText({
-    model: anthropic('claude-sonnet-4-20250514'),
+    model: anthropic('claude-opus-4-20250514'),
     system: systemPrompt,
     messages: modelMessages,
     providerOptions: {

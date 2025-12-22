@@ -33,7 +33,7 @@ cladari/                          # Monorepo root
 │   │   │   ├── breeding/      # Breeding record API
 │   │   │   ├── seed-batches/  # Seed batch API
 │   │   │   ├── seedlings/     # Seedling API
-│   │   │   ├── chat/          # AI chat endpoint (Sonnet 4 + semantic search + extended thinking)
+│   │   │   ├── chat/          # AI chat endpoint (Opus 4 + semantic search + extended thinking + stress analysis)
 │   │   │   ├── chat-logs/     # AI conversation persistence (HITL + auto-embedding)
 │   │   │   ├── ml/            # ML endpoints (semantic-search, diagnose, predict-care)
 │   │   │   ├── sensorpush/    # SensorPush API (sync, history, sensors)
@@ -78,9 +78,22 @@ cladari/                          # Monorepo root
 - **API routes**: kebab-case paths
 - **ID Generation**: `src/lib/breeding-ids.ts` for all ID generation
 
-## Current Version: v1.7.6 (Dec 21, 2025)
+## Current Version: v1.7.7 (Dec 22, 2025)
 
 ### Recently Completed
+- **Enhanced Environmental Stress Analysis + Opus 4 Restoration** (v1.7.7)
+  - **Switched AI back to Opus 4** from Sonnet 4 after inadequate leaf damage analysis
+  - **Enhanced `getEnvironmentalHistory()`** in chat API:
+    - Increased sample window from 7 → 14 days
+    - Increased sample limit from 200 → 500 readings
+    - Added stress event detection: LOW_RH (<55%), HIGH_VPD (>1.3), temp extremes
+    - Daily summaries now show min/max ranges, not just averages
+    - Days with stress events flagged with ⚠️
+    - Trend analysis: humidity/VPD rising/falling/stable over period
+    - Worst readings with timestamps for correlation with care events
+  - **New stress thresholds** configurable at top of chat route
+  - AI chat now receives granular data to correlate leaf damage with environmental events
+
 - **Monorepo Consolidation + Print Proxy** (v1.7.6)
   - **Monorepo**: Merged `cladari-website/` into parent `cladari/` repo
     - Single repo structure, app at root
