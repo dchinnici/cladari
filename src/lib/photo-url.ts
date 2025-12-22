@@ -5,9 +5,12 @@
  * This significantly reduces bandwidth by serving appropriately-sized images.
  *
  * URL patterns:
- * - Original: /storage/v1/object/public/photos/{path}
- * - Transformed: /storage/v1/render/image/public/photos/{path}?width=X&format=webp
+ * - Original: /storage/v1/object/public/{bucket}/{path}
+ * - Transformed: /storage/v1/render/image/public/{bucket}/{path}?width=X&format=webp
  */
+
+// Bucket name must match server.ts and Supabase Storage configuration
+const STORAGE_BUCKET = 'cladari-photos'
 
 export interface PhotoTransformOptions {
   /** Width in pixels (1-2500) */
@@ -81,10 +84,10 @@ export function getPhotoUrl(
       if (transformOptions.resize) params.set('resize', transformOptions.resize)
       if (transformOptions.format) params.set('format', transformOptions.format)
 
-      return `${supabaseUrl}/storage/v1/render/image/public/photos/${photo.storagePath}?${params.toString()}`
+      return `${supabaseUrl}/storage/v1/render/image/public/${STORAGE_BUCKET}/${photo.storagePath}?${params.toString()}`
     }
     // No transformation - use object endpoint
-    return `${supabaseUrl}/storage/v1/object/public/photos/${photo.storagePath}`
+    return `${supabaseUrl}/storage/v1/object/public/${STORAGE_BUCKET}/${photo.storagePath}`
   }
 
   // Legacy local URL - can't transform, return as-is
