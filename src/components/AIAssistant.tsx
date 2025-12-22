@@ -20,7 +20,59 @@ interface AIAssistantProps {
 }
 
 // Photo analysis modes
-type PhotoMode = 'recent' | 'comprehensive';
+type PhotoMode = 'recent' | 'comprehensive' | 'none';
+
+// Context modes for different query types
+type ContextMode = 'discussion' | 'visual' | 'progress' | 'report' | 'freestyle';
+
+interface QuickActionTemplate {
+  id: ContextMode;
+  label: string;
+  icon: string;
+  description: string;
+  query: string;
+  photoMode: PhotoMode;
+  photoCount: number;
+}
+
+const QUICK_ACTIONS: QuickActionTemplate[] = [
+  {
+    id: 'discussion',
+    label: 'Substrate',
+    icon: '📊',
+    description: 'EC/pH trends, feeding analysis',
+    query: 'Analyze my recent care data - EC/pH trends, substrate health, and any recommendations for adjustments.',
+    photoMode: 'none',
+    photoCount: 0,
+  },
+  {
+    id: 'visual',
+    label: 'Visual',
+    icon: '👁️',
+    description: 'Quick health check',
+    query: 'Quick visual health check - any issues or concerns you see in the recent photos?',
+    photoMode: 'recent',
+    photoCount: 3,
+  },
+  {
+    id: 'progress',
+    label: 'Progress',
+    icon: '📈',
+    description: 'Growth over time',
+    query: 'How has this plant progressed over time? Compare the photos chronologically and assess growth trajectory.',
+    photoMode: 'comprehensive',
+    photoCount: 10,
+  },
+  {
+    id: 'report',
+    label: 'Full Report',
+    icon: '📋',
+    description: 'Comprehensive analysis',
+    query: 'Generate a comprehensive status report: visual assessment, care data analysis, environmental conditions, and prioritized recommendations.',
+    photoMode: 'comprehensive',
+    photoCount: 20,
+  },
+];
 
 // Strip XML-style tags from AI responses (Claude sometimes outputs structured tags)
 function stripXmlTags(text: string): string {
@@ -36,6 +88,8 @@ export default function AIAssistant({ plantId, plantData, embedded = false }: AI
   const [isMaximized, setIsMaximized] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [photoMode, setPhotoMode] = useState<PhotoMode>('recent');
+  const [contextMode, setContextMode] = useState<ContextMode | null>(null);
+  const [freestyleMode, setFreestyleMode] = useState(false);
   const [userHasScrolled, setUserHasScrolled] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
@@ -50,16 +104,19 @@ export default function AIAssistant({ plantId, plantData, embedded = false }: AI
   const photoCount = plantData?.photos?.length || 0;
   const photosToSend = photoMode === 'comprehensive' ? Math.min(photoCount, 20) : Math.min(photoCount, 3);
 
-  // Use a ref to track current photoMode so transport always has latest value
+  // Use refs to track current modes so transport always has latest values
   const photoModeRef = useRef(photoMode);
   photoModeRef.current = photoMode;
+  const contextModeRef = useRef(contextMode);
+  contextModeRef.current = contextMode;
 
-  // Create transport that reads from ref to always get current photoMode
+  // Create transport that reads from refs to always get current modes
   const transport = useMemo(() => new DefaultChatTransport({
     api: '/api/chat',
     body: () => ({
       plantContext: plantData,
-      photoMode: photoModeRef.current
+      photoMode: photoModeRef.current,
+      contextMode: contextModeRef.current
     })
   }), [plantData]);
 
@@ -135,6 +192,22 @@ export default function AIAssistant({ plantId, plantData, embedded = false }: AI
     setInputValue('');
     setUserHasScrolled(false); // Reset scroll state for new message
     await sendMessage({ text: message });
+  };
+
+  // Handle quick action button clicks
+  const handleQuickAction = async (action: QuickActionTemplate) => {
+    if (isLoading) return;
+
+    // Set the appropriate modes
+    setContextMode(action.id);
+    setPhotoMode(action.photoMode);
+
+    // Update refs immediately for the transport
+    contextModeRef.current = action.id;
+    photoModeRef.current = action.photoMode;
+
+    setUserHasScrolled(false);
+    await sendMessage({ text: action.query });
   };
 
   // Copy a message to clipboard
@@ -326,59 +399,67 @@ export default function AIAssistant({ plantId, plantData, embedded = false }: AI
           className="flex-1 overflow-y-auto p-4 space-y-4 relative"
         >
           {messages.length === 0 && (
-            <div className="text-center text-[var(--clay)] mt-8">
-              <Bot size={40} className="mx-auto mb-3 text-[var(--moss)] opacity-50" />
-              <p className="text-sm font-medium text-[var(--bark)]">Cladari AI Assistant</p>
-              {plantData ? (
-                <>
-                  <p className="text-xs mt-1">
-                    Ask me anything about {plantData.hybridName || plantData.species}
-                  </p>
-                  {photoCount > 0 && (
-                    <p className="text-xs mt-1 text-[var(--moss)]">
-                      <Image size={12} className="inline mr-1" />
-                      {photoCount} photo{photoCount !== 1 ? 's' : ''} available for analysis
-                    </p>
-                  )}
-                </>
-              ) : (
-                <p className="text-xs mt-1">
-                  Ask about plants, care, breeding, or diagnose issues
+            <div className="text-center text-[var(--clay)] mt-4">
+              <Bot size={32} className="mx-auto mb-2 text-[var(--moss)] opacity-50" />
+              <p className="text-sm font-medium text-[var(--bark)]">
+                {plantData?.hybridName || plantData?.species || 'Cladari AI'}
+              </p>
+              {plantData && photoCount > 0 && (
+                <p className="text-[10px] mt-1 text-[var(--clay)]">
+                  {photoCount} photos • {plantData.careLogs?.length || 0} care logs
                 </p>
               )}
-              <div className="mt-4 flex flex-wrap gap-2 justify-center">
-                {plantData && photoCount > 0 ? (
-                  <>
-                    <button
-                      onClick={() => setInputValue('Analyze the photos and assess plant health')}
-                      className="text-xs px-3 py-1.5 bg-[var(--bg-primary)] text-[var(--bark)] rounded-full hover:bg-[var(--parchment)]"
-                    >
-                      Analyze photos
-                    </button>
-                    <button
-                      onClick={() => setInputValue('What trends do you see in the care data?')}
-                      className="text-xs px-3 py-1.5 bg-[var(--bg-primary)] text-[var(--bark)] rounded-full hover:bg-[var(--parchment)]"
-                    >
-                      Care trends
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      onClick={() => setInputValue('Which plants need water soon?')}
-                      className="text-xs px-3 py-1.5 bg-[var(--bg-primary)] text-[var(--bark)] rounded-full hover:bg-[var(--parchment)]"
-                    >
-                      Plants needing water
-                    </button>
-                    <button
-                      onClick={() => setInputValue('Show me elite genetics plants')}
-                      className="text-xs px-3 py-1.5 bg-[var(--bg-primary)] text-[var(--bark)] rounded-full hover:bg-[var(--parchment)]"
-                    >
-                      Elite genetics
-                    </button>
-                  </>
-                )}
-              </div>
+
+              {/* Quick Action Templates */}
+              {plantData && (
+                <div className="mt-4 space-y-2">
+                  <p className="text-[10px] uppercase tracking-wide text-[var(--clay)] mb-2">Quick Analysis</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {QUICK_ACTIONS.map((action) => (
+                      <button
+                        key={action.id}
+                        onClick={() => handleQuickAction(action)}
+                        disabled={isLoading || (action.photoCount > 0 && photoCount === 0)}
+                        className="flex flex-col items-center p-3 rounded-lg border border-black/[0.08] bg-white hover:bg-[var(--parchment)] hover:border-[var(--moss)]/30 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <span className="text-lg">{action.icon}</span>
+                        <span className="text-xs font-medium text-[var(--bark)] mt-1">{action.label}</span>
+                        <span className="text-[10px] text-[var(--clay)]">{action.description}</span>
+                        {action.photoCount > 0 && (
+                          <span className="text-[9px] text-[var(--moss)] mt-0.5">
+                            {action.photoCount} photos
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Freestyle Toggle */}
+                  <button
+                    onClick={() => setFreestyleMode(!freestyleMode)}
+                    className={`w-full mt-3 flex items-center justify-center gap-1.5 py-2 px-3 rounded text-xs transition-colors ${
+                      freestyleMode
+                        ? 'bg-[var(--moss)] text-white'
+                        : 'bg-black/5 text-[var(--clay)] hover:bg-black/10 hover:text-[var(--bark)]'
+                    }`}
+                  >
+                    <span>🔬</span>
+                    <span>{freestyleMode ? 'Freestyle Mode Active' : 'Freestyle Mode'}</span>
+                  </button>
+                  {freestyleMode && (
+                    <p className="text-[10px] text-[var(--clay)] italic">
+                      Multi-turn conversation enabled. Type anything below.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Non-plant context fallback */}
+              {!plantData && (
+                <p className="text-xs mt-2">
+                  Select a plant to access AI analysis
+                </p>
+              )}
             </div>
           )}
 
@@ -505,32 +586,33 @@ export default function AIAssistant({ plantId, plantData, embedded = false }: AI
           )}
         </div>
 
-        {/* Input */}
+        {/* Input - show when freestyle mode or conversation in progress */}
+        {(freestyleMode || messages.length > 1) && (
         <form onSubmit={handleSubmit} className="p-3 border-t border-black/[0.08]">
-          {/* Photo mode toggle - only show if plant has photos */}
-          {photoCount > 0 && (
-            <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-black/[0.04]">
-              <div className="flex items-center gap-1.5 text-xs text-[var(--clay)]">
-                <Image size={12} />
-                <span>{photosToSend} of {photoCount} photos</span>
+          {/* Photo mode selector - only in freestyle mode */}
+          {freestyleMode && photoCount > 0 && (
+            <div className="flex items-center gap-2 mb-2 pb-2 border-b border-black/[0.04]">
+              <span className="text-[10px] text-[var(--clay)]">Photos:</span>
+              <div className="flex gap-1">
+                {(['none', 'recent', 'comprehensive'] as PhotoMode[]).map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setPhotoMode(mode)}
+                    className={`px-2 py-0.5 text-[10px] rounded transition-colors ${
+                      photoMode === mode
+                        ? 'bg-[var(--moss)] text-white'
+                        : 'bg-black/5 text-[var(--clay)] hover:bg-black/10'
+                    }`}
+                  >
+                    {mode === 'none' ? '0' : mode === 'recent' ? '3' : '20'}
+                  </button>
+                ))}
               </div>
-              {photoCount > 3 && (
-                <label className="flex items-center gap-1.5 text-xs cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={photoMode === 'comprehensive'}
-                    onChange={(e) => setPhotoMode(e.target.checked ? 'comprehensive' : 'recent')}
-                    className="w-3.5 h-3.5 rounded border-black/20 text-[var(--moss)] focus:ring-[var(--moss)]"
-                  />
-                  <span className="text-[var(--clay)]">
-                    Deep analysis
-                  </span>
-                  {photoMode === 'comprehensive' && (
-                    <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
-                      ~{Math.round(photosToSend * 1.5)}K tokens
-                    </span>
-                  )}
-                </label>
+              {photoMode !== 'none' && (
+                <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded ml-auto">
+                  ~{photoMode === 'comprehensive' ? '30' : '10'}K tokens
+                </span>
               )}
             </div>
           )}
@@ -552,6 +634,7 @@ export default function AIAssistant({ plantId, plantData, embedded = false }: AI
             </button>
           </div>
         </form>
+        )}
       </div>
 
       {/* Save Modal */}

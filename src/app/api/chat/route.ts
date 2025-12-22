@@ -365,7 +365,10 @@ export async function POST(req: Request) {
     });
   }
 
-  const { messages, plantContext, photoMode = 'recent' } = await req.json();
+  const { messages, plantContext, photoMode = 'recent', contextMode = 'freestyle' } = await req.json();
+
+  // Log the context mode for debugging
+  console.log('[Chat API] contextMode:', contextMode, '| photoMode:', photoMode);
 
   // Verify locationId ownership if provided (prevents cross-user data access)
   if (plantContext?.locationId) {
@@ -476,11 +479,11 @@ Environmental parameters (reference ranges, not prescriptions):
 
 You're speaking to a master breeder - be professional, precise, and acknowledge complexity rather than oversimplifying.`;
 
-  // Load photos based on mode
+  // Load photos based on mode (skip entirely if 'none')
   let photoDescriptions: string[] = [];
   const imageContents: Array<{ type: 'image'; image: string; mimeType: string }> = [];
 
-  if (plantContext?.photos && plantContext.photos.length > 0) {
+  if (photoMode !== 'none' && plantContext?.photos && plantContext.photos.length > 0) {
     let photosToProcess: typeof plantContext.photos = [];
 
     // Sort all photos by date descending (most recent first)
@@ -659,7 +662,16 @@ Note: These are excerpts from past AI consultations. Use them to identify patter
 ${imageContents.length > 0 ? `PHOTOS PROVIDED FOR ANALYSIS (${photoMode} mode - ${imageContents.length} of ${plantContext.photos?.length || 0} total):
 ${photoDescriptions.map((desc, i) => `  Photo ${i + 1}: ${desc}`).join('\n')}
 
-IMPORTANT: You have been given ${imageContents.length} actual photo(s) to analyze visually. When discussing the plant's appearance, ALWAYS explicitly reference which photos you are describing and what you observe in each.` : ''}
+IMPORTANT: You have been given ${imageContents.length} actual photo(s) to analyze visually. When discussing the plant's appearance, ALWAYS explicitly reference which photos you are describing and what you observe in each.` : `NO PHOTOS PROVIDED THIS TURN. Focus on data analysis - care logs, EC/pH trends, environmental conditions, and semantic context from past consultations. Do not reference or speculate about visual appearance.`}
+
+${contextMode === 'discussion' ? `CONTEXT MODE: Discussion/Data Analysis
+Focus on numerical data, trends, and recommendations based on care logs and environmental data. Do not reference photos or visual assessment.` : ''}
+${contextMode === 'visual' ? `CONTEXT MODE: Quick Visual Check
+Provide a concise visual health assessment based on the provided photos. Flag any immediate concerns.` : ''}
+${contextMode === 'progress' ? `CONTEXT MODE: Progress Review
+Analyze the photos chronologically. Compare growth, leaf size, root development over time. Identify trends.` : ''}
+${contextMode === 'report' ? `CONTEXT MODE: Comprehensive Report
+Provide a thorough status report covering: 1) Visual assessment, 2) Care data analysis, 3) Environmental conditions, 4) Prioritized recommendations.` : ''}
 
 When the user asks questions, assume they're asking about this specific plant unless otherwise specified. Use the care log data to assess substrate health, watering patterns, and EC/pH trends.${imageContents.length > 0 ? ' Reference the photos when discussing visual aspects like leaf condition, growth patterns, or health assessment.' : ''}`;
   }
