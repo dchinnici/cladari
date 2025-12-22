@@ -312,18 +312,19 @@ export default function PlantDetailPage() {
   // Handle quickcare URL param (from QR code scan)
   useEffect(() => {
     if (searchParams.get('quickcare') === 'true' && plant && !careLogModalOpen) {
-      // Open care log modal automatically
+      // Open care log modal automatically with baseline feed values
       setCareLogModalOpen(true)
+      setUseBaselineFeed(true)
       setCareLogForm({
         logId: '',
         activityType: 'watering',
-        notes: '',
+        notes: 'CalMag + TPS One',
         fertilizer: '',
         pesticide: '',
         fungicide: '',
         dosage: '',
-        inputEC: '',
-        inputPH: '',
+        inputEC: '1.15',
+        inputPH: '5.7',
         outputEC: '',
         outputPH: '',
         rainAmount: '',
@@ -1242,7 +1243,11 @@ export default function PlantDetailPage() {
                   ...careLogForm,
                   logId: '',
                   activityType: 'watering',
-                  date: getTodayString()
+                  date: getTodayString(),
+                  // Pre-populate baseline feed values
+                  inputPH: '5.7',
+                  inputEC: '1.15',
+                  notes: 'CalMag + TPS One'
                 })
                 setUseBaselineFeed(true) // Default to baseline feed with watering
                 setCareLogModalOpen(true)
@@ -1261,8 +1266,21 @@ export default function PlantDetailPage() {
             </button>
             <button
               onClick={() => {
-                setNoteForm({ content: '', entryType: 'note', date: getTodayString() })
-                setNoteModalOpen(true)
+                // Open care modal with "note" activity type pre-selected
+                // This gives access to all activity types (repotting, treatment, etc.)
+                setCareLogForm({
+                  ...careLogForm,
+                  logId: '',
+                  activityType: 'repotting', // Default to repotting since watering is the Care button
+                  date: getTodayString(),
+                  notes: '',
+                  inputEC: '',
+                  inputPH: '',
+                  outputEC: '',
+                  outputPH: ''
+                })
+                setUseBaselineFeed(false)
+                setCareLogModalOpen(true)
               }}
               className="flex flex-col items-center gap-1 py-2 px-1 rounded-lg text-[var(--bark)] hover:bg-[var(--bark)]/10 transition-colors"
             >

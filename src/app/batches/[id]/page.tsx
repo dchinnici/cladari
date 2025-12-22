@@ -136,12 +136,12 @@ export default function BatchDetailPage({ params }: { params: Promise<{ id: stri
   const [careForm, setCareForm] = useState({
     date: getTodayString(),
     action: 'watering',
-    inputEC: '',
-    inputPH: '',
+    inputEC: '1.15',  // Pre-populate baseline values
+    inputPH: '5.7',   // Pre-populate baseline values
     outputEC: '',
     outputPH: '',
     isBaselineFeed: true,
-    notes: ''
+    notes: 'CalMag + TPS One'  // Pre-populate baseline note
   })
 
   useEffect(() => {
@@ -736,8 +736,21 @@ export default function BatchDetailPage({ params }: { params: Promise<{ id: stri
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900">Care History</h2>
           <button
-            onClick={() => setCareModalOpen(true)}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            onClick={() => {
+              // Reset form with baseline values
+              setCareForm({
+                date: getTodayString(),
+                action: 'watering',
+                inputEC: '1.15',
+                inputPH: '5.7',
+                outputEC: '',
+                outputPH: '',
+                isBaselineFeed: true,
+                notes: 'CalMag + TPS One'
+              })
+              setCareModalOpen(true)
+            }}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-[var(--forest)] text-white rounded-lg hover:bg-[var(--moss)] transition-colors"
           >
             <Plus size={16} />
             Log Care
@@ -862,117 +875,159 @@ export default function BatchDetailPage({ params }: { params: Promise<{ id: stri
         )}
       </div>
 
-      {/* Add Care Modal */}
+      {/* Add Care Modal - Matching Plant Care Modal */}
       <Modal isOpen={careModalOpen} onClose={() => setCareModalOpen(false)} title="Log Care">
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-              <input
-                type="date"
-                value={careForm.date}
-                onChange={e => setCareForm({ ...careForm, date: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Action</label>
-              <select
-                value={careForm.action}
-                onChange={e => setCareForm({ ...careForm, action: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg text-sm"
-              >
-                <option value="watering">Watering</option>
-                <option value="fertilizing">Fertilizing</option>
-                <option value="repotting">Repotting</option>
-                <option value="treatment">Treatment</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
+          <div>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Date</label>
             <input
-              type="checkbox"
-              id="baselineFeed"
-              checked={careForm.isBaselineFeed}
-              onChange={e => setCareForm({ ...careForm, isBaselineFeed: e.target.checked })}
-              className="rounded"
+              type="date"
+              value={careForm.date}
+              onChange={e => setCareForm({ ...careForm, date: e.target.value })}
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
             />
-            <label htmlFor="baselineFeed" className="text-sm text-gray-700">
-              Baseline feed (CalMag + TPS One)
-            </label>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Input EC</label>
-              <input
-                type="number"
-                step="0.01"
-                value={careForm.inputEC}
-                onChange={e => setCareForm({ ...careForm, inputEC: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg text-sm"
-                placeholder="e.g., 0.8"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Input pH</label>
-              <input
-                type="number"
-                step="0.1"
-                value={careForm.inputPH}
-                onChange={e => setCareForm({ ...careForm, inputPH: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg text-sm"
-                placeholder="e.g., 6.2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Output EC</label>
-              <input
-                type="number"
-                step="0.01"
-                value={careForm.outputEC}
-                onChange={e => setCareForm({ ...careForm, outputEC: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg text-sm"
-                placeholder="Runoff EC"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Output pH</label>
-              <input
-                type="number"
-                step="0.1"
-                value={careForm.outputPH}
-                onChange={e => setCareForm({ ...careForm, outputPH: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg text-sm"
-                placeholder="Runoff pH"
-              />
-            </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Activity Type</label>
+            <select
+              value={careForm.action}
+              onChange={e => {
+                const newAction = e.target.value
+                const updates: any = { action: newAction }
+
+                // Reset baseline when not watering
+                if (newAction !== 'watering') {
+                  updates.isBaselineFeed = false
+                  updates.inputEC = ''
+                  updates.inputPH = ''
+                  updates.notes = ''
+                }
+
+                setCareForm({ ...careForm, ...updates })
+              }}
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+            >
+              <option value="watering">Watering (with baseline feed)</option>
+              <option value="fertilizing">Incremental Feed (deviation from baseline)</option>
+              <option value="repotting">Repotting</option>
+              <option value="treatment">Treatment</option>
+              <option value="pest_discovery">Pest/Disease Discovery</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          {/* Baseline Feed Checkbox - Only for watering */}
+          {careForm.action === 'watering' && (
+            <div className="bg-[var(--moss)]/10 border border-[var(--moss)]/20 rounded-lg p-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={careForm.isBaselineFeed}
+                  onChange={e => {
+                    const checked = e.target.checked
+                    if (checked) {
+                      setCareForm({
+                        ...careForm,
+                        isBaselineFeed: true,
+                        inputPH: '5.7',
+                        inputEC: '1.15',
+                        notes: careForm.notes + (careForm.notes && !careForm.notes.includes('CalMag') ? '\n\n' : '') + 'CalMag + TPS One'
+                      })
+                    } else {
+                      setCareForm({ ...careForm, isBaselineFeed: false })
+                    }
+                  }}
+                  className="w-4 h-4 text-[var(--moss)] rounded focus:ring-[var(--moss)]"
+                />
+                <div className="flex-1">
+                  <span className="font-medium text-[var(--bark)]">Baseline feed (CalMag + TPS One)</span>
+                  <p className="text-xs text-[var(--clay)] mt-0.5">
+                    Auto-fills: pH 5.7, EC 1.15
+                  </p>
+                </div>
+              </label>
+            </div>
+          )}
+
+          {/* EC/pH fields - Only for watering/fertilizing */}
+          {(careForm.action === 'watering' || careForm.action === 'fertilizing') && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">Input EC</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={careForm.inputEC}
+                    onChange={e => setCareForm({ ...careForm, inputEC: e.target.value })}
+                    className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+                    placeholder="e.g., 1.15"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">Input pH</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={careForm.inputPH}
+                    onChange={e => setCareForm({ ...careForm, inputPH: e.target.value })}
+                    className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+                    placeholder="e.g., 5.7"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">Output EC (Optional)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={careForm.outputEC}
+                    onChange={e => setCareForm({ ...careForm, outputEC: e.target.value })}
+                    className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+                    placeholder="Runoff EC"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">Output pH (Optional)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={careForm.outputPH}
+                    onChange={e => setCareForm({ ...careForm, outputPH: e.target.value })}
+                    className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+                    placeholder="Runoff pH"
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--bark)] mb-1">Notes</label>
             <textarea
               value={careForm.notes}
               onChange={e => setCareForm({ ...careForm, notes: e.target.value })}
-              rows={2}
-              className="w-full px-3 py-2 border rounded-lg text-sm"
-              placeholder="Optional notes..."
+              rows={3}
+              className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+              placeholder="Describe the activity..."
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t">
-            <button
-              onClick={() => setCareModalOpen(false)}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800"
-            >
-              Cancel
-            </button>
+          <div className="flex gap-3 pt-2 border-t border-black/[0.08]">
             <button
               onClick={handleAddCare}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+              className="flex-1 px-4 py-2 bg-[var(--forest)] text-white rounded hover:bg-[var(--moss)]"
             >
               Log Care
+            </button>
+            <button
+              onClick={() => setCareModalOpen(false)}
+              className="flex-1 px-4 py-2 border border-black/[0.08] rounded text-[var(--bark)] hover:bg-[var(--parchment)]"
+            >
+              Cancel
             </button>
           </div>
         </div>
