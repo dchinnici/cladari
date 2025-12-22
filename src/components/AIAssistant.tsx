@@ -3,7 +3,7 @@
 import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
-import { Send, Bot, X, Maximize2, Minimize2, Loader, AlertCircle, Image, ChevronDown, BookmarkPlus } from 'lucide-react';
+import { Send, Bot, X, Maximize2, Minimize2, Loader, AlertCircle, Image, ChevronDown, BookmarkPlus, Copy, Check } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { SaveChatModal } from './SaveChatModal';
 
@@ -39,6 +39,8 @@ export default function AIAssistant({ plantId, plantData, embedded = false }: AI
   const [userHasScrolled, setUserHasScrolled] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const [savingTurnIndex, setSavingTurnIndex] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
@@ -133,6 +135,57 @@ export default function AIAssistant({ plantId, plantData, embedded = false }: AI
     setInputValue('');
     setUserHasScrolled(false); // Reset scroll state for new message
     await sendMessage({ text: message });
+  };
+
+  // Copy a message to clipboard
+  const handleCopyMessage = async (messageId: string, content: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedMessageId(messageId);
+      setTimeout(() => setCopiedMessageId(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  // Get the turn (user Q + AI A) for a specific assistant message
+  const getTurnMessages = (assistantIndex: number): ChatMessage[] => {
+    const result: ChatMessage[] = [];
+    const nonContextMessages = messages.filter(m => m.id !== 'context');
+
+    // Find the assistant message at this index
+    let assistantCount = 0;
+    for (let i = 0; i < nonContextMessages.length; i++) {
+      const m = nonContextMessages[i];
+      if (m.role === 'assistant') {
+        if (assistantCount === assistantIndex) {
+          // Found the target assistant message, now get the preceding user message
+          if (i > 0 && nonContextMessages[i - 1].role === 'user') {
+            const userMsg = nonContextMessages[i - 1];
+            result.push({
+              role: 'user',
+              content: userMsg.parts?.filter((p): p is { type: 'text'; text: string } => p.type === 'text').map(p => p.text).join('') || '',
+              timestamp: new Date().toISOString(),
+            });
+          }
+          // Add the assistant message
+          result.push({
+            role: 'assistant',
+            content: m.parts?.filter((p): p is { type: 'text'; text: string } => p.type === 'text').map(p => p.text).join('') || '',
+            timestamp: new Date().toISOString(),
+          });
+          break;
+        }
+        assistantCount++;
+      }
+    }
+    return result;
+  };
+
+  // Open save modal for a specific turn
+  const handleSaveTurn = (assistantIndex: number) => {
+    setSavingTurnIndex(assistantIndex);
+    setShowSaveModal(true);
   };
 
   // Check if there's a saveable conversation (more than just the context message)
@@ -336,7 +389,7 @@ export default function AIAssistant({ plantId, plantData, embedded = false }: AI
             </div>
           )}
 
-          {messages.map((message) => {
+          {messages.map((message, messageIndex) => {
             // Extract text content from message parts and strip XML tags
             const rawContent = message.parts
               ?.filter((part): part is { type: 'text'; text: string } => part.type === 'text')
@@ -344,44 +397,85 @@ export default function AIAssistant({ plantId, plantData, embedded = false }: AI
               .join('') || '';
             const textContent = message.role === 'assistant' ? stripXmlTags(rawContent) : rawContent;
 
+            // Track assistant message index (for per-turn save)
+            const nonContextMessages = messages.filter(m => m.id !== 'context');
+            const assistantIndex = message.role === 'assistant' && message.id !== 'context'
+              ? nonContextMessages.filter(m => m.role === 'assistant').findIndex(m => m.id === message.id)
+              : -1;
+
+            const isContextMessage = message.id === 'context';
+
             return (
               <div
                 key={message.id}
                 className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                <div
-                  className={`max-w-[85%] rounded-xl px-3 py-2 ${
-                    message.role === 'user'
-                      ? 'bg-[var(--moss)] text-white'
-                      : 'bg-[var(--bg-primary)] text-[var(--bark)]'
-                  }`}
-                >
-                  {message.role === 'user' ? (
-                    <p className="text-sm whitespace-pre-wrap">{textContent}</p>
-                  ) : (
-                    <div className="text-sm prose prose-sm max-w-none prose-headings:text-[var(--bark)] prose-headings:font-semibold prose-headings:mt-3 prose-headings:mb-1 prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-strong:text-[var(--bark)]">
-                      <ReactMarkdown
-                        components={{
-                          // Custom components for better styling
-                          h1: ({ children }) => <h3 className="text-base font-bold mt-3 mb-1">{children}</h3>,
-                          h2: ({ children }) => <h4 className="text-sm font-semibold mt-2 mb-1">{children}</h4>,
-                          h3: ({ children }) => <h5 className="text-sm font-medium mt-2 mb-1">{children}</h5>,
-                          p: ({ children }) => <p className="my-1.5">{children}</p>,
-                          ul: ({ children }) => <ul className="list-disc list-inside my-1.5 space-y-0.5">{children}</ul>,
-                          ol: ({ children }) => <ol className="list-decimal list-inside my-1.5 space-y-0.5">{children}</ol>,
-                          li: ({ children }) => <li className="text-sm">{children}</li>,
-                          strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-                          em: ({ children }) => <em className="italic">{children}</em>,
-                          code: ({ children }) => (
-                            <code className="bg-black/5 px-1 py-0.5 rounded text-xs font-mono">{children}</code>
-                          ),
-                          pre: ({ children }) => (
-                            <pre className="bg-black/5 p-2 rounded my-2 overflow-x-auto text-xs">{children}</pre>
-                          ),
-                        }}
+                <div className={`max-w-[85%] ${message.role === 'assistant' ? 'group' : ''}`}>
+                  <div
+                    className={`rounded-xl px-3 py-2 ${
+                      message.role === 'user'
+                        ? 'bg-[var(--moss)] text-white'
+                        : 'bg-[var(--bg-primary)] text-[var(--bark)]'
+                    }`}
+                  >
+                    {message.role === 'user' ? (
+                      <p className="text-sm whitespace-pre-wrap">{textContent}</p>
+                    ) : (
+                      <div className="text-sm prose prose-sm max-w-none prose-headings:text-[var(--bark)] prose-headings:font-semibold prose-headings:mt-3 prose-headings:mb-1 prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-strong:text-[var(--bark)]">
+                        <ReactMarkdown
+                          components={{
+                            // Custom components for better styling
+                            h1: ({ children }) => <h3 className="text-base font-bold mt-3 mb-1">{children}</h3>,
+                            h2: ({ children }) => <h4 className="text-sm font-semibold mt-2 mb-1">{children}</h4>,
+                            h3: ({ children }) => <h5 className="text-sm font-medium mt-2 mb-1">{children}</h5>,
+                            p: ({ children }) => <p className="my-1.5">{children}</p>,
+                            ul: ({ children }) => <ul className="list-disc list-inside my-1.5 space-y-0.5">{children}</ul>,
+                            ol: ({ children }) => <ol className="list-decimal list-inside my-1.5 space-y-0.5">{children}</ol>,
+                            li: ({ children }) => <li className="text-sm">{children}</li>,
+                            strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                            em: ({ children }) => <em className="italic">{children}</em>,
+                            code: ({ children }) => (
+                              <code className="bg-black/5 px-1 py-0.5 rounded text-xs font-mono">{children}</code>
+                            ),
+                            pre: ({ children }) => (
+                              <pre className="bg-black/5 p-2 rounded my-2 overflow-x-auto text-xs">{children}</pre>
+                            ),
+                          }}
+                        >
+                          {textContent}
+                        </ReactMarkdown>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Per-turn action buttons for assistant messages (not context) */}
+                  {message.role === 'assistant' && !isContextMessage && plantId && (
+                    <div className="flex gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => handleCopyMessage(message.id, textContent)}
+                        className="flex items-center gap-1 px-2 py-0.5 text-[10px] rounded bg-black/5 text-[var(--clay)] hover:bg-black/10 hover:text-[var(--bark)] transition-colors"
+                        title="Copy to clipboard"
                       >
-                        {textContent}
-                      </ReactMarkdown>
+                        {copiedMessageId === message.id ? (
+                          <>
+                            <Check size={10} className="text-green-600" />
+                            <span className="text-green-600">Copied</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy size={10} />
+                            <span>Copy</span>
+                          </>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleSaveTurn(assistantIndex)}
+                        className="flex items-center gap-1 px-2 py-0.5 text-[10px] rounded bg-black/5 text-[var(--clay)] hover:bg-black/10 hover:text-[var(--bark)] transition-colors"
+                        title="Save this turn to journal"
+                      >
+                        <BookmarkPlus size={10} />
+                        <span>Save</span>
+                      </button>
                     </div>
                   )}
                 </div>
@@ -463,8 +557,11 @@ export default function AIAssistant({ plantId, plantData, embedded = false }: AI
       {/* Save Modal */}
       <SaveChatModal
         isOpen={showSaveModal}
-        onClose={() => setShowSaveModal(false)}
-        messages={getChatMessages()}
+        onClose={() => {
+          setShowSaveModal(false);
+          setSavingTurnIndex(null);
+        }}
+        messages={savingTurnIndex !== null ? getTurnMessages(savingTurnIndex) : getChatMessages()}
         plantId={plantId || ''}
         onSave={handleSave}
         onSaveNegative={handleSaveNegative}
