@@ -38,14 +38,51 @@ async function getEnvironmentalHistory(locationId: string | undefined) {
 
     if (!location?.sensorPushId) return null;
 
-    // Fetch last 14 days of data for better trend analysis, limit 500 samples
+    // Query in smaller windows to avoid SensorPush API returning only oldest samples
+    // The API returns samples in ascending order (oldest first) and limits cut off recent data
+    // Use 2-day windows since sensor reports frequently (~every minute)
     const stopTime = new Date();
-    const startTime = new Date(stopTime.getTime() - 14 * 24 * 60 * 60 * 1000);
+    const windowDays = 2; // Query in 2-day chunks for full coverage
+    const totalDays = 14;
+    const windows: { start: Date; end: Date }[] = [];
 
-    const samplesResponse = await getSamples([location.sensorPushId], 500, startTime, stopTime);
-    const samples = samplesResponse.sensors[location.sensorPushId];
+    for (let i = 0; i < totalDays; i += windowDays) {
+      const end = new Date(stopTime.getTime() - i * 24 * 60 * 60 * 1000);
+      const start = new Date(end.getTime() - windowDays * 24 * 60 * 60 * 1000);
+      windows.push({ start, end });
+    }
 
-    if (!samples || samples.length === 0) return null;
+    // Fetch all windows in parallel
+    const windowResults = await Promise.all(
+      windows.map(async (w) => {
+        try {
+          const resp = await getSamples([location.sensorPushId], 500, w.start, w.end);
+          return resp.sensors[location.sensorPushId] || [];
+        } catch (e) {
+          console.error(`[Chat API] Error fetching window ${w.start.toISOString()}:`, e);
+          return [];
+        }
+      })
+    );
+
+    // Combine all samples, dedupe by timestamp
+    const seenTimes = new Set<string>();
+    const samples: typeof windowResults[0] = [];
+    for (const windowSamples of windowResults) {
+      for (const sample of windowSamples) {
+        if (!seenTimes.has(sample.observed)) {
+          seenTimes.add(sample.observed);
+          samples.push(sample);
+        }
+      }
+    }
+
+    // Sort by time descending (most recent first)
+    samples.sort((a, b) => new Date(b.observed).getTime() - new Date(a.observed).getTime());
+
+    if (samples.length === 0) return null;
+
+    const startTime = new Date(stopTime.getTime() - totalDays * 24 * 60 * 60 * 1000);
 
     // Calculate overall stats
     const temps = samples.map(s => s.temperature);
