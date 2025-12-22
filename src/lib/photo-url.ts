@@ -21,20 +21,19 @@ export interface PhotoTransformOptions {
   quality?: number
   /** Resize mode */
   resize?: 'cover' | 'contain' | 'fill'
-  /** Output format */
-  format?: 'webp' | 'jpeg' | 'png'
+  // Note: Supabase automatically optimizes format based on Accept header
 }
 
 /** Preset sizes for common use cases */
 export const PHOTO_SIZES = {
   /** Tiny thumbnail for lists (150px) */
-  thumbnail: { width: 150, format: 'webp' as const, quality: 75 },
+  thumbnail: { width: 150, quality: 75 },
   /** Card preview (300px) */
-  card: { width: 300, format: 'webp' as const, quality: 80 },
+  card: { width: 300, quality: 80 },
   /** Medium detail view (600px) */
-  medium: { width: 600, format: 'webp' as const, quality: 85 },
+  medium: { width: 600, quality: 85 },
   /** Large detail view (1200px) */
-  large: { width: 1200, format: 'webp' as const, quality: 90 },
+  large: { width: 1200, quality: 90 },
   /** Full size (no transformation) */
   full: undefined,
 } as const
@@ -73,20 +72,20 @@ export function getPhotoUrl(
     ? PHOTO_SIZES[options]
     : options
 
-  // Supabase Storage path - use render endpoint for transformations
+  // Supabase Storage path
   if (photo.storagePath && supabaseUrl) {
+    // Use render endpoint for transformations (Pro feature)
     if (transformOptions) {
-      // Use /render/ endpoint for transformed images
       const params = new URLSearchParams()
       if (transformOptions.width) params.set('width', String(transformOptions.width))
       if (transformOptions.height) params.set('height', String(transformOptions.height))
       if (transformOptions.quality) params.set('quality', String(transformOptions.quality))
       if (transformOptions.resize) params.set('resize', transformOptions.resize)
-      if (transformOptions.format) params.set('format', transformOptions.format)
-
+      // Note: format parameter removed - Supabase auto-optimizes
       return `${supabaseUrl}/storage/v1/render/image/public/${STORAGE_BUCKET}/${photo.storagePath}?${params.toString()}`
     }
-    // No transformation - use object endpoint
+
+    // Full size - use object endpoint (no transformation)
     return `${supabaseUrl}/storage/v1/object/public/${STORAGE_BUCKET}/${photo.storagePath}`
   }
 
