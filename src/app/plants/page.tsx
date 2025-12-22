@@ -400,11 +400,11 @@ export default function PlantsPage() {
               >
                 {/* Photo - 2:3 portrait aspect ratio */}
                 {plant.photos && plant.photos.length > 0 ? (
-                  <div className="aspect-[2/3] bg-[var(--parchment)]">
+                  <div className="aspect-[2/3] bg-[var(--parchment)] flex items-center justify-center">
                     <img
                       src={getPhotoUrl(plant.photos[0], 'card')}
                       alt={plant.hybridName || plant.species || 'Plant'}
-                      className="w-full h-full object-cover"
+                      className="max-w-full max-h-full object-contain"
                       loading="lazy"
                     />
                   </div>
