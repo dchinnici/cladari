@@ -11,6 +11,7 @@ import {
 import { Modal } from '@/components/modal'
 import { showToast } from '@/components/toast'
 import { getTodayString } from '@/lib/timezone'
+import { getPhotoUrl as getPhotoUrlLib } from '@/lib/photo-url'
 
 interface CloneBatch {
   id: string
@@ -382,21 +383,11 @@ export default function BatchDetailPage({ params }: { params: Promise<{ id: stri
   }
 
   function getPhotoUrl(photo: Photo): string {
-    // Supabase Storage - construct signed URL
-    if (photo.storagePath) {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-      return `${supabaseUrl}/storage/v1/object/public/photos/${photo.storagePath}`
-    }
-    // Legacy local URL
-    return photo.url || ''
+    return getPhotoUrlLib(photo, 'medium')
   }
 
   function getThumbnailUrl(photo: Photo): string {
-    if (photo.thumbnailPath) {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-      return `${supabaseUrl}/storage/v1/object/public/photos/${photo.thumbnailPath}`
-    }
-    return photo.thumbnailUrl || getPhotoUrl(photo)
+    return getPhotoUrlLib(photo, 'thumbnail')
   }
 
   function getBatchName(): string {
