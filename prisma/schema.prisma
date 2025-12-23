@@ -285,8 +285,9 @@ model Photo {
   thumbnailUrl    String?
 
   dateTaken       DateTime
-  growthStage     String?  // seedling, juvenile, mature
-  photoType       String   // whole_plant, leaf, spathe, spadix, roots, cross, germination, batch
+  growthStage     String?  // DEPRECATED: AI can infer this. Kept for backward compatibility.
+  photoType       String   // Anatomy: whole_plant, leaf, spathe, spadix, roots, stem, cataphyll, base
+  photoContext    String?  // Intent: progress, emergent, pest_evidence, damage, etc. Dynamic based on photoType.
 
   metadata        Json?    // EXIF data, camera settings
   aiAnalysis      Json?    // Computer vision results

@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
     const cloneBatchId = formData.get('cloneBatchId') as string | null
 
     const photoType = formData.get('photoType') as string || 'whole_plant'
+    const photoContext = formData.get('photoContext') as string || 'progress'
     const growthStage = formData.get('growthStage') as string || null
     const notes = formData.get('notes') as string || null
     const manualDateTaken = formData.get('dateTaken') as string || null
@@ -292,6 +293,7 @@ export async function POST(request: NextRequest) {
         thumbnailUrl: null,
         dateTaken,
         photoType,
+        photoContext,
         growthStage,
         notes,
         metadata
@@ -401,7 +403,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { photoType, growthStage, notes, dateTaken } = body
+    const { photoType, photoContext, growthStage, notes, dateTaken } = body
 
     // Validate photo exists and belongs to user
     const existingPhoto = await prisma.photo.findUnique({
@@ -426,6 +428,7 @@ export async function PATCH(request: NextRequest) {
       where: { id: photoId },
       data: {
         photoType: photoType || undefined,
+        photoContext: photoContext || undefined,
         growthStage: growthStage || null,
         notes: notes || null,
         dateTaken: parsedDate || undefined

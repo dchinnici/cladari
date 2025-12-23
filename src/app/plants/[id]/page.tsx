@@ -229,10 +229,76 @@ export default function PlantDetailPage() {
   const [photoForm, setPhotoForm] = useState({
     photoId: '',
     photoType: 'whole_plant',
-    growthStage: '',
+    photoContext: 'progress',
+    growthStage: '',  // Deprecated but kept for backward compat
     notes: '',
     dateTaken: getTodayString()
   })
+
+  // Dynamic photo context options based on photo type (anatomy → intent mapping)
+  const PHOTO_CONTEXTS: Record<string, { value: string; label: string }[]> = {
+    whole_plant: [
+      { value: 'progress', label: 'Progress Shot' },
+      { value: 'sizing_up', label: 'Sizing Up' },
+      { value: 'repot', label: 'Repot Documentation' },
+      { value: 'stress_response', label: 'Stress Response' },
+      { value: 'recovery', label: 'Recovery' },
+      { value: 'comparison', label: 'Before/After' },
+      { value: 'environmental', label: 'Environmental Context' },
+    ],
+    leaf: [
+      { value: 'progress', label: 'Progress Shot' },
+      { value: 'emergent', label: 'Emergent/New Leaf' },
+      { value: 'unfurling', label: 'Unfurling' },
+      { value: 'pest_evidence', label: 'Pest Evidence' },
+      { value: 'damage', label: 'Damage Documentation' },
+      { value: 'color_change', label: 'Color Change' },
+      { value: 'venation', label: 'Venation Detail' },
+      { value: 'measurement', label: 'Measurement' },
+    ],
+    spathe: [
+      { value: 'bud_emerging', label: 'Bud Emerging' },
+      { value: 'opening', label: 'Spathe Opening' },
+      { value: 'receptive', label: 'Female Receptive' },
+      { value: 'pollen_visible', label: 'Pollen Visible' },
+      { value: 'post_pollination', label: 'Post Pollination' },
+      { value: 'finished', label: 'Finished' },
+    ],
+    spadix: [
+      { value: 'bud_emerging', label: 'Bud Emerging' },
+      { value: 'opening', label: 'Opening' },
+      { value: 'receptive', label: 'Female Receptive' },
+      { value: 'pollen_visible', label: 'Pollen Visible' },
+      { value: 'post_pollination', label: 'Post Pollination' },
+      { value: 'finished', label: 'Finished' },
+    ],
+    stem: [
+      { value: 'progress', label: 'Progress Shot' },
+      { value: 'new_growth', label: 'New Growth' },
+      { value: 'damage', label: 'Damage' },
+      { value: 'aerial_roots', label: 'Aerial Roots' },
+    ],
+    cataphyll: [
+      { value: 'emergent', label: 'Emergent' },
+      { value: 'new_growth', label: 'New Growth' },
+      { value: 'splitting', label: 'Splitting' },
+      { value: 'progress', label: 'Progress Shot' },
+    ],
+    base: [
+      { value: 'new_growth', label: 'New Growth' },
+      { value: 'emergent', label: 'Emergent Leaf/Cataphyll' },
+      { value: 'division_point', label: 'Division Point' },
+      { value: 'root_emergence', label: 'Root Emergence' },
+      { value: 'basal_offset', label: 'Basal Offset' },
+    ],
+    roots: [
+      { value: 'health_check', label: 'Health Check' },
+      { value: 'repot', label: 'Repot Documentation' },
+      { value: 'root_bound', label: 'Root Bound' },
+      { value: 'rot_evidence', label: 'Rot Evidence' },
+      { value: 'new_growth', label: 'New Root Growth' },
+    ],
+  }
 
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
@@ -797,7 +863,7 @@ export default function PlantDetailPage() {
           formData.append('file', uploadFile)
           formData.append('plantId', plant.id)
           formData.append('photoType', photoForm.photoType)
-          if (photoForm.growthStage) formData.append('growthStage', photoForm.growthStage)
+          formData.append('photoContext', photoForm.photoContext)
           if (photoForm.notes) formData.append('notes', photoForm.notes)
           formData.append('dateTaken', photoForm.dateTaken)
 
@@ -824,6 +890,7 @@ export default function PlantDetailPage() {
       setPhotoForm({
         photoId: '',
         photoType: 'whole_plant',
+        photoContext: 'progress',
         growthStage: '',
         notes: '',
         dateTaken: getTodayString()
@@ -857,6 +924,7 @@ export default function PlantDetailPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           photoType: photoForm.photoType,
+          photoContext: photoForm.photoContext,
           growthStage: photoForm.growthStage || null,
           notes: photoForm.notes || null,
           dateTaken: photoForm.dateTaken
@@ -869,6 +937,7 @@ export default function PlantDetailPage() {
         setPhotoForm({
           photoId: '',
           photoType: 'whole_plant',
+          photoContext: 'progress',
           growthStage: '',
           notes: '',
           dateTaken: getTodayString()
@@ -1870,6 +1939,7 @@ export default function PlantDetailPage() {
                               setPhotoForm({
                                 photoId: photo.id,
                                 photoType: photo.photoType || 'whole_plant',
+                                photoContext: photo.photoContext || 'progress',
                                 growthStage: photo.growthStage || '',
                                 notes: photo.notes || '',
                                 dateTaken: photo.dateTaken ? new Date(photo.dateTaken).toLocaleDateString('en-CA') : getTodayString()
@@ -1891,13 +1961,13 @@ export default function PlantDetailPage() {
                         </div>
                       </div>
                       <div className="p-3">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <span className="text-xs px-2 py-1 bg-[var(--moss)]/20 text-[var(--moss)] rounded-full font-medium">
                             {photo.photoType?.replace('_', ' ')}
                           </span>
-                          {photo.growthStage && (
+                          {photo.photoContext && photo.photoContext !== 'progress' && (
                             <span className="text-xs px-2 py-1 bg-blue-100 text-[var(--water-blue)] rounded-full font-medium">
-                              {photo.growthStage}
+                              {photo.photoContext.replace('_', ' ')}
                             </span>
                           )}
                         </div>
@@ -3479,6 +3549,7 @@ export default function PlantDetailPage() {
           setPhotoForm({
             photoId: '',
             photoType: 'whole_plant',
+            photoContext: 'progress',
             growthStage: '',
             notes: '',
             dateTaken: getTodayString()
@@ -3560,7 +3631,16 @@ export default function PlantDetailPage() {
               </label>
               <select
                 value={photoForm.photoType}
-                onChange={(e) => setPhotoForm({ ...photoForm, photoType: e.target.value })}
+                onChange={(e) => {
+                  const newType = e.target.value
+                  // Reset context to first available option when type changes
+                  const contexts = PHOTO_CONTEXTS[newType] || PHOTO_CONTEXTS.whole_plant
+                  setPhotoForm({
+                    ...photoForm,
+                    photoType: newType,
+                    photoContext: contexts[0]?.value || 'progress'
+                  })
+                }}
                 className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
               >
                 <option value="whole_plant">Whole Plant</option>
@@ -3568,7 +3648,7 @@ export default function PlantDetailPage() {
                 <option value="spathe">Spathe</option>
                 <option value="spadix">Spadix</option>
                 <option value="stem">Stem</option>
-                <option value="catophyl">Catophyl</option>
+                <option value="cataphyll">Cataphyll</option>
                 <option value="base">Base/Petiole</option>
                 <option value="roots">Roots</option>
               </select>
@@ -3576,17 +3656,16 @@ export default function PlantDetailPage() {
 
             <div>
               <label className="block text-sm font-medium text-[var(--bark)] mb-1">
-                Growth Stage
+                Context
               </label>
               <select
-                value={photoForm.growthStage}
-                onChange={(e) => setPhotoForm({ ...photoForm, growthStage: e.target.value })}
+                value={photoForm.photoContext}
+                onChange={(e) => setPhotoForm({ ...photoForm, photoContext: e.target.value })}
                 className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
               >
-                <option value="">Not specified</option>
-                <option value="seedling">Seedling</option>
-                <option value="juvenile">Juvenile</option>
-                <option value="mature">Mature</option>
+                {(PHOTO_CONTEXTS[photoForm.photoType] || PHOTO_CONTEXTS.whole_plant).map((ctx) => (
+                  <option key={ctx.value} value={ctx.value}>{ctx.label}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -3627,6 +3706,7 @@ export default function PlantDetailPage() {
                 setPhotoForm({
                   photoId: '',
                   photoType: 'whole_plant',
+                  photoContext: 'progress',
                   growthStage: '',
                   notes: '',
                   dateTaken: getTodayString()

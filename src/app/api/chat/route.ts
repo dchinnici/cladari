@@ -513,6 +513,7 @@ You're speaking to a master breeder - be professional, precise, and acknowledge 
         });
         const photoInfo = [
           photo.photoType && `Type: ${photo.photoType}`,
+          photo.photoContext && photo.photoContext !== 'progress' && `Context: ${photo.photoContext}`,
           photo.dateTaken && `Date: ${new Date(photo.dateTaken).toLocaleDateString()}`,
           photo.notes && `Notes: ${photo.notes}`
         ].filter(Boolean).join(', ');
