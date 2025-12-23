@@ -365,7 +365,7 @@ export async function POST(req: Request) {
     });
   }
 
-  const { messages, plantContext, photoMode = 'recent', contextMode = 'freestyle' } = await req.json();
+  const { messages, plantContext, photoMode = 'recent', photoCount, contextMode = 'freestyle' } = await req.json();
 
   // Log the context mode for debugging
   console.log('[Chat API] contextMode:', contextMode, '| photoMode:', photoMode);
@@ -491,14 +491,17 @@ You're speaking to a master breeder - be professional, precise, and acknowledge 
       new Date(b.dateTaken).getTime() - new Date(a.dateTaken).getTime()
     );
 
+    // Determine photo limit based on mode and optional photoCount override
+    let photoLimit: number;
     if (photoMode === 'comprehensive') {
-      // Comprehensive mode: all photos (up to 20 to avoid extreme token usage)
-      photosToProcess = sortedPhotos.slice(0, 20);
+      // Use explicit photoCount if provided, otherwise default to 20
+      photoLimit = photoCount || 20;
     } else {
-      // Recent mode: get the 3 most recent photos regardless of date
-      // This gives context across recent sessions without excessive token cost
-      photosToProcess = sortedPhotos.slice(0, 3);
+      // Recent mode: 3 photos
+      photoLimit = 3;
     }
+
+    photosToProcess = sortedPhotos.slice(0, photoLimit);
 
     console.log('[Chat API] Photos to process:', photosToProcess.length);
 

@@ -88,6 +88,7 @@ export default function AIAssistant({ plantId, plantData, embedded = false }: AI
   const [isMaximized, setIsMaximized] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [photoMode, setPhotoMode] = useState<PhotoMode>('recent');
+  const [photoLimit, setPhotoLimit] = useState<number | undefined>(undefined);
   const [contextMode, setContextMode] = useState<ContextMode | null>(null);
   const [freestyleMode, setFreestyleMode] = useState(false);
   const [userHasScrolled, setUserHasScrolled] = useState(false);
@@ -107,6 +108,8 @@ export default function AIAssistant({ plantId, plantData, embedded = false }: AI
   // Use refs to track current modes so transport always has latest values
   const photoModeRef = useRef(photoMode);
   photoModeRef.current = photoMode;
+  const photoLimitRef = useRef(photoLimit);
+  photoLimitRef.current = photoLimit;
   const contextModeRef = useRef(contextMode);
   contextModeRef.current = contextMode;
 
@@ -116,6 +119,7 @@ export default function AIAssistant({ plantId, plantData, embedded = false }: AI
     body: () => ({
       plantContext: plantData,
       photoMode: photoModeRef.current,
+      photoCount: photoLimitRef.current,
       contextMode: contextModeRef.current
     })
   }), [plantData]);
@@ -201,10 +205,12 @@ export default function AIAssistant({ plantId, plantData, embedded = false }: AI
     // Set the appropriate modes
     setContextMode(action.id);
     setPhotoMode(action.photoMode);
+    setPhotoLimit(action.photoCount);
 
     // Update refs immediately for the transport
     contextModeRef.current = action.id;
     photoModeRef.current = action.photoMode;
+    photoLimitRef.current = action.photoCount;
 
     setUserHasScrolled(false);
     await sendMessage({ text: action.query });

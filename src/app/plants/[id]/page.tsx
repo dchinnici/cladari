@@ -248,13 +248,21 @@ export default function PlantDetailPage() {
     ],
     leaf: [
       { value: 'progress', label: 'Progress Shot' },
-      { value: 'emergent', label: 'Emergent/New Leaf' },
-      { value: 'unfurling', label: 'Unfurling' },
+      { value: 'emergent', label: 'Emergent (spear tip showing)' },
+      { value: 'unfurling', label: 'Unfurling (opening)' },
+      { value: 'mature', label: 'Fully Hardened' },
       { value: 'pest_evidence', label: 'Pest Evidence' },
       { value: 'damage', label: 'Damage Documentation' },
       { value: 'color_change', label: 'Color Change' },
       { value: 'venation', label: 'Venation Detail' },
       { value: 'measurement', label: 'Measurement' },
+    ],
+    petiole: [
+      { value: 'progress', label: 'Progress Shot' },
+      { value: 'color', label: 'Color/Pattern' },
+      { value: 'length', label: 'Length Measurement' },
+      { value: 'damage', label: 'Damage' },
+      { value: 'comparison', label: 'Comparison' },
     ],
     spathe: [
       { value: 'bud_emerging', label: 'Bud Emerging' },
@@ -279,16 +287,16 @@ export default function PlantDetailPage() {
       { value: 'aerial_roots', label: 'Aerial Roots' },
     ],
     cataphyll: [
-      { value: 'emergent', label: 'Emergent' },
-      { value: 'new_growth', label: 'New Growth' },
-      { value: 'splitting', label: 'Splitting' },
+      { value: 'emergent', label: 'Emergent (just showing)' },
+      { value: 'splitting', label: 'Splitting Open' },
+      { value: 'shed', label: 'Shed/Dried' },
       { value: 'progress', label: 'Progress Shot' },
     ],
     base: [
-      { value: 'new_growth', label: 'New Growth' },
-      { value: 'emergent', label: 'Emergent Leaf/Cataphyll' },
+      { value: 'new_growth', label: 'New Growth Point' },
+      { value: 'emergent', label: 'Emergent (spear/cataphyll)' },
+      { value: 'meristem', label: 'Meristem/Crown' },
       { value: 'division_point', label: 'Division Point' },
-      { value: 'root_emergence', label: 'Root Emergence' },
       { value: 'basal_offset', label: 'Basal Offset' },
     ],
     roots: [
@@ -297,6 +305,7 @@ export default function PlantDetailPage() {
       { value: 'root_bound', label: 'Root Bound' },
       { value: 'rot_evidence', label: 'Rot Evidence' },
       { value: 'new_growth', label: 'New Root Growth' },
+      { value: 'aerial', label: 'Aerial Roots' },
     ],
   }
 
@@ -3645,11 +3654,12 @@ export default function PlantDetailPage() {
               >
                 <option value="whole_plant">Whole Plant</option>
                 <option value="leaf">Leaf Detail</option>
+                <option value="petiole">Petiole</option>
                 <option value="spathe">Spathe</option>
                 <option value="spadix">Spadix</option>
                 <option value="stem">Stem</option>
                 <option value="cataphyll">Cataphyll</option>
-                <option value="base">Base/Petiole</option>
+                <option value="base">Base/Meristem</option>
                 <option value="roots">Roots</option>
               </select>
             </div>
