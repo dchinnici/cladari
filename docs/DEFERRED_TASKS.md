@@ -80,6 +80,18 @@
 | Add JSON.parse error handling | 🔵 TODO | 1 hr | Several routes lack try-catch around JSON.parse |
 | Randomize temp file names | 🔵 TODO | 30 min | Photo upload uses predictable paths |
 
+### AI Intelligence (Temporal Segmentation)
+
+| Task | Status | Effort | Notes |
+|------|--------|--------|-------|
+| LocationHistory model | 🔵 TODO | 3 hrs | Track plant moves between locations over time |
+| Epoch boundary detection | 🔵 TODO | 2 hrs | Flag repots/treatments as discontinuities in trend analysis |
+| AI context injection for epochs | 🔵 TODO | 2 hrs | "Plant was repotted Dec 13, analyze in two epochs" |
+| Chart event annotations | 🔵 TODO | 3 hrs | Vertical markers for repots, treatments, moves on insight graphs |
+| Substrate mix correlation | 🔵 TODO | 2 hrs | Track which mix (4.0 vs 4.5) affects pH drift rates |
+
+**Why this matters:** AI currently treats all data as one continuous timeline. A plant that was in a humid grow tent (0.3 VPD) then moved to a dry bathroom gets analyzed as if it experienced "stress events" when the damage was actually from the opposite condition. Repots reset substrate health, but AI sees it as one trend. This ~10-12 hour feature block unlocks significantly more accurate environmental correlation.
+
 ### Monitoring
 
 | Task | Status | Effort | Notes |
@@ -177,4 +189,4 @@ src/
 
 ---
 
-*Last updated: December 21, 2025*
+*Last updated: December 22, 2025*

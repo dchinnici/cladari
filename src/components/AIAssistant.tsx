@@ -124,12 +124,31 @@ export default function AIAssistant({ plantId, plantData, embedded = false }: AI
     })
   }), [plantData]);
 
+  // Generate dynamic welcome message based on available data
+  const getWelcomeMessage = () => {
+    const name = plantData?.hybridName || plantData?.species || 'this plant';
+    const careLogCount = plantData?.careLogs?.length || 0;
+    const hasPhotos = photoCount > 0;
+    const hasCareData = careLogCount > 0;
+
+    let capabilities = [];
+    if (hasPhotos) capabilities.push(`${photoCount} photos`);
+    if (hasCareData) capabilities.push(`${careLogCount} care logs`);
+    if (plantData?.location?.sensorPushId) capabilities.push('live environmental data');
+
+    const capabilityStr = capabilities.length > 0
+      ? `I have ${capabilities.join(', ')} to work with.`
+      : '';
+
+    return `Ready to analyze **${name}**. ${capabilityStr} Choose a quick analysis above, or tap Freestyle for deep-dive questions.`;
+  };
+
   const { messages, sendMessage, status, error, setMessages } = useChat({
     transport,
     messages: plantData ? [{
       id: 'context',
       role: 'assistant' as const,
-      parts: [{ type: 'text' as const, text: `I'm ready to help with ${plantData.hybridName || plantData.species || 'this plant'}. I have access to ${photoCount} photo${photoCount !== 1 ? 's' : ''} and will analyze the ${photoMode === 'comprehensive' ? 'full photo history' : '3 most recent photos'}. What would you like to know?` }]
+      parts: [{ type: 'text' as const, text: getWelcomeMessage() }]
     }] : []
   });
 
@@ -141,10 +160,10 @@ export default function AIAssistant({ plantId, plantData, embedded = false }: AI
       setMessages([{
         id: 'context',
         role: 'assistant' as const,
-        parts: [{ type: 'text' as const, text: `I'm ready to help with ${plantData?.hybridName || plantData?.species || 'this plant'}. I have access to ${photoCount} photo${photoCount !== 1 ? 's' : ''} and will analyze the ${photoMode === 'comprehensive' ? 'full photo history' : '3 most recent photos'}. What would you like to know?` }]
+        parts: [{ type: 'text' as const, text: getWelcomeMessage() }]
       }]);
     }
-  }, [plantId, plantData, photoCount, photoMode, setMessages]);
+  }, [plantId, plantData, photoCount, setMessages]);
 
   const isLoading = status === 'streaming' || status === 'submitted';
 

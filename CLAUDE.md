@@ -33,7 +33,7 @@ cladari/                          # Monorepo root
 │   │   │   ├── breeding/      # Breeding record API
 │   │   │   ├── seed-batches/  # Seed batch API
 │   │   │   ├── seedlings/     # Seedling API
-│   │   │   ├── chat/          # AI chat endpoint (Opus 4 + semantic search + extended thinking + stress analysis)
+│   │   │   ├── chat/          # AI chat endpoint (Opus 4 + quick actions + context modes + stress analysis)
 │   │   │   ├── chat-logs/     # AI conversation persistence (HITL + auto-embedding)
 │   │   │   ├── ml/            # ML endpoints (semantic-search, diagnose, predict-care)
 │   │   │   ├── sensorpush/    # SensorPush API (sync, history, sensors)
@@ -78,9 +78,25 @@ cladari/                          # Monorepo root
 - **API routes**: kebab-case paths
 - **ID Generation**: `src/lib/breeding-ids.ts` for all ID generation
 
-## Current Version: v1.7.7 (Dec 22, 2025)
+## Current Version: v1.7.8 (Dec 22, 2025)
 
 ### Recently Completed
+- **AI Chat Quick Actions + Photo Context Classification** (v1.7.8)
+  - **Quick Action Templates**: Four pre-configured analysis modes
+    - 📊 **Substrate** - EC/pH trends, no photos (fast, cheap)
+    - 👁️ **Visual** - Quick health check, 3 photos
+    - 📈 **Progress** - Growth over time, 10 photos chronologically
+    - 📋 **Full Report** - Comprehensive analysis, 20 photos
+  - **Freestyle Mode**: Toggle for multi-turn deep-dive conversations
+  - **Dynamic Photo Context**: Two-tier classification system for ML pipeline
+    - Tier 1 (anatomy): whole_plant, leaf, petiole, spathe, spadix, stem, cataphyll, base, roots
+    - Tier 2 (intent): Dynamic options based on type (emergent, unfurling, pest_evidence, damage, etc.)
+    - AI receives context hints: "Type: leaf, Context: pest_evidence"
+  - **Photo limit fix**: Progress mode now correctly sends 10 photos (was sending 20)
+  - **Per-turn Copy/Save**: Inline buttons on each AI response for HITL scoring
+  - **Improved welcome message**: Dynamic capabilities display based on available data
+  - **Queued: Temporal Segmentation** - LocationHistory model, epoch boundaries for repots/treatments
+
 - **Enhanced Environmental Stress Analysis + Opus 4 Restoration** (v1.7.7)
   - **Switched AI back to Opus 4** from Sonnet 4 after inadequate leaf damage analysis
   - **Enhanced `getEnvironmentalHistory()`** in chat API:
