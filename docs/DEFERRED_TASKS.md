@@ -80,6 +80,14 @@
 | Add JSON.parse error handling | 🔵 TODO | 1 hr | Several routes lack try-catch around JSON.parse |
 | Randomize temp file names | 🔵 TODO | 30 min | Photo upload uses predictable paths |
 
+### RLS Performance Optimization
+
+| Task | Status | Effort | Notes |
+|------|--------|--------|-------|
+| Optimize RLS auth function calls | 🔵 TODO | 30 min | Change `auth.uid()` to `(select auth.uid())` in all policies - prevents per-row re-evaluation |
+
+**Context:** Supabase flagged 68 issues (1 security, 67 performance) - all the same pattern. Current policies re-evaluate auth functions for every row scanned. Wrapping in subquery caches the result for query duration. Not urgent for single user, but will matter at scale.
+
 ### AI Intelligence (Temporal Segmentation)
 
 | Task | Status | Effort | Notes |
