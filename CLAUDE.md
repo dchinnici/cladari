@@ -36,6 +36,7 @@ cladari/                          # Monorepo root
 │   │   │   ├── chat/          # AI chat endpoint (Opus 4 + quick actions + context modes + stress analysis)
 │   │   │   ├── chat-logs/     # AI conversation persistence (HITL + auto-embedding)
 │   │   │   ├── ml/            # ML endpoints (semantic-search, diagnose, predict-care)
+│   │   │   ├── taxa/          # Taxon reference API (IAS species data)
 │   │   │   ├── sensorpush/    # SensorPush API (sync, history, sensors)
 │   │   │   ├── weather/       # Open-Meteo weather API
 │   │   │   └── print/         # Label print APIs (zebra, plant-tag, location-tag)
@@ -64,6 +65,7 @@ cladari/                          # Monorepo root
 │   ├── migrate-to-supabase.ts      # Data migration script
 │   ├── migrate-photos-to-supabase.ts # Photo storage migration
 │   ├── print-proxy.ts              # Local print proxy (Tailscale Funnel)
+│   ├── scrape-ias-taxa.ts          # IAS species scraper (154 Anthurium species)
 │   └── setup-rls-policies.sql      # Row Level Security policies
 └── middleware.ts              # Auth middleware (protects routes)
 ```
@@ -81,6 +83,24 @@ cladari/                          # Monorepo root
 ## Current Version: v1.7.8 (Dec 24, 2025)
 
 ### Recently Completed
+- **IAS Taxon Reference System** (Dec 24, 2025)
+  - **TaxonReference model**: Full morphometric schema for species data
+    - Taxonomy: genus, species, section, authority, type specimen
+    - Measurements: blade, spadix, spathe, petiole dimensions (JSON ranges)
+    - Ecology: habit, distribution, elevation, habitat
+    - ML-ready: pgvector embedding field, verification status
+  - **IAS Scraper** (`scripts/scrape-ias-taxa.ts`):
+    - Parses International Aroid Society species descriptions
+    - Extracts structured data from botanical text (measurements, traits)
+    - Handles SSL issues with curl fallback
+    - **154 species scraped** across 15 sections
+  - **Taxa API Endpoints**:
+    - `GET /api/taxa` - List with filtering (species, section, source, genus)
+    - `GET /api/taxa/[species]` - Full details + related taxa + matching plants
+    - `PATCH /api/taxa/[species]` - HITL verification workflow
+  - **Use cases**: AI species ID, ML vision pipeline reference, breeding research
+  - **Future sources**: MOBOT, Tropicos, iNaturalist (same schema, different source)
+
 - **P1 Defensive Fixes + Dynamic UI** (Dec 24, 2025)
   - **Dynamic Urgency Colors**: Plant cards now use plant-specific watering thresholds
     - Uses `care-thresholds.ts` which calculates 1.3x (yellow) and 1.7x (red) of average interval
