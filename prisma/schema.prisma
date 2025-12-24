@@ -944,3 +944,95 @@ model NegativeExample {
   @@index([plantId])
   @@index([failureType])
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TAXON REFERENCE SYSTEM
+// Authoritative species descriptions from IAS, MOBOT, iNaturalist, etc.
+// Enables AI cross-referencing, species ID via HITL, ML vision pipeline
+// ═══════════════════════════════════════════════════════════════════════════
+
+model TaxonReference {
+  id                String   @id @default(cuid())
+
+  // Taxonomy
+  genus             String   @default("Anthurium")
+  species           String   // "papillilaminum"
+  authority         String?  // "Croat" or "Croat, sp. nov."
+  section           String?  // "Cardiolonchium"
+  subsection        String?  // For finer classification
+
+  // Type specimen info
+  typeSpecimen      String?  // "Dressler 6033 (MO 2927339, holotype; US, isotype)"
+  typeLocality      String?  // "Panama. Colón: hill slope in Achiote"
+
+  // Full descriptions (text for AI context)
+  latinDiagnosis    String?  // Original Latin description
+  fullDescription   String?  // Complete English morphological description
+  diagnosticTraits  String?  // Key distinguishing features from similar species
+
+  // Structured morphometrics (JSON for ML feature extraction)
+  // Format: { min: number, max: number, typical?: number, unit: string }
+  petioleLength     Json?    // Petiole measurements
+  petioleDiameter   Json?
+  bladeLength       Json?    // Leaf blade measurements
+  bladeWidth        Json?
+  bladeShape        String?  // "oblong-ovate to narrowly ovate"
+  sinusShape        String?  // "hippocrepiform to nearly triangular"
+  basalVeins        Int?     // Number of basal vein pairs
+  lateralVeins      Int?     // Primary lateral veins per side
+
+  // Inflorescence measurements
+  peduncleLength    Json?
+  spatheLength      Json?
+  spatheWidth       Json?
+  spatheColor       String?  // "green tinged with red-violet"
+  spadixLength      Json?
+  spadixDiameter    Json?
+  spadixColor       String?  // "green (B & K Yellow-green 6/10)"
+  stipeLength       Json?
+
+  // Berry/fruit (when known)
+  berryColor        String?
+  berrySize         Json?
+
+  // Habit & ecology
+  habit             String?  // "terrestrial", "epiphytic", "lithophytic"
+  elevationRange    Json?    // { min: 0, max: 100, unit: "m" }
+  distribution      String?  // "central Panama and eastern Darien Provinces"
+  habitat           String?  // "hill slope", "wet forest", etc.
+
+  // Taxonomic notes & relationships
+  relatedSpecies    Json?    // Array of related species with notes
+  taxonomicNotes    String?  // Comparisons, confusion notes, etc.
+
+  // Specimen citations
+  specimenCitations Json?    // Array of { collector, number, herbarium, location }
+
+  // Images
+  images            Json?    // Array of { url, caption, source, copyright }
+
+  // Source tracking
+  source            String   @default("IAS") // IAS, MOBOT, Tropicos, iNaturalist, etc.
+  sourceUrl         String?  // Direct link to source page
+  sourcePublication String?  // "A Revision of Anthurium sect. Cardiolonchium"
+  sourceAuthor      String?  // "Croat, T.B."
+  sourceYear        Int?     // 2009
+
+  // ML/AI integration
+  embedding         Unsupported("vector(768)")?  // For semantic search
+
+  // Verification & quality
+  verificationStatus String  @default("unverified") // unverified, verified, needs_review
+  verifiedBy        String?  // User who verified
+  verifiedDate      DateTime?
+  notes             String?  // Internal notes
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([genus, species, source]) // One entry per species per source
+  @@index([genus])
+  @@index([species])
+  @@index([section])
+  @@index([source])
+}
