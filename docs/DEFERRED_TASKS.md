@@ -88,6 +88,14 @@
 
 **Context:** Supabase flagged 68 issues (1 security, 67 performance) - all the same pattern. Current policies re-evaluate auth functions for every row scanned. Wrapping in subquery caches the result for query duration. Not urgent for single user, but will matter at scale.
 
+### OAuth UX (Custom Domain)
+
+| Task | Status | Effort | Notes |
+|------|--------|--------|-------|
+| Supabase custom domain | 🔵 DEFERRED | $10/mo | Would change ugly `wtvydonwfnypzzeizptw.supabase.co` to `api.cladari.ai` in OAuth consent screen |
+
+**Decision:** Not worth $10/month for alpha stage. The ugly project ID in OAuth consent is cosmetic - users still see "Cladari" as app name. Revisit if user feedback indicates trust issues.
+
 ### AI Intelligence (Temporal Segmentation)
 
 | Task | Status | Effort | Notes |
