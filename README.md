@@ -1,366 +1,197 @@
-# 🌿 Cladari PlantDB
+# 🌿 Cladari
 
-## Advanced Anthurium Collection Management System
+**Professional Anthurium Breeding & Collection Management Platform**
 
-A production-grade web application for managing high-value Anthurium collections with comprehensive tracking of genetics, morphology, care schedules, and breeding programs.
+A production-grade web application for managing high-value Anthurium collections with comprehensive tracking of genetics, morphology, care schedules, breeding programs, and AI-assisted plant health analysis.
 
-![Version](https://img.shields.io/badge/version-1.7.4-green.svg)
-![Status](https://img.shields.io/badge/status-production-brightgreen.svg)
-![Plants](https://img.shields.io/badge/plants-70+-blue.svg)
-![Photos](https://img.shields.io/badge/photos-696-purple.svg)
-![Live](https://img.shields.io/badge/live-www.cladari.ai-blue.svg)
+[![Version](https://img.shields.io/badge/version-1.7.8-green.svg)](https://github.com/yourusername/cladari)
+[![Status](https://img.shields.io/badge/status-production-brightgreen.svg)](https://www.cladari.ai)
+[![Live](https://img.shields.io/badge/live-www.cladari.ai-blue.svg)](https://www.cladari.ai)
 
 ---
 
-## ✨ Features
+## ✨ Key Features
 
-### 📸 Photo Management
-- **Multi-photo upload** with EXIF extraction
-- **Cover photo selection** for plant cards
-- **8 photo categories** including stem, catophyl, base
-- **Automatic thumbnail generation**
-- **Growth stage tracking**
+### 🌱 Plant Management
+- **Unique ID System** - ANT-YYYY-#### accession numbers
+- **Complete Lineage Tracking** - Sexual and asexual propagation
+- **13 Anthurium Sections** - Full taxonomic support
+- **Financial Valuation** - Acquisition cost and market value tracking
 
-### 🧪 EC/pH Monitoring
-- **Input/output tracking** for substrate analysis
-- **Automated health scoring** (0-100 scale)
-- **Drift detection** and trend analysis
-- **Critical alerts** for pH/EC issues
-- **Paired reading analysis**
-
-### 📦 Batch Operations
-- **Quick Care (Cmd+K)** for rapid logging
-- **Batch care** for multiple plants
-- **Location-based operations**
-- **Rain tracking** with amount/duration
-- **Baseline feed automation**
-
-### 🤖 AI Assistant Integration
-- **Embedded AI chat** directly in PlantDB UI
-- **Plant-specific context** on detail pages
-- **F2 GPU-powered** Mistral-Nemo-12B (12B params)
-- **Smart query routing** (database vs. knowledge)
-- **Anti-hallucination** for collection queries
-- **Floating assistant** on plant list page
-- **Local fallback** for offline operation
-- **Clean responses** (no system prompts visible)
-
-Also includes:
-- **MCP Server** for external AI integration
-- **Vector embeddings** schema ready
-- **Care prediction** algorithms
-
-### 🧬 Breeding Pipeline (NEW v1.3.0)
+### 🧬 Breeding Pipeline
 - **Cross Tracking** - CLX-YYYY-### notation with female × male parents
 - **Category Detection** - INTRASPECIFIC, INTERSPECIFIC, INTERSECTIONAL
-- **Harvest Management** - Multiple berry harvests per cross
-- **Seed Batches** - Germination tracking (SDB-YYYY-###)
-- **Seedling Records** - Individual tracking (SDL-YYYY-####)
-- **Selection Workflow** - GROWING → KEEPER/HOLDBACK/CULL
-- **Graduation System** - Seedlings promote to Plant table
+- **Seed Batches** - Germination tracking with environmental conditions
+- **Clone Batches** - TC, division, cutting, offset management
+- **Graduation Workflow** - Seedlings and clones promote to Plant records
 
-### 📊 Analytics Dashboard
-- **Care queue** with priority sorting
-- **Collection statistics** and value tracking
-- **EC/pH trends** visualization
-- **Vendor performance** metrics
-- **Critical plant alerts**
+### 🤖 AI-Powered Analysis
+- **Claude Opus 4 Integration** - Extended thinking for complex diagnoses
+- **Photo Analysis** - Multi-image health assessments with 4 quick-action modes
+- **Environmental Correlation** - SensorPush data integrated into AI context
+- **Semantic Search** - Cross-collection knowledge base via pgvector embeddings
+- **HITL Quality Scoring** - Human feedback loop for ML training
 
-### 🔒 Data Protection
-- **Automated daily backups** to NAS
-- **30-day snapshot retention**
-- **Time Machine integration**
-- **Export to CSV/SQL**
-- **Photo backup included**
+### 📊 Environmental Monitoring
+- **SensorPush Integration** - Live temperature, humidity, VPD tracking
+- **Weather API** - Open-Meteo integration for outdoor context
+- **Stress Detection** - Automated alerts for environmental extremes
+- **Location Management** - Per-location sensor assignments
 
-### 🌱 Core Plant Management
-- **Plant Database** - Track accessions, lineage, genetics, breeding records
-- **Smart Filtering & Sorting** - Adaptive care-based sorting, persistent filters
-- **Location Management** - Monitor environmental conditions (DLI, VPD, CO₂)
-- **Reproductive Phenology** - Track flowering cycles and fertility windows
-- **Temporal Morphology** - Document phenotypic changes over time
-- **Pest Management** - Discovery and treatment tracking
+### 🧪 Substrate Health
+- **EC/pH Tracking** - Input/output measurements per watering
+- **Drift Detection** - Trend analysis for substrate aging
+- **Automated Alerts** - Critical thresholds for pH and EC
+- **Dynamic Care Thresholds** - Plant-specific watering schedules based on history
 
----
+### 📸 Photo Documentation
+- **Multi-photo Upload** - Batch processing with EXIF extraction
+- **9 Photo Types** - Whole plant, leaf, petiole, spathe, spadix, etc.
+- **Context Classification** - Dynamic intent tagging (emergent, damage, pest evidence)
+- **Supabase Storage** - Cloud-hosted with signed URLs
 
-## 🚀 Quick Start
-
-### Prerequisites
-- Node.js 18+
-- macOS (optimized for Mac)
-- 4GB RAM minimum
-
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/plantdb.git
-cd plantDB
-
-# Install dependencies
-npm install
-
-# Set up database
-npx prisma generate
-npx prisma db push
-
-# Start development server
-./scripts/dev --bg
-```
-
-### Access the Application
-
-- **Main App**: http://localhost:3000
-- **Database UI**: `npx prisma studio` → http://localhost:5555
-
----
-
-## 📚 Documentation
-
-- **[Operator Manual](OPERATOR_MANUAL.md)** - User guide for daily operations
-- **[Engineer Manual](docs/CLADARI_ENGINEER_MANUAL.md)** - Technical documentation
-- **[Integration Guide](INTEGRATION.md)** - Sovria AI integration via MCP
-- **[MCP Server](mcp-server/README.md)** - Natural language interface
-- **[Backup Setup](docs/BACKUP_SETUP.md)** - Automated backup configuration
-- **[Location Management](docs/LOCATION_MANAGEMENT.md)** - Environmental tracking
-- **[ML Integration Roadmap](docs/ML_INTEGRATION_ROADMAP.md)** - AI/ML plans
-- **[Reproductive Phenology](docs/REPRODUCTIVE_PHENOLOGY.md)** - Breeding cycles
+### 🏷️ QR Code & Printing
+- **Plant Tags** - One-click Zebra label printing
+- **Location Tags** - QR codes for batch care workflows
+- **Quick Care Flow** - Scan → log care in 5 seconds
 
 ---
 
 ## 🛠️ Technology Stack
 
-- **Framework**: Next.js 15.5.6 (App Router)
-- **Database**: SQLite + Prisma ORM
-- **UI**: Tailwind CSS + Glassmorphism
-- **Language**: TypeScript
-- **Icons**: Lucide React
-- **Charts**: Recharts
-- **Photos**: Sharp for image processing
+| Layer | Technology |
+|-------|------------|
+| **Framework** | Next.js 15.5.6 (App Router) |
+| **Database** | Supabase PostgreSQL + Prisma ORM |
+| **Auth** | Supabase Auth (Google OAuth) |
+| **Storage** | Supabase Storage |
+| **AI** | Claude Opus 4 via Anthropic API |
+| **Embeddings** | BGE-base-en-v1.5 (768d) + pgvector |
+| **Hosting** | Vercel (Production) |
+| **Sensors** | SensorPush API integration |
+| **Weather** | Open-Meteo API |
+| **Language** | TypeScript |
+| **Styling** | Tailwind CSS |
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js 18+
+- Supabase account (for database, auth, storage)
+- Anthropic API key (for AI features)
+
+### Environment Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/cladari.git
+cd cladari
+
+# Install dependencies
+npm install
+
+# Copy environment template
+cp .env.example .env.local
+
+# Configure your environment variables:
+# - NEXT_PUBLIC_SUPABASE_URL
+# - NEXT_PUBLIC_SUPABASE_ANON_KEY
+# - SUPABASE_SERVICE_ROLE_KEY
+# - DATABASE_URL (Supabase connection string)
+# - ANTHROPIC_API_KEY
+
+# Generate Prisma client
+npx prisma generate
+
+# Push schema to database
+npx prisma db push
+
+# Start development server
+npm run dev
+```
+
+### Access Points
+- **Development**: http://localhost:3000
+- **Production**: https://www.cladari.ai
+- **Database UI**: `npx prisma studio`
 
 ---
 
 ## 📁 Project Structure
 
 ```
-plantDB/
-├── mcp-server/          # MCP server for Sovria integration
-│   ├── index.ts        # MCP server implementation
-│   ├── README.md       # MCP setup guide
-│   └── dist/          # Compiled JavaScript
+cladari/
 ├── prisma/
-│   ├── schema.prisma     # Database schema
-│   └── dev.db           # SQLite database
+│   └── schema.prisma          # Database schema (Postgres)
 ├── src/
-│   ├── app/             # Next.js app routes
-│   │   ├── plants/      # Plant management
-│   │   ├── breeding/    # Breeding pipeline UI
-│   │   ├── batch-care/  # Batch operations
-│   │   ├── locations/   # Location management
-│   │   └── api/        # API endpoints
-│   ├── components/      # React components
-│   │   └── care/       # Care-related components
-│   └── lib/            # Utilities & helpers
-│       ├── care/       # Care algorithms
-│       └── ml/         # ML functions
-├── public/
-│   └── uploads/        # Photo storage
-│       ├── photos/     # Original photos
-│       └── thumbnails/ # Generated thumbnails
-├── scripts/            # Automation scripts
-├── docs/              # Documentation
-└── backups/           # Backup directory
+│   ├── app/                   # Next.js App Router
+│   │   ├── api/               # REST API endpoints
+│   │   │   ├── chat/          # AI chat (Opus 4 + context)
+│   │   │   ├── ml/            # ML endpoints (semantic-search, diagnose)
+│   │   │   └── sensorpush/    # Environmental monitoring
+│   │   ├── plants/            # Plant management UI
+│   │   ├── breeding/          # Breeding pipeline UI
+│   │   └── batches/           # Clone batch management
+│   ├── components/            # React components
+│   └── lib/
+│       ├── ml/                # ML modules (embeddings, predictors)
+│       ├── care-thresholds.ts # Dynamic watering thresholds
+│       └── sensorpush.ts      # SensorPush API client
+├── scripts/                   # Migration and automation
+└── docs/                      # Technical documentation
 ```
 
 ---
 
-## 🤖 MCP Server Integration
+## 📚 Documentation
 
-PlantDB includes a Model Context Protocol (MCP) server that enables natural language interaction through Sovria AI:
-
-### Available Tools
-- **search_plants** - Natural language plant search ("Find velvety plants with red veins")
-- **predict_care** - ML-powered care predictions ("Which plants need water today?")
-- **diagnose_symptoms** - Plant health analysis ("Diagnose yellowing leaves")
-- **get_plant_details** - Retrieve plant information and statistics
-
-### Quick Setup
-```bash
-# Build MCP server
-cd mcp-server && npm install && npm run build
-
-# Add to Sovria config (~/.config/claude/claude_desktop_config.json)
-{
-  "mcpServers": {
-    "plantdb": {
-      "command": "node",
-      "args": ["/path/to/plantDB/mcp-server/dist/index.js"]
-    }
-  }
-}
-```
-
-### Example Queries
-- "Which plants need water today?"
-- "Show me my most valuable Anthuriums"
-- "Diagnose the yellowing on my Crystallinum"
-- "Search for plants with velvety leaves"
-
-See [Integration Guide](INTEGRATION.md) for complete setup instructions.
+| Document | Purpose |
+|----------|---------|
+| [CLAUDE.md](CLAUDE.md) | AI context and development notes |
+| [OPERATOR_MANUAL.md](OPERATOR_MANUAL.md) | End-user guide |
+| [docs/CLADARI_ENGINEER_MANUAL.md](docs/CLADARI_ENGINEER_MANUAL.md) | Technical reference |
+| [docs/ML_VISION_PIPELINE.md](docs/ML_VISION_PIPELINE.md) | ML architecture plans |
 
 ---
 
-## 🎯 Key Features in Detail
+## 🎯 Version History
 
-### Plant Management
-- **Unique IDs**: ANT-2025-XXXX format
-- **13 Anthurium sections**: Full taxonomic support
-- **Parent/offspring tracking**: Complete lineage (sexual + asexual)
-- **Morphological traits**: Detailed phenotyping
-- **Financial valuation**: Market value tracking
-- **Generation tracking**: F1, F2, S1, BC1, etc.
+| Version | Date | Highlights |
+|---------|------|------------|
+| **1.7.8** | Dec 2025 | AI quick actions, photo context classification, dynamic thresholds |
+| **1.7.7** | Dec 2025 | Enhanced stress analysis, Opus 4 restoration |
+| **1.7.6** | Dec 2025 | Monorepo consolidation, print proxy via Tailscale |
+| **1.7.5** | Dec 2025 | Unified breed UI, flowering events |
+| **1.7.4** | Dec 2025 | Production deployment, Google OAuth |
+| **1.7.0** | Dec 2025 | Supabase migration (SQLite → Postgres) |
 
-### Breeding Pipeline
-- **Cross notation**: CLX-YYYY-### with female × male
-- **Cross categories**: Auto-detected from parent sections
-- **Harvest tracking**: Multiple harvests per cross
-- **Seed batches**: SDB-YYYY-### with germination conditions
-- **Seedling tracking**: SDL-YYYY-#### individual records
-- **Selection status**: GROWING, KEEPER, HOLDBACK, CULL, GRADUATED
-- **Graduation**: Promotes seedlings to full Plant records
-
-### Care Tracking
-- **Smart scheduling**: ML-powered predictions
-- **Fertilizer management**: Baseline + incremental
-- **Pest tracking**: Discovery to treatment
-- **Repotting logs**: Substrate details included
-- **Growth measurements**: Time-series data
-
-### Photo System
-- **Multi-upload**: Batch photo processing
-- **EXIF extraction**: Camera metadata preserved
-- **Cover selection**: Choose display photo
-- **8 categories**: Comprehensive documentation
-- **Auto-thumbnails**: Performance optimized
-
-### EC/pH Analysis
-- **Paired readings**: Input vs output analysis
-- **Variance detection**: Salt buildup alerts
-- **pH drift tracking**: Substrate aging monitor
-- **Health scoring**: 0-100 substrate health
-- **Trend visualization**: Historical patterns
-
-### Environmental Monitoring
-- **DLI tracking**: Daily light integral
-- **VPD calculation**: Vapor pressure deficit
-- **CO₂ monitoring**: PPM tracking
-- **Temperature/humidity**: Full climate data
-- **Equipment tracking**: Lights, fans, timers
+See [CHANGELOG.md](CHANGELOG.md) for full history.
 
 ---
 
-## 📈 Performance Metrics
+## 🔮 Roadmap
 
-- **Plant list load**: <200ms
-- **Photo upload**: <2s with thumbnails
-- **Search response**: <50ms
-- **Database size**: ~50MB
-- **Photo storage**: ~2GB
-- **Backup size**: ~2.5GB total
+### Current Focus
+- **Temporal Segmentation** - LocationHistory for AI epoch boundaries
+- **SensorPush Optimization** - Daily aggregate caching for true min/max
 
----
-
-## ⌨️ Keyboard Shortcuts
-
-- `Cmd+K` - Quick care modal
-- `/` - Focus search (on plant list)
-- `Esc` - Close modals
-- `Enter` - Submit forms
+### Planned
+- **ML Vision Pipeline** - SAM2 + DINOv2 for morphological analysis
+- **Voice Memo Import** - Whisper transcription for hands-free logging
+- **Taxon Reference System** - Verified specimen database for AI comparison
 
 ---
 
-## 🔧 Development
+## 🤝 About
 
-### Running Tests
-```bash
-npm test
-```
+Cladari is built for serious Anthurium breeders and collectors who need:
+- **Rich documentation** over quick features
+- **Data integrity** for breeding verification
+- **AI assistance** grounded in actual collection data
 
-### Database Migrations
-```bash
-# Create migration
-npx prisma migrate dev --name your_migration_name
-
-# Apply migrations
-npx prisma migrate deploy
-
-# Push schema changes (development)
-npx prisma db push
-```
-
-### Building for Production
-```bash
-npm run build
-npm start
-```
-
-### Backup Management
-```bash
-# Manual backup
-./scripts/backup-to-nas.sh
-
-# Check backup status
-launchctl list | grep cladari
-
-# View backup logs
-tail -20 logs/backup.log
-```
-
----
-
-## 🐛 Recent Fixes (v1.2.0)
-
-- ✅ **Dropdown z-index**: Menus now appear above cards
-- ✅ **Timezone handling**: EST standardized across system
-- ✅ **pH drift detection**: False positives eliminated
-- ✅ **EC averaging**: Uses last 3 logs for accuracy
-- ✅ **Pest status**: Only shows active issues
-- ✅ **Repotting fields**: Proper editing behavior
-- ✅ **Cover photo**: New selection feature added
-
----
-
-## 📅 Roadmap
-
-### Phase 2 (Q1 2026)
-- [ ] QR code generation for plant labels
-- [ ] Mobile PWA for field work
-- [ ] SensorPush integration
-- [ ] Darwin Core export format
-- [ ] Advanced search filters
-- [ ] Care calendar view
-
-### Phase 3 (Q2 2026)
-- [x] MCP server integration (✅ Completed Nov 2025)
-- [ ] Vector search capabilities
-- [ ] PostgreSQL migration (>1000 plants)
-- [ ] Photo AI analysis
-- [ ] Automated pest detection
-- [ ] Growth prediction models
-
-### Phase 4 (Q3 2026)
-- [ ] Custom ML models
-- [ ] Breeding recommendations AI
-- [ ] Multi-user collaboration
-- [ ] Marketplace features
-- [ ] DNA sequence storage
-- [ ] BLAST search integration
-
----
-
-## 🤝 Contributing
-
-This is currently a private project for managing a personal Anthurium collection. If you're interested in similar features for your collection, feel free to fork and adapt!
+This is the reference implementation of the **Stream Protocol** for biological provenance verification.
 
 ---
 
@@ -370,59 +201,4 @@ Private project - All rights reserved
 
 ---
 
-## 🙏 Acknowledgments
-
-- Built for the Cladari Anthurium collection
-- Inspired by botanical database standards
-- Optimized for serious plant collectors
-- Developed with assistance from Claude AI
-
----
-
-## 📞 Support
-
-For issues or questions:
-1. Check the [Operator Manual](OPERATOR_MANUAL.md)
-2. Review the [Engineer Manual](docs/CLADARI_ENGINEER_MANUAL.md)
-3. Check logs: `tail -50 .next-dev.log`
-4. Database issues: `npx prisma studio`
-
-### Common Commands
-```bash
-# Start server
-./scripts/dev --bg
-
-# Stop server
-./scripts/stop
-
-# View database
-npx prisma studio
-
-# Check plant count
-sqlite3 prisma/dev.db "SELECT COUNT(*) FROM Plant;"
-
-# Export to CSV
-curl http://localhost:3000/api/plants/export > plants.csv
-```
-
----
-
-## 🌟 Recent Updates
-
-- **v1.3.0** - Complete breeding pipeline (Dec 2025)
-- **v1.2.0** - Cover photo selection, bug fixes
-- **v1.1.9** - Photo management system
-- **v1.1.8** - EC/pH analysis system
-- **v1.1.7** - Batch care & quick care
-- **v1.1.6** - ML foundation & journal
-- **v1.1.5** - Automated backups
-- **v1.1.4** - Location management
-- **v1.1.3** - Reproductive phenology
-- **v1.1.2** - Temporal morphology
-- **v1.1.1** - Data standardization
-
----
-
 **Happy Growing! 🌱**
-
-*Last Updated: December 4, 2025*# Trigger Vercel deploy

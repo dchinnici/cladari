@@ -423,19 +423,29 @@ export default function PlantsPage() {
                   {/* Plant ID */}
                   <p className="text-xs text-[var(--clay)] font-mono mt-0.5">{plant.plantId}</p>
 
-                  {/* Last care - key info */}
-                  <div className="flex items-center gap-1 mt-2 text-xs">
-                    <Clock className="w-3 h-3 text-[var(--clay)]" />
-                    <span className={`${
-                      getDaysSinceLastCare(plant) === null || getDaysSinceLastCare(plant)! >= 7
-                        ? 'text-[var(--alert-red)]'
-                        : getDaysSinceLastCare(plant)! >= 5
-                        ? 'text-[var(--spadix-yellow)]'
-                        : 'text-[var(--moss)]'
-                    }`}>
-                      {formatLastCare(plant)}
-                    </span>
-                  </div>
+                  {/* Last care - key info with dynamic thresholds */}
+                  {(() => {
+                    const status = getCareStatus(plant)
+                    const colorClass = status.status === 'overdue'
+                      ? 'text-[var(--alert-red)]'
+                      : status.status === 'warning'
+                      ? 'text-[var(--spadix-yellow)]'
+                      : 'text-[var(--moss)]'
+                    return (
+                      <div className="flex items-center gap-1 mt-2 text-xs">
+                        <Clock className="w-3 h-3 text-[var(--clay)]" />
+                        <span className={colorClass}>
+                          {formatLastCare(plant)}
+                        </span>
+                        {/* Show dynamic interval hint for plants with enough data */}
+                        {status.thresholds.isDynamic && (
+                          <span className="text-[var(--clay)]" title={`Based on ${status.thresholds.eventCount} care events`}>
+                            (~{status.thresholds.averageInterval}d avg)
+                          </span>
+                        )}
+                      </div>
+                    )
+                  })()}
 
                   {/* Location if available */}
                   {plant.currentLocation && (

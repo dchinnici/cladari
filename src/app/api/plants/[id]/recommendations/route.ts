@@ -105,7 +105,8 @@ export async function GET(
     )
     const lastRepotDate = lastRepot ? new Date(lastRepot.date) : null
 
-    // ML Predictions
+    // ML Predictions - Each predictor wrapped for graceful degradation
+    // If one fails, others still return data instead of 500ing the whole response
 
     // 1. Watering Prediction
     // Note: SensorPush stores temperature in °F, predictor expects °C
@@ -139,92 +140,110 @@ export async function GET(
       }
     }
 
-    const wateringPrediction = predictWateringInterval(
-      plant.careLogs.map((log: any) => ({
-        date: new Date(log.date),
-        action: log.action,
-        ecIn: log.inputEC ?? null,
-        ecOut: log.outputEC ?? null,
-        phIn: log.inputPH ?? null,
-        phOut: log.outputPH ?? null
-      })),
-      plant.currentLocation ? {
-        temperature: fahrenheitToCelsius(plant.currentLocation.temperature),
-        humidity: plant.currentLocation.humidity,
-        vpd: plant.currentLocation.vpd,
-        dli: plant.currentLocation.dli,
-        co2: plant.currentLocation.co2
-      } : undefined,
-      lastRepotDate,
-      plant.healthStatus,
-      precipitationData
-    )
+    // Watering prediction with graceful degradation
+    let wateringPrediction: ReturnType<typeof predictWateringInterval> | null = null
+    let wateringHistory: ReturnType<typeof analyzeWateringHistory> | null = null
+    try {
+      wateringPrediction = predictWateringInterval(
+        plant.careLogs.map((log: any) => ({
+          date: new Date(log.date),
+          action: log.action,
+          ecIn: log.inputEC ?? null,
+          ecOut: log.outputEC ?? null,
+          phIn: log.inputPH ?? null,
+          phOut: log.outputPH ?? null
+        })),
+        plant.currentLocation ? {
+          temperature: fahrenheitToCelsius(plant.currentLocation.temperature),
+          humidity: plant.currentLocation.humidity,
+          vpd: plant.currentLocation.vpd,
+          dli: plant.currentLocation.dli,
+          co2: plant.currentLocation.co2
+        } : undefined,
+        lastRepotDate,
+        plant.healthStatus,
+        precipitationData
+      )
 
-    const wateringHistory = analyzeWateringHistory(
-      plant.careLogs.map((log: any) => ({
-        date: new Date(log.date),
-        action: log.action
-      }))
-    )
+      wateringHistory = analyzeWateringHistory(
+        plant.careLogs.map((log: any) => ({
+          date: new Date(log.date),
+          action: log.action
+        }))
+      )
+    } catch (err) {
+      console.error('[ML Recommendations] Watering prediction failed:', err)
+    }
 
-    // 2. Health Trajectory
-    const healthTrajectory = predictHealthTrajectory(
-      ecPhReadings,
-      lastRepotDate
-    )
+    // 2. Health Trajectory with graceful degradation
+    let healthTrajectory: ReturnType<typeof predictHealthTrajectory> | null = null
+    let substrateHealthScore: ReturnType<typeof calculateSubstrateHealthScore> | null = null
+    try {
+      healthTrajectory = predictHealthTrajectory(
+        ecPhReadings,
+        lastRepotDate
+      )
 
-    const substrateHealthScore = calculateSubstrateHealthScore(
-      ecPhReadings,
-      lastRepotDate
-    )
+      substrateHealthScore = calculateSubstrateHealthScore(
+        ecPhReadings,
+        lastRepotDate
+      )
+    } catch (err) {
+      console.error('[ML Recommendations] Health trajectory failed:', err)
+    }
 
-    // 3. Flowering Prediction
+    // 3. Flowering Prediction with graceful degradation
     // Map from Prisma schema (spatheEmergence, etc.) to predictor interface (startDate, etc.)
-    const floweringPrediction = predictFloweringCycle(
-      plant.floweringCycles.map((cycle: any) => {
-        // Determine status based on which phase dates are filled
-        let status: 'developing' | 'female_phase' | 'male_phase' | 'pollinated' | 'seeding' | 'closed' = 'developing'
-        if (cycle.spatheClose) status = 'closed'
-        else if (cycle.maleEnd) status = 'seeding'
-        else if (cycle.maleStart) status = 'male_phase'
-        else if (cycle.femaleStart) status = 'female_phase'
-        else if (cycle.pollenCollected) status = 'pollinated'
+    let floweringPrediction: ReturnType<typeof predictFloweringCycle> | null = null
+    try {
+      floweringPrediction = predictFloweringCycle(
+        plant.floweringCycles.map((cycle: any) => {
+          // Determine status based on which phase dates are filled
+          let status: 'developing' | 'female_phase' | 'male_phase' | 'pollinated' | 'seeding' | 'closed' = 'developing'
+          if (cycle.spatheClose) status = 'closed'
+          else if (cycle.maleEnd) status = 'seeding'
+          else if (cycle.maleStart) status = 'male_phase'
+          else if (cycle.femaleStart) status = 'female_phase'
+          else if (cycle.pollenCollected) status = 'pollinated'
 
-        return {
-          id: cycle.id,
-          startDate: cycle.spatheEmergence ? new Date(cycle.spatheEmergence) : new Date(),
-          endDate: cycle.spatheClose ? new Date(cycle.spatheClose) : null,
-          status,
-          femalePhaseStart: cycle.femaleStart ? new Date(cycle.femaleStart) : null,
-          femalePhaseEnd: cycle.femaleEnd ? new Date(cycle.femaleEnd) : null,
-          malePhaseStart: cycle.maleStart ? new Date(cycle.maleStart) : null,
-          malePhaseEnd: cycle.maleEnd ? new Date(cycle.maleEnd) : null,
-          pollinationDate: null, // Not tracked separately in schema
-          notes: cycle.notes
-        }
-      })
-    )
+          return {
+            id: cycle.id,
+            startDate: cycle.spatheEmergence ? new Date(cycle.spatheEmergence) : new Date(),
+            endDate: cycle.spatheClose ? new Date(cycle.spatheClose) : null,
+            status,
+            femalePhaseStart: cycle.femaleStart ? new Date(cycle.femaleStart) : null,
+            femalePhaseEnd: cycle.femaleEnd ? new Date(cycle.femaleEnd) : null,
+            malePhaseStart: cycle.maleStart ? new Date(cycle.maleStart) : null,
+            malePhaseEnd: cycle.maleEnd ? new Date(cycle.maleEnd) : null,
+            pollinationDate: null, // Not tracked separately in schema
+            notes: cycle.notes
+          }
+        })
+      )
+    } catch (err) {
+      console.error('[ML Recommendations] Flowering prediction failed:', err)
+    }
 
-    // Build enhanced response
+    // Build enhanced response with graceful null handling
     const response = {
       recommendations,
       predictions: {
-        watering: {
+        watering: wateringPrediction ? {
           nextDate: wateringPrediction.nextWaterDate,
           daysUntil: wateringPrediction.daysUntilWater,
           confidence: wateringPrediction.confidence,
           interval: wateringPrediction.interval,
           factors: wateringPrediction.factors,
           trend: wateringPrediction.trend,
-          history: {
+          history: wateringHistory ? {
             totalEvents: wateringHistory.totalEvents,
             avgInterval: wateringHistory.avgInterval,
             recentInterval: wateringHistory.recentInterval,
             trend: wateringHistory.trend,
             consistency: wateringHistory.consistency
-          }
-        },
-        health: {
+          } : null
+        } : { error: 'Watering prediction unavailable', confidence: 'low' as const },
+        health: healthTrajectory ? {
           trajectory: healthTrajectory.trajectory,
           currentScore: healthTrajectory.currentScore,
           substrateHealthScore,
@@ -239,8 +258,8 @@ export async function GET(
           trends: healthTrajectory.trends,
           alerts: healthTrajectory.alerts,
           summary: generateHealthSummary(healthTrajectory)
-        },
-        flowering: {
+        } : { error: 'Health trajectory unavailable', confidence: 'low' as const },
+        flowering: floweringPrediction ? {
           likelyNextCycle: floweringPrediction.likelyNextCycle,
           daysUntilNextCycle: floweringPrediction.daysUntilNextCycle,
           confidence: floweringPrediction.confidence,
@@ -250,7 +269,7 @@ export async function GET(
           statistics: floweringPrediction.statistics,
           insights: floweringPrediction.insights,
           summary: generateFloweringSummary(floweringPrediction)
-        }
+        } : { error: 'Flowering prediction unavailable', confidence: 'low' as const }
       },
       mlMetadata: {
         dataPoints: {
@@ -259,10 +278,15 @@ export async function GET(
           floweringCycles: plant.floweringCycles.length
         },
         modelConfidence: calculateOverallConfidence(
-          wateringPrediction.confidence,
-          healthTrajectory.confidence,
-          floweringPrediction.confidence
+          wateringPrediction?.confidence ?? 'low',
+          healthTrajectory?.confidence ?? 'low',
+          floweringPrediction?.confidence ?? 'low'
         ),
+        predictorStatus: {
+          watering: wateringPrediction ? 'ok' : 'failed',
+          health: healthTrajectory ? 'ok' : 'failed',
+          flowering: floweringPrediction ? 'ok' : 'failed'
+        },
         generatedAt: new Date().toISOString()
       },
       plantContext: {

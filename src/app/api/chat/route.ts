@@ -365,7 +365,41 @@ export async function POST(req: Request) {
     });
   }
 
-  const { messages, plantContext, photoMode = 'recent', photoCount, contextMode = 'freestyle' } = await req.json();
+  let body;
+  try {
+    body = await req.json();
+  } catch (e) {
+    return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  const { messages, plantContext, photoMode = 'recent', photoCount, contextMode = 'freestyle' } = body;
+
+  // Input validation
+  if (!messages || !Array.isArray(messages) || messages.length === 0) {
+    return new Response(JSON.stringify({ error: 'messages must be a non-empty array' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  // Validate message structure
+  for (const msg of messages) {
+    if (!msg.role || !['user', 'assistant', 'system'].includes(msg.role)) {
+      return new Response(JSON.stringify({ error: 'Each message must have a valid role (user/assistant/system)' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    if (typeof msg.content !== 'string' && !Array.isArray(msg.content)) {
+      return new Response(JSON.stringify({ error: 'Each message must have content (string or array)' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+  }
 
   // Log the context mode for debugging
   console.log('[Chat API] contextMode:', contextMode, '| photoMode:', photoMode);

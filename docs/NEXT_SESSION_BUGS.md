@@ -27,11 +27,12 @@
 **Task:** Move these from Plant table to Seedling table, then allow individual graduation back to Plant
 **Context:** These were likely accessioned prematurely before proper seedling tracking existed
 
-### 2. Stale Status Thresholds
-**Current:** All plants use hardcoded 7-day threshold for green/yellow/red status
-**Needed:** Calculate thresholds from care history averages when sufficient data exists (e.g., if plant averages 4-day watering, yellow at 5 days, red at 7 days)
-**Fallback:** 7 days for plants without enough data
-**Files:** `src/components/care/CareQueue.tsx`, `src/lib/constants.ts` (thresholds already centralized)
+### 2. ~~Stale Status Thresholds~~ ✅ FIXED (Dec 24, 2025)
+**Solution:** Dynamic threshold logic already existed in `src/lib/care-thresholds.ts`. Fixed plant cards in `src/app/plants/page.tsx` to use `getCareStatus()` instead of hardcoded 5/7 day thresholds.
+- Uses 1.3x average interval for yellow/warning
+- Uses 1.7x average interval for red/overdue
+- Falls back to static 5/7 days if plant has < 3 care events
+- Now shows dynamic interval hint: "(~4.2d avg)" for plants with enough data
 
 ### 3. Photos for Crosses and Batches
 **Current:** Only Plant model has Photo relation
@@ -75,11 +76,8 @@ b. Want different designs for different use cases:
 
 **Files:** `src/lib/zpl.ts` (ZPL templates)
 
-### 7. Batch Care Shows UID Not Name
-**Issue:** Batch care selection shows CUIDs like `cmgsezkjd003tgw74hosd87vo`
-**Needed:** Show `hybridName || species || plantId` instead
-**User context:** "I know plant names by heart, but I don't know the UID"
-**Files:** Batch care components, likely in `/batch-care/` or QuickCare.tsx
+### 7. ~~Batch Care Shows UID Not Name~~ ✅ ALREADY FIXED
+**Verified:** Dec 24, 2025 - `src/app/batch-care/page.tsx:561-569` shows `hybridName || species || plantId` with plantId as secondary mono text.
 
 ### 8. Flowering Tracking Refactor (MAJOR)
 **Current problems:**
@@ -103,12 +101,11 @@ b. Want different designs for different use cases:
 - Different recommendations based on method
 - Analytics on outcomes by care method
 
-### 10. Clone Batch Individual Graduation
-**Current:** No visible way to graduate individual clones from batch to Plant
-**Needed:**
-- UI in clone batch detail to select and graduate individuals
-- Similar to seedling graduation workflow
-- Must work on mobile PWA
+### 10. ~~Clone Batch Individual Graduation~~ ✅ ALREADY FIXED
+**Verified:** Dec 24, 2025 - Full graduation UI exists in `src/app/batches/[id]/page.tsx:284-350, 1074-1222`
+- "Graduate to Plant" button with count selector
+- Form for hybridName, species, potSize, substrate, location
+- Multi-plant graduation support with proper validation
 
 ### 11. Autocomplete/Search for Misspellings
 **Problem:** Free-text entry leads to typos (species names, hybrid names)

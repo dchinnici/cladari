@@ -78,9 +78,24 @@ cladari/                          # Monorepo root
 - **API routes**: kebab-case paths
 - **ID Generation**: `src/lib/breeding-ids.ts` for all ID generation
 
-## Current Version: v1.7.8 (Dec 22, 2025)
+## Current Version: v1.7.8 (Dec 24, 2025)
 
 ### Recently Completed
+- **P1 Defensive Fixes + Dynamic UI** (Dec 24, 2025)
+  - **Dynamic Urgency Colors**: Plant cards now use plant-specific watering thresholds
+    - Uses `care-thresholds.ts` which calculates 1.3x (yellow) and 1.7x (red) of average interval
+    - Shows `(~4.2d avg)` hint for plants with ≥3 care events
+    - Falls back to static 5/7 days for new plants
+  - **Chat API Input Validation**: Validates messages array, role, content before processing
+    - Catches malformed JSON, missing messages, invalid structure
+    - Returns 400 with clear error messages instead of 500
+  - **ML Predictor Graceful Degradation**: Each predictor wrapped in try-catch
+    - Watering, health, and flowering predictors fail independently
+    - Response includes `predictorStatus` to indicate which succeeded/failed
+    - Partial results returned instead of 500ing entire request
+  - **Bug List Cleanup**: Verified and marked #2, #7, #10 as fixed
+  - **GitHub Cleanup**: Removed "CLAUDE READ" folder from tracking, updated .gitignore
+
 - **AI Chat Quick Actions + Photo Context Classification** (v1.7.8)
   - **Quick Action Templates**: Four pre-configured analysis modes
     - 📊 **Substrate** - EC/pH trends, no photos (fast, cheap)

@@ -89,3 +89,10 @@ backups/
 # Legacy/stale folders from monorepo consolidation
 plantDB/
 
+# AI context folder (local only, contains personal notes)
+CLAUDE READ/
+CLAUDE\ READ/
+
+# AI tools
+.claude/
+
