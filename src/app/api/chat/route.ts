@@ -386,6 +386,7 @@ export async function POST(req: Request) {
   }
 
   // Validate message structure
+  // AI SDK v4 uses 'parts' array, older format uses 'content' string/array
   for (const msg of messages) {
     if (!msg.role || !['user', 'assistant', 'system'].includes(msg.role)) {
       return new Response(JSON.stringify({ error: 'Each message must have a valid role (user/assistant/system)' }), {
@@ -393,8 +394,11 @@ export async function POST(req: Request) {
         headers: { 'Content-Type': 'application/json' }
       });
     }
-    if (typeof msg.content !== 'string' && !Array.isArray(msg.content)) {
-      return new Response(JSON.stringify({ error: 'Each message must have content (string or array)' }), {
+    // Accept either 'content' (legacy) or 'parts' (AI SDK v4)
+    const hasContent = typeof msg.content === 'string' || Array.isArray(msg.content);
+    const hasParts = Array.isArray(msg.parts);
+    if (!hasContent && !hasParts) {
+      return new Response(JSON.stringify({ error: 'Each message must have content or parts' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
       });
