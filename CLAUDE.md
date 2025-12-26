@@ -575,6 +575,30 @@ Cardiolonchium, Pachyneurium, Porphyrochitonium, Xialophyllum, and others. Inter
 - Don't add external dependencies without justification
 - Don't hardcode IDs or magic strings
 
+## Development Gotchas (Lessons Learned)
+
+**AI SDK v4 Message Format** (Dec 2025)
+- The `useChat` hook sends messages with `parts` array, NOT `content` string
+- When validating chat API input, accept BOTH formats:
+  ```typescript
+  const hasContent = typeof msg.content === 'string' || Array.isArray(msg.content);
+  const hasParts = Array.isArray(msg.parts);
+  if (!hasContent && !hasParts) { /* reject */ }
+  ```
+- Lesson: Always test API validation with the actual client format, not just raw API format
+
+**Vercel Environment Variables**
+- Local `.env` files do NOT sync to Vercel production
+- After project reconnection or fresh deploy, verify env vars exist: `vercel env ls`
+- Critical vars: ANTHROPIC_API_KEY, DATABASE_URL, SUPABASE_* keys
+- Missing env vars cause silent failures that look like code bugs
+
+**SensorPush API Limitations**
+- No stats/summary endpoint - only raw `/samples` with ~5MB limit
+- Returns oldest samples first, truncates recent data if limit hit
+- No webhooks - designed for historical queries, not real-time
+- Solution: Query in 2-day windows to ensure recent data coverage
+
 ## Running the Project
 ```bash
 # From plantDB directory
