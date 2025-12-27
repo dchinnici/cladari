@@ -83,7 +83,7 @@ cladari/                          # Monorepo root
 ## Current Version: v1.7.8 (Dec 24, 2025)
 
 ### Recently Completed
-- **IAS Taxon Reference System** (Dec 24, 2025)
+- **IAS Taxon Reference System + Embeddings** (Dec 27, 2025)
   - **TaxonReference model**: Full morphometric schema for species data
     - Taxonomy: genus, species, section, authority, type specimen
     - Measurements: blade, spadix, spathe, petiole dimensions (JSON ranges)
@@ -94,11 +94,16 @@ cladari/                          # Monorepo root
     - Extracts structured data from botanical text (measurements, traits)
     - Handles SSL issues with curl fallback
     - **154 species scraped** across 15 sections
+  - **Taxa Embeddings** (`scripts/embed-taxa.ts`):
+    - BGE-base-en-v1.5 embeddings (768 dimensions, same as ChatLog)
+    - Rich text: taxonomy + morphometrics + colors + traits + descriptions
+    - **147 taxa embedded** (ready for semantic search)
   - **Taxa API Endpoints**:
     - `GET /api/taxa` - List with filtering (species, section, source, genus)
     - `GET /api/taxa/[species]` - Full details + related taxa + matching plants
     - `PATCH /api/taxa/[species]` - HITL verification workflow
-  - **Use cases**: AI species ID, ML vision pipeline reference, breeding research
+  - **Status**: Infrastructure complete, NOT YET WIRED to AI chat
+  - **Next step**: Design context-aware injection (see `docs/TAXA_INTEGRATION_DESIGN.md`)
   - **Future sources**: MOBOT, Tropicos, iNaturalist (same schema, different source)
 
 - **P1 Defensive Fixes + Dynamic UI** (Dec 24, 2025)
