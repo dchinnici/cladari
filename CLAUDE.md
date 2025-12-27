@@ -618,6 +618,18 @@ Cardiolonchium, Pachyneurium, Porphyrochitonium, Xialophyllum, and others. Inter
 - No webhooks - designed for historical queries, not real-time
 - Solution: Query in 2-day windows to ensure recent data coverage
 
+**Documentation Hygiene (The Documentation Contract)**
+- **ALWAYS update all 5 docs together** when bumping versions or adding features:
+  1. `CLAUDE.md` - Version header + Recently Completed section
+  2. `docs/CLADARI_ENGINEER_MANUAL.md` - Version + What's Working + Recent Improvements
+  3. `OPERATOR_MANUAL.md` - Version + new feature sections for user-facing changes
+  4. `CHANGELOG.md` - New version entry with Added/Changed/Fixed/Technical sections
+  5. `README.md` - Version badge + features list + version history table
+- **Commit all doc updates atomically** in a single commit (e.g., `docs: update all documentation for vX.Y.Z`)
+- **Why this matters**: Documentation fragmentation causes confusion for humans and AI assistants. When CLAUDE.md says v1.7.9 but README says v1.7.5, context is unreliable.
+- **The contract**: The Documentation Index table (below) defines which files update for which changes. Treat it as a checklist.
+- **Quick check**: After any feature commit, ask "Did I update the docs?" If version bumped, all 5 files must change.
+
 ## Running the Project
 ```bash
 # From plantDB directory
