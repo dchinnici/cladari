@@ -1,5 +1,69 @@
 # CLAUDE.md - Cladari Project Context
 
+---
+## 🚨 ACTIVE SPRINT: BACKLOG CLEARING (Started Dec 27, 2025)
+
+**STATUS**: Feature freeze. Clear technical debt before new features.
+
+### AI Assistant Instructions
+**READ THIS FIRST.** Before implementing any new feature request:
+
+1. **Check if it's on the sprint list below** → If yes, proceed
+2. **Check if it's a bug fix or security issue** → If yes, proceed
+3. **If it's a NEW feature**, ask the user:
+   > "This looks like a new feature. We're currently in backlog-clearing mode. Is this higher priority than the sprint items, or should we defer it?"
+4. **If user insists on new feature**, add it to "Parked Ideas" below and note the date
+
+**Why this matters**: Velocity on new features has outpaced UI completion. APIs exist that users can't access. Infrastructure is built but not wired. Clearing this debt creates a solid foundation.
+
+### Sprint Backlog (Target: ~24 hours focused work)
+
+#### Phase 1: Security & Stability (P1) — ~6 hours
+- [ ] Multi-tenant SensorPush credentials (2-4 hrs)
+- [ ] Apply RLS policies from `scripts/setup-rls-policies.sql` (1 hr)
+- [ ] Wrap ML predictor calls in try-catch (30 min)
+- [ ] Add input validation to chat API (30 min)
+- [ ] Standardize Prisma error responses (1 hr)
+
+#### Phase 2: Breeding Pipeline UI — ~10 hours
+- [ ] Harvest modal UI (API at `/api/breeding/[id]/harvests` ready)
+- [ ] Seed batch modal UI (API at `/api/seed-batches` ready)
+- [ ] Seedling modal UI (API at `/api/seedlings` ready)
+- [ ] Seedling graduation workflow UI
+
+#### Phase 3: Wire Existing Infrastructure — ~4 hours
+- [ ] Connect taxa embeddings to AI chat (context-aware injection)
+- [ ] Location sensor management UI (dropdown in edit modal)
+
+#### Phase 4: Small Polish — ~4 hours
+- [ ] Batch print functionality
+- [ ] SWP vs top watering tracking per plant
+- [ ] Autocomplete/search for text fields
+
+### Parked Ideas (Do NOT start until sprint complete)
+| Idea | Date Parked | Requested By |
+|------|-------------|--------------|
+| ML Vision Pipeline | Pre-sprint | Roadmap |
+| Voice Memo Import | Pre-sprint | Roadmap |
+| Sovria Component Harvest | Pre-sprint | Roadmap |
+| Additional Cardiolonchium data scraping | Dec 27 | Gap analysis |
+
+### Sprint Rules
+1. **No new tables/models** unless fixing a bug
+2. **No new API endpoints** unless completing existing UI
+3. **Document any parked ideas** so they're not lost
+4. **Bug fixes always allowed** - don't let broken things fester
+5. **User can override** - these are guidelines, not laws
+
+### Exit Criteria
+Sprint complete when:
+- All P1 security items done
+- Breeding pipeline usable end-to-end via UI
+- Taxa wired to AI chat
+- User declares "sprint complete" or overrides
+
+---
+
 ## What This Is
 Cladari is a production plant database for managing a high-value Anthurium breeding collection (~70 plants, ~$15K value). Built for a serious breeding program focused on documented provenance, genetic transparency, and conservation.
 
