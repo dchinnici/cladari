@@ -4,7 +4,7 @@
 
 A production-grade web application for managing high-value Anthurium collections with comprehensive tracking of genetics, morphology, care schedules, breeding programs, and AI-assisted plant health analysis.
 
-[![Version](https://img.shields.io/badge/version-1.7.8-green.svg)](https://github.com/yourusername/cladari)
+[![Version](https://img.shields.io/badge/version-1.7.9-green.svg)](https://github.com/yourusername/cladari)
 [![Status](https://img.shields.io/badge/status-production-brightgreen.svg)](https://www.cladari.ai)
 [![Live](https://img.shields.io/badge/live-www.cladari.ai-blue.svg)](https://www.cladari.ai)
 
@@ -49,6 +49,12 @@ A production-grade web application for managing high-value Anthurium collections
 - **9 Photo Types** - Whole plant, leaf, petiole, spathe, spadix, etc.
 - **Context Classification** - Dynamic intent tagging (emergent, damage, pest evidence)
 - **Supabase Storage** - Cloud-hosted with signed URLs
+
+### 📱 Telegram Notifications
+- **Daily Care Digest** - Morning summary at 8am EST
+- **Overdue Alerts** - Plants past their watering threshold
+- **Due Today Warnings** - Plants approaching care needs
+- **Vercel Cron** - Automated scheduling via serverless
 
 ### 🏷️ QR Code & Printing
 - **Plant Tags** - One-click Zebra label printing
@@ -160,6 +166,7 @@ cladari/
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| **1.7.9** | Dec 2025 | Telegram daily care notifications at 8am EST |
 | **1.7.8** | Dec 2025 | AI quick actions, photo context classification, dynamic thresholds |
 | **1.7.7** | Dec 2025 | Enhanced stress analysis, Opus 4 restoration |
 | **1.7.6** | Dec 2025 | Monorepo consolidation, print proxy via Tailscale |

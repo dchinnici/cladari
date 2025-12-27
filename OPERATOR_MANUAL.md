@@ -1,5 +1,5 @@
 # Cladari PlantDB - Operator Manual
-**Version 1.7.5** | **Updated: December 21, 2025**
+**Version 1.7.9** | **Updated: December 27, 2025**
 
 ## 🌿 Welcome to Your Plant Management System
 
@@ -13,13 +13,14 @@ This guide will help you use all the features of your Anthurium collection datab
 2. [Managing Your Plants](#-managing-your-plants)
 3. [Care Management](#-care-management)
 4. [Photo Management](#-photo-management)
-5. [AI Photo Analysis](#-ai-photo-analysis) *(NEW)*
-6. [EC/pH Monitoring](#-ecph-monitoring)
-7. [Batch Operations](#-batch-operations)
-8. [Breeding Pipeline](#-breeding-pipeline)
-9. [Dashboard Features](#-dashboard-features)
-10. [Keyboard Shortcuts](#-keyboard-shortcuts)
-11. [Troubleshooting](#-troubleshooting)
+5. [AI Photo Analysis](#-ai-photo-analysis)
+6. [Telegram Notifications](#-telegram-notifications) *(NEW)*
+7. [EC/pH Monitoring](#-ecph-monitoring)
+8. [Batch Operations](#-batch-operations)
+9. [Breeding Pipeline](#-breeding-pipeline)
+10. [Dashboard Features](#-dashboard-features)
+11. [Keyboard Shortcuts](#-keyboard-shortcuts)
+12. [Troubleshooting](#-troubleshooting)
 
 ---
 
@@ -242,6 +243,76 @@ The AI provides formatted responses with:
 3. **Photograph problem areas** - Close-ups of issues get better diagnosis
 4. **Ask specific questions** - "Is this thrips damage?" beats "what's wrong?"
 5. **Mention relevant context** - "I just changed the fertilizer..."
+
+---
+
+## 📱 Telegram Notifications
+
+Get daily care reminders sent directly to your Telegram at 8am EST every morning.
+
+### What You'll Receive
+
+Each morning, CladariCareBot sends a digest message with:
+
+**🔴 Overdue Plants** - Plants that haven't been watered past their threshold
+- Shows plant name and days since last care
+- Sorted by most overdue first
+- Example: "Papillilaminum (6 days)"
+
+**🟡 Due Today** - Plants approaching their watering threshold
+- Plants that should be checked today
+- Based on your care history patterns
+
+**📊 Collection Stats**
+- Total healthy plants
+- Flowering plant count
+- Total collection size
+
+### Message Format
+
+```
+☀️ Morning Care Digest
+
+🔴 Overdue (6 plants)
+• Papillilaminum (6 days)
+• Crystallinum (5 days)
+...
+
+🟡 Due Today (13 plants)
+• Magnificum
+• Warocqueanum
+...
+
+📊 Stats
+• 59 healthy • 3 flowering • 78 total
+```
+
+### How It Works
+
+1. **Automatic**: Vercel cron job triggers at 8am EST daily
+2. **Smart Thresholds**: Uses same care analysis as the dashboard
+3. **No Setup Needed**: Already configured for your account
+
+### Testing Manually
+
+If you want to test or trigger a manual digest:
+
+```bash
+# From project root
+npx tsx scripts/test-daily-digest.ts
+```
+
+This fetches your real plant data and sends a digest to your Telegram immediately.
+
+### Troubleshooting
+
+**Not receiving messages?**
+- Check that you've messaged @CladariCareBot at least once
+- Verify your TELEGRAM_CHAT_ID is correct in Vercel environment variables
+
+**Wrong plants showing?**
+- The digest uses the same care threshold logic as the dashboard
+- Plants are marked "overdue" based on days since last watering care log
 
 ---
 
@@ -657,4 +728,4 @@ Remember: This system grows with your collection. Every plant tracked, every mea
 
 ---
 
-*End of Operator Manual v1.7.5*
+*End of Operator Manual v1.7.9*

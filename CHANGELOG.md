@@ -2,6 +2,41 @@
 
 All notable changes to the Cladari Plant Management System will be documented in this file.
 
+## [1.7.9] - 2025-12-27
+
+### Added
+- **Telegram Daily Care Notifications** - Morning digest sent at 8am EST via CladariCareBot
+  - **Overdue Plants**: Lists plants past their watering threshold with days-since-care count
+  - **Due Today**: Plants approaching their care threshold (warning status)
+  - **Collection Stats**: Healthy count, flowering count, total plants
+  - **HTML Formatting**: Rich message with emoji categories and bold text
+  - **Vercel Cron**: Scheduled at `0 13 * * *` (8am EST = 1pm UTC)
+
+- **Telegram Bot Library** - `src/lib/telegram.ts`
+  - `sendTelegramMessage()` - Send formatted messages via Bot API
+  - `formatDailyDigest()` - Generate daily care summary message
+  - `sendTestMessage()` - Verify bot configuration
+
+- **Daily Digest API** - `POST /api/notifications/daily-digest`
+  - Fetches all plants and categorizes by care status
+  - Uses same threshold logic as dashboard (`getWateringStatus()`)
+  - Protected by optional CRON_SECRET for production
+  - Supports both POST (cron) and GET (manual testing)
+
+- **Test Scripts**
+  - `scripts/test-telegram.ts` - Test bot connectivity with sample message
+  - `scripts/test-daily-digest.ts` - Send real digest with actual plant data
+
+### Technical
+- Environment variables: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `NOTIFY_USER_ID`
+- vercel.json: Added cron job for daily-digest endpoint
+- Bot: @CladariCareBot (created via BotFather)
+
+### Fixed
+- **AI SDK v4 Compatibility** - Fixed message validation to accept both `content` and `parts` formats
+  - AI SDK v4 sends `{ parts: [{ type: 'text', text: '...' }] }` instead of `{ content: '...' }`
+  - Defensive validation now accepts either format
+
 ## [1.7.4] - 2025-12-20
 
 ### Added

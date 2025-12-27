@@ -1,8 +1,8 @@
 # Cladari Plant Database - Engineering Manual
-**Version:** 1.7.5
-**Last Updated:** December 21, 2025
-**Status:** PRODUCTION - Supabase Cloud + pgvector Semantic Search + AI Photo Analysis
-**Architecture:** PostgreSQL (Supabase) + Next.js 15 + Prisma ORM + Claude AI + pgvector
+**Version:** 1.7.9
+**Last Updated:** December 27, 2025
+**Status:** PRODUCTION - Supabase Cloud + pgvector Semantic Search + AI Photo Analysis + Telegram Notifications
+**Architecture:** PostgreSQL (Supabase) + Next.js 15 + Prisma ORM + Claude AI + pgvector + Telegram Bot
 
 ---
 
@@ -65,10 +65,20 @@ The Cladari Plant Database is a comprehensive Anthurium breeding management syst
 ✅ SENSORPUSH INTEGRATION: Live environmental data with VPD, 10-min sync
 ✅ WEATHER INTEGRATION: Open-Meteo API, AI chat context
 ✅ JOURNAL EDIT/DELETE: Edit or remove any historical entry (traits, measurements)
+✅ TELEGRAM DAILY DIGEST: Morning care notifications at 8am EST via Vercel cron
 ```
 
 ### Recent Improvements 🚀
 ```
+Dec 27: TELEGRAM DAILY CARE NOTIFICATIONS (v1.7.9)
+        - Telegram Bot Integration: CladariCareBot sends daily digest at 8am EST
+        - Care Priority Alerting: Overdue plants with days-since-care counts
+        - Due Today Warnings: Plants approaching watering threshold
+        - Dynamic Thresholds: Uses same care-thresholds.ts logic as dashboard
+        - Vercel Cron: Scheduled at 0 13 * * * (8am EST = 1pm UTC)
+        - Manual test script: scripts/test-daily-digest.ts
+        - Env vars: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, NOTIFY_USER_ID
+
 Dec 21: UNIFIED BREED UI + FLOWERING EVENTS (v1.7.5)
         - Unified "Breed" navigation: Breeding + Batches under single entry point
         - Tab-style navigation between Crosses and Batches pages

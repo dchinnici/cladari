@@ -80,9 +80,23 @@ cladari/                          # Monorepo root
 - **API routes**: kebab-case paths
 - **ID Generation**: `src/lib/breeding-ids.ts` for all ID generation
 
-## Current Version: v1.7.8 (Dec 24, 2025)
+## Current Version: v1.7.9 (Dec 27, 2025)
 
 ### Recently Completed
+- **Telegram Daily Care Notifications** (Dec 27, 2025)
+  - **Telegram Bot Integration** (`src/lib/telegram.ts`):
+    - CladariCareBot sends daily digest at 8am EST
+    - HTML-formatted messages with plant care priorities
+    - `sendTelegramMessage()`, `formatDailyDigest()` functions
+  - **Daily Digest API** (`/api/notifications/daily-digest`):
+    - Queries plants by care status using dynamic thresholds
+    - Categories: overdue (red), due today (yellow), healthy (green)
+    - Protected by CRON_SECRET for production
+  - **Vercel Cron**: Configured at `0 13 * * *` UTC (8am EST)
+  - **Environment Variables**:
+    - `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `NOTIFY_USER_ID`
+  - **Future**: Add SensorPush environmental alerts, PWA push notifications
+
 - **IAS Taxon Reference System + Embeddings** (Dec 27, 2025)
   - **TaxonReference model**: Full morphometric schema for species data
     - Taxonomy: genus, species, section, authority, type specimen
