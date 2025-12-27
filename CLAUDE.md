@@ -119,6 +119,12 @@ cladari/                          # Monorepo root
   - **Status**: Infrastructure complete, NOT YET WIRED to AI chat
   - **Next step**: Design context-aware injection (see `docs/TAXA_INTEGRATION_DESIGN.md`)
   - **Future sources**: MOBOT, Tropicos, iNaturalist (same schema, different source)
+  - **CRITICAL DATA GAP** (identified Dec 27, 2025):
+    - IAS scrape heavily weighted toward obscure Panamanian species
+    - **Cardiolonchium section: only 5 species** (crystallinum, dressleri, papillilaminum, folsomianum, cerrocampanense)
+    - **Missing key horticultural species**: forgetii, portillae, warocqueanum, magnificum, regale, clarinervium, luxurians, etc.
+    - This is the MOST IMPORTANT section for ornamental breeding - needs priority data sourcing
+    - Root cause: IAS data based on Croat's Panama monographs, misses Mexican/Colombian species
 
 - **P1 Defensive Fixes + Dynamic UI** (Dec 24, 2025)
   - **Dynamic Urgency Colors**: Plant cards now use plant-specific watering thresholds
