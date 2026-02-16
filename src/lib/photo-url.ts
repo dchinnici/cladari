@@ -72,9 +72,20 @@ export function getPhotoUrl(
     ? PHOTO_SIZES[options]
     : options
 
-  // Supabase Storage path - use object endpoint (original images, no transformation)
-  // Transformations disabled until we can properly test them
+  // Supabase Storage path
   if (photo.storagePath && supabaseUrl) {
+    // If transformations requested, use Supabase Image Transformation /render/ endpoint
+    if (transformOptions) {
+      const params = new URLSearchParams()
+      if (transformOptions.width) params.set('width', transformOptions.width.toString())
+      if (transformOptions.height) params.set('height', transformOptions.height.toString())
+      if (transformOptions.quality) params.set('quality', transformOptions.quality.toString())
+      if (transformOptions.resize) params.set('resize', transformOptions.resize)
+
+      return `${supabaseUrl}/storage/v1/render/image/public/${STORAGE_BUCKET}/${photo.storagePath}?${params}`
+    }
+
+    // Full size - use object endpoint (no transformation)
     return `${supabaseUrl}/storage/v1/object/public/${STORAGE_BUCKET}/${photo.storagePath}`
   }
 

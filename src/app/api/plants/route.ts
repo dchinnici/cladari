@@ -15,59 +15,76 @@ export async function GET() {
         userId: user.id,  // Filter by authenticated user
         isArchived: false  // Exclude archived plants from main collection view
       },
-      include: {
-        vendor: true,
-        currentLocation: true,
+      select: {
+        // Core identity fields
+        id: true,
+        plantId: true,
+        hybridName: true,
+        species: true,
+        breederCode: true,
+        section: true,
+        healthStatus: true,
+        updatedAt: true,
+        coverPhotoId: true,
+
+        // Minimal location info
+        currentLocation: {
+          select: {
+            id: true,
+            name: true,
+          }
+        },
+
+        // Care logs - REQUIRED for dynamic threshold calculation (need 10+ for intervals)
         careLogs: {
+          select: {
+            date: true,
+            action: true,
+          },
           orderBy: { date: 'desc' },
-          take: 10  // Increased from 1 to 10 for care frequency calculations
+          take: 10
         },
-        measurements: {
-          orderBy: { measurementDate: 'desc' },
-          take: 1
-        },
-        traits: {
-          orderBy: { observationDate: 'desc' },
-          take: 1
-        },
-        floweringCycles: {
-          orderBy: { createdAt: 'desc' },
-          take: 1
-        },
+
+        // Only cover photo OR first photo (not all photos)
         photos: {
-          orderBy: { dateTaken: 'desc' }
+          select: {
+            id: true,
+            storagePath: true,
+            url: true,
+            dateTaken: true,
+          },
+          orderBy: { dateTaken: 'desc' },
+          take: 1,
         }
       }
     })
 
-    // Add lastActivityDate and select display photo for each plant
-    const plantsWithActivity = await Promise.all(plants.map(async (plant) => {
+    // Batch signed URL generation for photos (parallel instead of sequential)
+    const photoPromises = plants.map(plant => {
+      const photo = plant.photos[0]
+      if (photo?.storagePath) {
+        return getSignedPhotoUrl(photo.storagePath)
+      }
+      return Promise.resolve(null)
+    })
+    const signedUrls = await Promise.all(photoPromises)
+
+    // Add lastActivityDate and attach signed URLs
+    const plantsWithActivity = plants.map((plant, index) => {
+      // Calculate lastActivityDate from care logs and updatedAt
       const dates = [
         plant.updatedAt,
         plant.careLogs[0]?.date,
-        plant.measurements[0]?.measurementDate,
-        plant.traits[0]?.observationDate,
-        plant.floweringCycles[0]?.createdAt
       ].filter(Boolean).map(d => new Date(d!))
 
       const lastActivityDate = dates.length > 0
         ? new Date(Math.max(...dates.map(d => d.getTime())))
         : plant.updatedAt
 
-      // Select the display photo: use cover photo if set, otherwise use first photo
-      let displayPhoto = null
-      if (plant.coverPhotoId && plant.photos.length > 0) {
-        displayPhoto = plant.photos.find(p => p.id === plant.coverPhotoId) || plant.photos[0]
-      } else if (plant.photos.length > 0) {
-        displayPhoto = plant.photos[0]
-      }
-
-      // Get signed URL for display photo if it's in Supabase Storage
-      if (displayPhoto?.storagePath) {
-        const signedUrl = await getSignedPhotoUrl(displayPhoto.storagePath)
-        if (signedUrl) {
-          displayPhoto = { ...displayPhoto, url: signedUrl }
-        }
+      // Attach signed URL to photo if available
+      const displayPhoto = plant.photos[0]
+      if (displayPhoto && signedUrls[index]) {
+        displayPhoto.url = signedUrls[index]!
       }
 
       return {
@@ -75,7 +92,7 @@ export async function GET() {
         photos: displayPhoto ? [displayPhoto] : [],  // Return as array for backward compatibility
         lastActivityDate
       }
-    }))
+    })
 
     // Sort by name (hybridName or species, whichever exists)
     const sortedPlants = plantsWithActivity.sort((a, b) => {

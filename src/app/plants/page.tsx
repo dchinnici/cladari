@@ -9,6 +9,7 @@ import { useEffect, useState, useRef } from 'react'
 import { getTodayString } from '@/lib/timezone'
 import { isPlantStale, getWateringStatus, type CareStatus } from '@/lib/care-thresholds'
 import { getPhotoUrl } from '@/lib/photo-url'
+import { useQuery } from '@tanstack/react-query'
 
 export default function PlantsPage() {
   // Helper to check if plant needs attention - now uses dynamic thresholds
@@ -43,8 +44,6 @@ export default function PlantsPage() {
     return plant.lastActivityDate ? new Date(plant.lastActivityDate) : new Date(plant.updatedAt)
   }
 
-  const [plants, setPlants] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [createOpen, setCreateOpen] = useState(false)
   const [creating, setCreating] = useState(false)
@@ -70,30 +69,37 @@ export default function PlantsPage() {
     healthStatus: 'healthy',
   })
 
+  // React Query - fetch plants with client-side caching
+  const { data: plants = [], isLoading, refetch } = useQuery({
+    queryKey: ['plants'],
+    queryFn: async () => {
+      const response = await fetch('/api/plants')
+      const data = await response.json()
+
+      if (Array.isArray(data)) {
+        return data
+      } else if (data.error) {
+        console.error('API Error:', data.error)
+        return []
+      }
+      return []
+    },
+    staleTime: 30 * 1000,  // 30 seconds
+    gcTime: 5 * 60 * 1000,  // 5 minutes
+  })
+
   // Set date on client to avoid hydration mismatch
   useEffect(() => {
     setCreateForm(f => ({ ...f, accessionDate: getTodayString() }))
   }, [])
 
+  // Restore scroll position, filters, and sort on mount
   useEffect(() => {
-    // Check if we're returning from plant detail (flag indicates care may have been added)
-    const returningFromDetail = sessionStorage.getItem('plantsPageScroll') !== null
-
-    fetchPlants()
     fetchLocations()
 
-    // Restore scroll position, filters, and sort if returning from plant detail
-    const savedScroll = sessionStorage.getItem('plantsPageScroll')
     const savedFilters = sessionStorage.getItem('plantsPageFilters')
     const savedSort = sessionStorage.getItem('plantsPageSort')
     const savedSearch = sessionStorage.getItem('plantsPageSearch')
-
-    if (savedScroll) {
-      setTimeout(() => {
-        window.scrollTo(0, parseInt(savedScroll))
-        sessionStorage.removeItem('plantsPageScroll')
-      }, 100)
-    }
 
     if (savedFilters) {
       try {
@@ -115,17 +121,30 @@ export default function PlantsPage() {
     }
   }, [])
 
+  // Scroll restoration - wait for data to load and DOM to render
+  useEffect(() => {
+    const savedScroll = sessionStorage.getItem('plantsPageScroll')
+
+    if (savedScroll && !isLoading && plants.length > 0) {
+      // Use requestAnimationFrame for guaranteed post-render scroll
+      requestAnimationFrame(() => {
+        window.scrollTo(0, parseInt(savedScroll))
+        sessionStorage.removeItem('plantsPageScroll')
+      })
+    }
+  }, [isLoading, plants.length])
+
   // Refetch plants when page becomes visible (handles back navigation)
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        fetchPlants()
+        refetch()
       }
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
-  }, [])
+  }, [refetch])
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -171,27 +190,6 @@ export default function PlantsPage() {
       setLocations(data)
     } catch (error) {
       console.error('Error fetching locations:', error)
-    }
-  }
-
-  const fetchPlants = async () => {
-    try {
-      const response = await fetch('/api/plants')
-      const data = await response.json()
-      // Ensure data is an array
-      if (Array.isArray(data)) {
-        setPlants(data)
-      } else if (data.error) {
-        console.error('API Error:', data.error)
-        setPlants([])
-      } else {
-        setPlants([])
-      }
-    } catch (error) {
-      console.error('Error fetching plants:', error)
-      setPlants([])
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -376,7 +374,7 @@ export default function PlantsPage() {
         </div>
 
         {/* Plant grid */}
-        {loading ? (
+        {isLoading ? (
           <div className="text-center py-12 text-[var(--clay)]">
             <p>Loading plants...</p>
           </div>
@@ -502,7 +500,7 @@ export default function PlantsPage() {
                     showToast({ type: 'success', title: 'Plant created', message: 'New plant was added successfully.' })
                     setCreateOpen(false)
                     setCreateForm({ hybridName:'', species:'', speciesComplex:'', breederCode:'', acquisitionCost:'', accessionDate: getTodayString(), healthStatus: 'healthy' })
-                    await fetchPlants()
+                    refetch()
                   } else {
                     showToast({ type: 'error', title: 'Create failed', message: 'Could not create plant. Please try again.' })
                   }
@@ -616,7 +614,7 @@ export default function PlantsPage() {
           onClose={() => setQuickCareOpen(false)}
           plants={filteredPlants}
           onSuccess={() => {
-            fetchPlants()
+            refetch()
             showToast({ type: 'success', title: 'Care logs saved' })
           }}
         />
