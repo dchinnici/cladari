@@ -12,6 +12,7 @@ import { Modal } from '@/components/modal'
 import { showToast } from '@/components/toast'
 import { getTodayString } from '@/lib/timezone'
 import { getPhotoUrl as getPhotoUrlLib } from '@/lib/photo-url'
+import { DEFAULT_EC_INPUT, DEFAULT_PH_INPUT, DEFAULT_BASELINE_NOTES } from '@/lib/constants'
 
 interface CloneBatch {
   id: string
@@ -136,12 +137,12 @@ export default function BatchDetailPage({ params }: { params: Promise<{ id: stri
   const [careForm, setCareForm] = useState({
     date: getTodayString(),
     action: 'watering',
-    inputEC: '1.15',  // Pre-populate baseline values
-    inputPH: '5.7',   // Pre-populate baseline values
+    inputEC: String(DEFAULT_EC_INPUT),
+    inputPH: String(DEFAULT_PH_INPUT),
     outputEC: '',
     outputPH: '',
     isBaselineFeed: true,
-    notes: 'CalMag + TPS One'  // Pre-populate baseline note
+    notes: DEFAULT_BASELINE_NOTES
   })
 
   useEffect(() => {
@@ -741,12 +742,12 @@ export default function BatchDetailPage({ params }: { params: Promise<{ id: stri
               setCareForm({
                 date: getTodayString(),
                 action: 'watering',
-                inputEC: '1.15',
-                inputPH: '5.7',
+                inputEC: String(DEFAULT_EC_INPUT),
+                inputPH: String(DEFAULT_PH_INPUT),
                 outputEC: '',
                 outputPH: '',
                 isBaselineFeed: true,
-                notes: 'CalMag + TPS One'
+                notes: DEFAULT_BASELINE_NOTES
               })
               setCareModalOpen(true)
             }}
@@ -930,20 +931,26 @@ export default function BatchDetailPage({ params }: { params: Promise<{ id: stri
                       setCareForm({
                         ...careForm,
                         isBaselineFeed: true,
-                        inputPH: '5.7',
-                        inputEC: '1.15',
-                        notes: careForm.notes + (careForm.notes && !careForm.notes.includes('CalMag') ? '\n\n' : '') + 'CalMag + TPS One'
+                        inputPH: String(DEFAULT_PH_INPUT),
+                        inputEC: String(DEFAULT_EC_INPUT),
+                        notes: DEFAULT_BASELINE_NOTES
                       })
                     } else {
-                      setCareForm({ ...careForm, isBaselineFeed: false })
+                      setCareForm({
+                        ...careForm,
+                        isBaselineFeed: false,
+                        inputPH: '',
+                        inputEC: '',
+                        notes: ''
+                      })
                     }
                   }}
                   className="w-4 h-4 text-[var(--moss)] rounded focus:ring-[var(--moss)]"
                 />
                 <div className="flex-1">
-                  <span className="font-medium text-[var(--bark)]">Baseline feed (CalMag + TPS One)</span>
+                  <span className="font-medium text-[var(--bark)]">Baseline feed ({DEFAULT_BASELINE_NOTES})</span>
                   <p className="text-xs text-[var(--clay)] mt-0.5">
-                    Auto-fills: pH 5.7, EC 1.15
+                    Auto-fills: pH {DEFAULT_PH_INPUT}, EC {DEFAULT_EC_INPUT}
                   </p>
                 </div>
               </label>

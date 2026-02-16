@@ -16,6 +16,7 @@ import { TrendCharts } from '@/components/plant/TrendCharts'
 import { JournalTab, type JournalEntryType } from '@/components/plant/JournalTab'
 import { LineageTab } from '@/components/plant/LineageTab'
 import { getPhotoUrl } from '@/lib/photo-url'
+import { DEFAULT_EC_INPUT, DEFAULT_PH_INPUT, DEFAULT_BASELINE_NOTES } from '@/lib/constants'
 
 // Maximum file size for Vercel Hobby tier (4.5MB, use 4MB with headroom)
 const MAX_UPLOAD_SIZE_MB = 4
@@ -393,13 +394,13 @@ export default function PlantDetailPage() {
       setCareLogForm({
         logId: '',
         activityType: 'watering',
-        notes: 'CalMag + TPS One',
+        notes: DEFAULT_BASELINE_NOTES,
         fertilizer: '',
         pesticide: '',
         fungicide: '',
         dosage: '',
-        inputEC: '1.15',
-        inputPH: '5.7',
+        inputEC: String(DEFAULT_EC_INPUT),
+        inputPH: String(DEFAULT_PH_INPUT),
         outputEC: '',
         outputPH: '',
         rainAmount: '',
@@ -1323,9 +1324,9 @@ export default function PlantDetailPage() {
                   activityType: 'watering',
                   date: getTodayString(),
                   // Pre-populate baseline feed values
-                  inputPH: '5.7',
-                  inputEC: '1.15',
-                  notes: 'CalMag + TPS One'
+                  inputPH: String(DEFAULT_PH_INPUT),
+                  inputEC: String(DEFAULT_EC_INPUT),
+                  notes: DEFAULT_BASELINE_NOTES
                 })
                 setUseBaselineFeed(true) // Default to baseline feed with watering
                 setCareLogModalOpen(true)
@@ -2404,9 +2405,12 @@ export default function PlantDetailPage() {
                 const newActivityType = e.target.value
                 const updates: any = { activityType: newActivityType }
 
-                // Reset baseline feed when changing activity type
+                // Reset baseline feed and clear auto-populated values when changing activity type
                 if (newActivityType !== 'watering') {
                   setUseBaselineFeed(false)
+                  updates.inputPH = ''
+                  updates.inputEC = ''
+                  updates.notes = ''
                 }
 
                 // Auto-populate repotting fields from current plant data
@@ -2442,12 +2446,19 @@ export default function PlantDetailPage() {
                     const checked = e.target.checked
                     setUseBaselineFeed(checked)
                     if (checked) {
-                      // Auto-populate baseline feed values
                       setCareLogForm({
                         ...careLogForm,
-                        inputPH: '5.7',
-                        inputEC: '1.15',
-                        notes: careLogForm.notes + (careLogForm.notes ? '\n\n' : '') + 'Baseline feed: CalMag 1ml/L, TPS One 2ml/L'
+                        inputPH: String(DEFAULT_PH_INPUT),
+                        inputEC: String(DEFAULT_EC_INPUT),
+                        notes: DEFAULT_BASELINE_NOTES
+                      })
+                    } else {
+                      // Clear auto-populated values when unchecked
+                      setCareLogForm({
+                        ...careLogForm,
+                        inputPH: '',
+                        inputEC: '',
+                        notes: ''
                       })
                     }
                   }}
@@ -2456,7 +2467,7 @@ export default function PlantDetailPage() {
                 <div className="flex-1">
                   <span className="font-medium text-[var(--bark)]">Include baseline feed</span>
                   <p className="text-xs text-[var(--clay)] mt-0.5">
-                    Auto-fills: pH 5.7, EC 1.15 (CalMag + TPS One)
+                    Auto-fills: pH {DEFAULT_PH_INPUT}, EC {DEFAULT_EC_INPUT} ({DEFAULT_BASELINE_NOTES})
                   </p>
                 </div>
               </label>

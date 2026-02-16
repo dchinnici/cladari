@@ -6,6 +6,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Check, Droplets, Calendar, Save, X } from 'lucide-react'
 import { showToast } from '@/components/toast'
 import { getTodayString } from '@/lib/timezone'
+import { DEFAULT_EC_INPUT, DEFAULT_PH_INPUT, DEFAULT_BASELINE_NOTES } from '@/lib/constants'
 
 function BatchCareContent() {
   const searchParams = useSearchParams()
@@ -231,7 +232,23 @@ function BatchCareContent() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Activity Type</label>
                   <select
                     value={careForm.activityType}
-                    onChange={(e) => setCareForm({ ...careForm, activityType: e.target.value })}
+                    onChange={(e) => {
+                      const newType = e.target.value
+                      const updates: any = { activityType: newType }
+                      // Clear baseline feed values when switching away from watering/fertilizing/calmag
+                      if (newType !== 'watering' && newType !== 'fertilizing' && newType !== 'calmag') {
+                        updates.isBaselineFeed = false
+                        updates.inputPH = ''
+                        updates.inputEC = ''
+                        updates.outputPH = ''
+                        updates.outputEC = ''
+                        updates.useCaMg = false
+                        updates.useTpsOne = false
+                        updates.useSilica = false
+                        updates.notes = ''
+                      }
+                      setCareForm({ ...careForm, ...updates })
+                    }}
                     className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
                     <option value="watering">Watering</option>
@@ -319,8 +336,8 @@ function BatchCareContent() {
                             setCareForm({
                               ...careForm,
                               isBaselineFeed: isBaseline,
-                              inputEC: isBaseline ? '1.15' : careForm.inputEC,
-                              inputPH: isBaseline ? '5.7' : careForm.inputPH,
+                              inputEC: isBaseline ? String(DEFAULT_EC_INPUT) : '',
+                              inputPH: isBaseline ? String(DEFAULT_PH_INPUT) : '',
                               useCaMg: isBaseline,
                               useTpsOne: isBaseline,
                               useSilica: false
@@ -330,7 +347,7 @@ function BatchCareContent() {
                         />
                         <div>
                           <span className="font-medium text-gray-900">Baseline Feed</span>
-                          <span className="text-xs text-gray-500 ml-2">(CaMg 1ml/L + TPS One 2ml/L = pH 5.7, EC 1.15)</span>
+                          <span className="text-xs text-gray-500 ml-2">({DEFAULT_BASELINE_NOTES} = pH {DEFAULT_PH_INPUT}, EC {DEFAULT_EC_INPUT})</span>
                         </div>
                       </label>
                     </div>

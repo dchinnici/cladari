@@ -33,10 +33,13 @@ export const PH_MIN_THRESHOLD = 5.5
 export const PH_MAX_THRESHOLD = 7.0
 
 /** Default EC input value for quick care (Anthurium standard) */
-export const DEFAULT_EC_INPUT = 1.15
+export const DEFAULT_EC_INPUT = 1.25
 
 /** Default pH input value for quick care (Anthurium standard) */
-export const DEFAULT_PH_INPUT = 5.7
+export const DEFAULT_PH_INPUT = 5.85
+
+/** Default baseline feed note */
+export const DEFAULT_BASELINE_NOTES = 'CalMag + TPS One'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Health Score Thresholds
