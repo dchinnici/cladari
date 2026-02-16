@@ -1345,21 +1345,8 @@ export default function PlantDetailPage() {
             </button>
             <button
               onClick={() => {
-                // Open care modal with "note" activity type pre-selected
-                // This gives access to all activity types (repotting, treatment, etc.)
-                setCareLogForm({
-                  ...careLogForm,
-                  logId: '',
-                  activityType: 'repotting', // Default to repotting since watering is the Care button
-                  date: getTodayString(),
-                  notes: '',
-                  inputEC: '',
-                  inputPH: '',
-                  outputEC: '',
-                  outputPH: ''
-                })
-                setUseBaselineFeed(false)
-                setCareLogModalOpen(true)
+                setNoteForm({ content: '', date: getTodayString(), entryType: 'note' })
+                setNoteModalOpen(true)
               }}
               className="flex flex-col items-center gap-1 py-2 px-1 rounded-lg text-[var(--bark)] hover:bg-[var(--bark)]/10 transition-colors"
             >
