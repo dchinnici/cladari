@@ -134,18 +134,18 @@ export function ECPHDashboard({ ecPhContext }: ECPHDashboardProps) {
         </div>
       )}
 
-      {/* EC/pH Metrics Grid */}
+      {/* pH/EC Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Input EC */}
-        {ecPhContext.avgInputEC && (
+        {/* Input pH */}
+        {ecPhContext.avgInputPH && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
             <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-medium text-gray-600">Input EC</h4>
-              <Zap className="w-4 h-4 text-blue-500" />
+              <h4 className="text-sm font-medium text-gray-600">Input pH</h4>
+              <Activity className="w-4 h-4 text-green-500" />
             </div>
-            <p className="text-3xl font-bold text-gray-900">{ecPhContext.avgInputEC.toFixed(2)}</p>
-            <p className="text-xs text-gray-500 mt-1">Target: 0.8-1.2</p>
-            {ecPhContext.avgInputEC >= 0.8 && ecPhContext.avgInputEC <= 1.2 ? (
+            <p className="text-3xl font-bold text-gray-900">{ecPhContext.avgInputPH.toFixed(2)}</p>
+            <p className="text-xs text-gray-500 mt-1">Target: 5.5-6.5</p>
+            {ecPhContext.avgInputPH >= 5.5 && ecPhContext.avgInputPH <= 6.5 ? (
               <div className="mt-2 flex items-center gap-1 text-green-600 text-sm">
                 <CheckCircle2 className="w-4 h-4" />
                 <span>Within target range</span>
@@ -159,45 +159,16 @@ export function ECPHDashboard({ ecPhContext }: ECPHDashboardProps) {
           </div>
         )}
 
-        {/* Output EC */}
-        {ecPhContext.avgOutputEC && (
+        {/* Input EC */}
+        {ecPhContext.avgInputEC && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
             <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-medium text-gray-600">Output EC</h4>
-              <Zap className="w-4 h-4 text-purple-500" />
+              <h4 className="text-sm font-medium text-gray-600">Input EC</h4>
+              <Zap className="w-4 h-4 text-blue-500" />
             </div>
-            <p className="text-3xl font-bold text-gray-900">{ecPhContext.avgOutputEC.toFixed(2)}</p>
-            {ecPhContext.avgInputEC && (
-              <>
-                <p className="text-xs text-gray-500 mt-1">
-                  Variance: {Math.abs(ecPhContext.avgOutputEC - ecPhContext.avgInputEC).toFixed(2)}
-                </p>
-                {ecPhContext.variance?.ecVariance && ecPhContext.variance.ecVariance > 0.3 ? (
-                  <div className="mt-2 flex items-center gap-1 text-red-600 text-sm">
-                    <AlertCircle className="w-4 h-4" />
-                    <span>High variance detected</span>
-                  </div>
-                ) : (
-                  <div className="mt-2 flex items-center gap-1 text-green-600 text-sm">
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>Normal variance</span>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        )}
-
-        {/* Input pH */}
-        {ecPhContext.avgInputPH && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-medium text-gray-600">Input pH</h4>
-              <Activity className="w-4 h-4 text-green-500" />
-            </div>
-            <p className="text-3xl font-bold text-gray-900">{ecPhContext.avgInputPH.toFixed(2)}</p>
-            <p className="text-xs text-gray-500 mt-1">Target: 5.5-6.5</p>
-            {ecPhContext.avgInputPH >= 5.5 && ecPhContext.avgInputPH <= 6.5 ? (
+            <p className="text-3xl font-bold text-gray-900">{ecPhContext.avgInputEC.toFixed(2)}</p>
+            <p className="text-xs text-gray-500 mt-1">Target: 0.8-1.2</p>
+            {ecPhContext.avgInputEC >= 0.8 && ecPhContext.avgInputEC <= 1.2 ? (
               <div className="mt-2 flex items-center gap-1 text-green-600 text-sm">
                 <CheckCircle2 className="w-4 h-4" />
                 <span>Within target range</span>
@@ -235,6 +206,35 @@ export function ECPHDashboard({ ecPhContext }: ECPHDashboardProps) {
                 <CheckCircle2 className="w-4 h-4" />
                 <span>Within safe range</span>
               </div>
+            )}
+          </div>
+        )}
+
+        {/* Output EC */}
+        {ecPhContext.avgOutputEC && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-medium text-gray-600">Output EC</h4>
+              <Zap className="w-4 h-4 text-purple-500" />
+            </div>
+            <p className="text-3xl font-bold text-gray-900">{ecPhContext.avgOutputEC.toFixed(2)}</p>
+            {ecPhContext.avgInputEC && (
+              <>
+                <p className="text-xs text-gray-500 mt-1">
+                  Variance: {Math.abs(ecPhContext.avgOutputEC - ecPhContext.avgInputEC).toFixed(2)}
+                </p>
+                {ecPhContext.variance?.ecVariance && ecPhContext.variance.ecVariance > 0.3 ? (
+                  <div className="mt-2 flex items-center gap-1 text-red-600 text-sm">
+                    <AlertCircle className="w-4 h-4" />
+                    <span>High variance detected</span>
+                  </div>
+                ) : (
+                  <div className="mt-2 flex items-center gap-1 text-green-600 text-sm">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Normal variance</span>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}

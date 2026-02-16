@@ -410,19 +410,8 @@ function BatchCareContent() {
                       </div>
                     )}
 
-                    {/* EC/pH Measurements */}
+                    {/* pH/EC Measurements */}
                     <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Input EC</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={careForm.inputEC}
-                          onChange={(e) => setCareForm({ ...careForm, inputEC: e.target.value })}
-                          className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                          placeholder="e.g., 1.15"
-                        />
-                      </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Input pH</label>
                         <input
@@ -434,20 +423,20 @@ function BatchCareContent() {
                           placeholder="e.g., 5.7"
                         />
                       </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Output EC <span className="text-xs text-gray-400">(runoff)</span></label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Input EC</label>
                         <input
                           type="number"
                           step="0.01"
-                          value={careForm.outputEC}
-                          onChange={(e) => setCareForm({ ...careForm, outputEC: e.target.value })}
+                          value={careForm.inputEC}
+                          onChange={(e) => setCareForm({ ...careForm, inputEC: e.target.value })}
                           className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                          placeholder="Optional"
+                          placeholder="e.g., 1.15"
                         />
                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Output pH <span className="text-xs text-gray-400">(runoff)</span></label>
                         <input
@@ -455,6 +444,17 @@ function BatchCareContent() {
                           step="0.1"
                           value={careForm.outputPH}
                           onChange={(e) => setCareForm({ ...careForm, outputPH: e.target.value })}
+                          className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          placeholder="Optional"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Output EC <span className="text-xs text-gray-400">(runoff)</span></label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={careForm.outputEC}
+                          onChange={(e) => setCareForm({ ...careForm, outputEC: e.target.value })}
                           className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                           placeholder="Optional"
                         />

@@ -950,21 +950,10 @@ export default function BatchDetailPage({ params }: { params: Promise<{ id: stri
             </div>
           )}
 
-          {/* EC/pH fields - Only for watering/fertilizing */}
+          {/* pH/EC fields - Only for watering/fertilizing */}
           {(careForm.action === 'watering' || careForm.action === 'fertilizing') && (
             <>
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">Input EC</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={careForm.inputEC}
-                    onChange={e => setCareForm({ ...careForm, inputEC: e.target.value })}
-                    className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
-                    placeholder="e.g., 1.15"
-                  />
-                </div>
                 <div>
                   <label className="block text-sm font-medium text-[var(--bark)] mb-1">Input pH</label>
                   <input
@@ -976,20 +965,20 @@ export default function BatchDetailPage({ params }: { params: Promise<{ id: stri
                     placeholder="e.g., 5.7"
                   />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">Output EC (Optional)</label>
+                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">Input EC</label>
                   <input
                     type="number"
                     step="0.01"
-                    value={careForm.outputEC}
-                    onChange={e => setCareForm({ ...careForm, outputEC: e.target.value })}
+                    value={careForm.inputEC}
+                    onChange={e => setCareForm({ ...careForm, inputEC: e.target.value })}
                     className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
-                    placeholder="Runoff EC"
+                    placeholder="e.g., 1.15"
                   />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-[var(--bark)] mb-1">Output pH (Optional)</label>
                   <input
@@ -999,6 +988,17 @@ export default function BatchDetailPage({ params }: { params: Promise<{ id: stri
                     onChange={e => setCareForm({ ...careForm, outputPH: e.target.value })}
                     className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
                     placeholder="Runoff pH"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">Output EC (Optional)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={careForm.outputEC}
+                    onChange={e => setCareForm({ ...careForm, outputEC: e.target.value })}
+                    className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+                    placeholder="Runoff EC"
                   />
                 </div>
               </div>

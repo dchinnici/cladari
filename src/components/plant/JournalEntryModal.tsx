@@ -246,17 +246,6 @@ export function JournalEntryModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Input EC</label>
-              <input
-                type="number"
-                step="0.01"
-                value={careForm.inputEC}
-                onChange={(e) => setCareForm({ ...careForm, inputEC: e.target.value })}
-                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
-                placeholder="e.g., 1.2"
-              />
-            </div>
-            <div>
               <label className="block text-sm font-medium text-[var(--bark)] mb-1">Input pH</label>
               <input
                 type="number"
@@ -268,14 +257,14 @@ export function JournalEntryModal({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Output EC</label>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Input EC</label>
               <input
                 type="number"
                 step="0.01"
-                value={careForm.outputEC}
-                onChange={(e) => setCareForm({ ...careForm, outputEC: e.target.value })}
+                value={careForm.inputEC}
+                onChange={(e) => setCareForm({ ...careForm, inputEC: e.target.value })}
                 className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
-                placeholder="e.g., 1.5"
+                placeholder="e.g., 1.2"
               />
             </div>
             <div>
@@ -287,6 +276,17 @@ export function JournalEntryModal({
                 onChange={(e) => setCareForm({ ...careForm, outputPH: e.target.value })}
                 className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
                 placeholder="e.g., 5.8"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[var(--bark)] mb-1">Output EC</label>
+              <input
+                type="number"
+                step="0.01"
+                value={careForm.outputEC}
+                onChange={(e) => setCareForm({ ...careForm, outputEC: e.target.value })}
+                className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+                placeholder="e.g., 1.5"
               />
             </div>
           </div>
@@ -643,17 +643,6 @@ export function JournalEntryModal({
 
       <div className="grid grid-cols-3 gap-3">
         <div>
-          <label className="block text-sm font-medium text-[var(--bark)] mb-1">EC Value</label>
-          <input
-            type="number"
-            step="0.01"
-            value={measurementForm.ecValue}
-            onChange={(e) => setMeasurementForm({ ...measurementForm, ecValue: e.target.value })}
-            className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
-            placeholder="e.g., 1.2"
-          />
-        </div>
-        <div>
           <label className="block text-sm font-medium text-[var(--bark)] mb-1">pH Value</label>
           <input
             type="number"
@@ -662,6 +651,17 @@ export function JournalEntryModal({
             onChange={(e) => setMeasurementForm({ ...measurementForm, phValue: e.target.value })}
             className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
             placeholder="e.g., 6.0"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-[var(--bark)] mb-1">EC Value</label>
+          <input
+            type="number"
+            step="0.01"
+            value={measurementForm.ecValue}
+            onChange={(e) => setMeasurementForm({ ...measurementForm, ecValue: e.target.value })}
+            className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+            placeholder="e.g., 1.2"
           />
         </div>
         <div>
