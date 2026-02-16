@@ -34,13 +34,12 @@
 - Falls back to static 5/7 days if plant has < 3 care events
 - Now shows dynamic interval hint: "(~4.2d avg)" for plants with enough data
 
-### 3. Photos for Crosses and Batches
-**Current:** Only Plant model has Photo relation
-**Needed:** Add photo upload capability to:
-- BreedingRecord (crosses)
-- SeedBatch
-- CloneBatch
-**Schema change:** Add `breedingRecordId`, `seedBatchId`, `cloneBatchId` to Photo model (nullable)
+### 3. ~~Photos for Crosses and Batches~~ ✅ FIXED (Feb 16, 2026)
+**Solution:** Photo model already had polymorphic relations (`breedingRecordId`, `seedBatchId`, `cloneBatchId`). Added:
+- Camera upload button + thumbnail grid on breeding page cross cards
+- Clone batch photo upload already existed in `batches/[id]/page.tsx`
+- Breeding API now includes photos + `_count.photos` in response
+- Clone batch graduation now copies photos to graduated plants
 
 ### 4. Batch Care Log Formatting
 **Issue:** Care logging UI in batches looks different than plant care log module
@@ -237,17 +236,9 @@ Upgraded to Supabase Pro to fix egress overages (10GB on 5GB limit). Attempted t
 
 ---
 
-## Files Changed This Session
-- `src/app/api/photos/route.ts` - Serverless fixes, originalFilename storage
-- `src/app/api/plants/lookup/route.ts` - Auth fix
-- `src/app/api/plants/[id]/export/route.ts` - Auth fix
-- `src/app/api/locations/[id]/route.ts` - Auth fix (GET/PATCH/DELETE)
-- `src/app/api/print/location-tag/[name]/route.ts` - Auth fix
-- `src/app/plants/[id]/page.tsx` - Client-side image compression
-- `src/lib/sensorpush.ts` - 10s timeout
-- `src/lib/weather.ts` - 10s timeout
-- `src/lib/constants.ts` - NEW: centralized thresholds
-- `src/components/care/CareQueue.tsx` - Tailwind fix, constants
-- `src/components/QuickCare.tsx` - Constants
-- `prisma/schema.prisma` - Photo.originalFilename field
-- `vercel.json` - maxDuration for photos API
+## Summary of Fixed Bugs
+- #2 ✅ Stale Status Thresholds (Dec 24, 2025)
+- #3 ✅ Photos for Crosses/Batches (Feb 16, 2026)
+- #7 ✅ Batch Care Shows UID Not Name (verified Dec 24, 2025)
+- #10 ✅ Clone Batch Individual Graduation (verified Dec 24, 2025)
+- #13 ✅ SensorPush Test Data Pollution (Feb 16, 2026)

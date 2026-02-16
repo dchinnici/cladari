@@ -1,66 +1,33 @@
 # CLAUDE.md - Cladari Project Context
 
 ---
-## 🚨 ACTIVE SPRINT: BACKLOG CLEARING (Started Dec 27, 2025)
+## Sprint Status
 
-**STATUS**: Feature freeze. Clear technical debt before new features.
+**Backlog Clearing Sprint** (Dec 27, 2025 – Feb 16, 2026) — **COMPLETE**
 
-### AI Assistant Instructions
-**READ THIS FIRST.** Before implementing any new feature request:
+### Completed This Sprint
+- ✅ ML predictor try-catch (P1 security)
+- ✅ Chat API input validation (P1 security)
+- ✅ Harvest modal UI (create + edit + delete)
+- ✅ Seed batch modal UI (create + edit + delete)
+- ✅ Seedling modal UI + graduation workflow
+- ✅ Clone batch graduation with data transfer (care logs + photos)
+- ✅ Breeding record photo upload UI
+- ✅ pH/EC field ordering standardized platform-wide
+- ✅ Baseline feed centralized (`constants.ts`)
+- ✅ Note button fixed (freeform notes)
+- ✅ Division batch lineage display
+- ✅ Production Vercel env var restoration
 
-1. **Check if it's on the sprint list below** → If yes, proceed
-2. **Check if it's a bug fix or security issue** → If yes, proceed
-3. **If it's a NEW feature**, ask the user:
-   > "This looks like a new feature. We're currently in backlog-clearing mode. Is this higher priority than the sprint items, or should we defer it?"
-4. **If user insists on new feature**, add it to "Parked Ideas" below and note the date
-
-**Why this matters**: Velocity on new features has outpaced UI completion. APIs exist that users can't access. Infrastructure is built but not wired. Clearing this debt creates a solid foundation.
-
-### Sprint Backlog (Target: ~24 hours focused work)
-
-#### Phase 1: Security & Stability (P1) — ~6 hours
-- [ ] Multi-tenant SensorPush credentials (2-4 hrs)
-- [ ] Apply RLS policies from `scripts/setup-rls-policies.sql` (1 hr)
-- [ ] Wrap ML predictor calls in try-catch (30 min)
-- [ ] Add input validation to chat API (30 min)
-- [ ] Standardize Prisma error responses (1 hr)
-
-#### Phase 2: Breeding Pipeline UI — ~10 hours
-- [ ] Harvest modal UI (API at `/api/breeding/[id]/harvests` ready)
-- [ ] Seed batch modal UI (API at `/api/seed-batches` ready)
-- [ ] Seedling modal UI (API at `/api/seedlings` ready)
-- [ ] Seedling graduation workflow UI
-
-#### Phase 3: Wire Existing Infrastructure — ~4 hours
-- [ ] Connect taxa embeddings to AI chat (context-aware injection)
-- [ ] Location sensor management UI (dropdown in edit modal)
-
-#### Phase 4: Small Polish — ~4 hours
+### Still Open (Carry to Next Sprint)
+- [ ] Multi-tenant SensorPush credentials
+- [ ] Apply RLS policies from `scripts/setup-rls-policies.sql`
+- [ ] Standardize Prisma error responses
+- [ ] Connect taxa embeddings to AI chat
+- [ ] Location sensor management UI
 - [ ] Batch print functionality
-- [ ] SWP vs top watering tracking per plant
+- [ ] SWP vs top watering tracking
 - [ ] Autocomplete/search for text fields
-
-### Parked Ideas (Do NOT start until sprint complete)
-| Idea | Date Parked | Requested By |
-|------|-------------|--------------|
-| ML Vision Pipeline | Pre-sprint | Roadmap |
-| Voice Memo Import | Pre-sprint | Roadmap |
-| Sovria Component Harvest | Pre-sprint | Roadmap |
-| Additional Cardiolonchium data scraping | Dec 27 | Gap analysis |
-
-### Sprint Rules
-1. **No new tables/models** unless fixing a bug
-2. **No new API endpoints** unless completing existing UI
-3. **Document any parked ideas** so they're not lost
-4. **Bug fixes always allowed** - don't let broken things fester
-5. **User can override** - these are guidelines, not laws
-
-### Exit Criteria
-Sprint complete when:
-- All P1 security items done
-- Breeding pipeline usable end-to-end via UI
-- Taxa wired to AI chat
-- User declares "sprint complete" or overrides
 
 ---
 
@@ -234,111 +201,16 @@ cladari/                          # Monorepo root
   - **New stress thresholds** configurable at top of chat route
   - AI chat now receives granular data to correlate leaf damage with environmental events
 
-- **Monorepo Consolidation + Print Proxy** (v1.7.6)
-  - **Monorepo**: Merged `cladari-website/` into parent `cladari/` repo
-    - Single repo structure, app at root
-    - Backup at `/Users/davidchinnici/cladari-backup-20251221/`
-  - **Print Proxy via Tailscale Funnel**: Production can now print to local Zebra
-    - `scripts/print-proxy.ts` runs locally, receives print jobs
-    - Funnel URL: `https://f1.tail2ea078.ts.net/print`
-    - Vercel detects `VERCEL=1` and forwards to proxy
-  - **AI Chat Cost Optimization**: Switched Opus → Sonnet 4 with extended thinking
-    - ~5x cost reduction ($0.45 → $0.09 per 30K query)
-    - Same 16K thinking budget, quality testing in progress
-  - **Pot Sticker Layout**: Redesigned for 57x32mm labels
-    - QR code mag 6 on left, text fills right side
-    - Common name 72pt, species 40pt, ID 36pt, date 30pt
-    - Text wrapping for long names
-- **Unified Breed UI + Flowering Events** (v1.7.5)
-  - **Unified "Breed" Navigation**: Combined Breeding + Batches under single "Breed" entry point
-    - Tab-style navigation between Crosses (sexual) and Batches (asexual) pages
-    - Mobile nav shows "Breed" with GitBranch icon (replaced separate entries)
-    - Desktop nav consolidated under "Breed" link
-  - **Flowering Event Picker**: Simple event-log approach for tracking flowering cycles
-    - Quick Actions reorganized: Care/Flower/Note/Photo (replaced Water/Feed/Note/Photo)
-    - One-tap events: 🌱 Bud Emerging, 🌸 Spathe Opening, 💧 Female Receptive, 🌾 Pollen Visible, ✂️ Finished
-    - Events save to Journal with 'flowering' entryType and metadata
-  - **Lineage Tab Clone Batch Support**: Graduated plants now show "Graduated From Batch" section
-    - Links back to source batch with propagation type, cultivar name, external source
-    - Batch origin visible in family tree visualization
-  - **Multi-Plant Graduation Fix**: Fixed duplicate ID and partial commit bugs
-    - Sequential ID generation (query once, increment locally)
-    - Transaction wrapper for atomic all-or-nothing commits
-    - Fixed propagationType mapping: OFFSET→division, TC→tissue_culture
-  - **Clone Batch Photos**: Photo upload UI on batch detail pages
-  - **Polymorphic Photo Support**: Photos can attach to breeding records and batches
-- **Production Deployment + OAuth** (v1.7.4)
-  - **Vercel Production**: Live at https://www.cladari.ai
-  - **Google OAuth**: Sign in with Google (account picker enabled)
-  - **Apple OAuth**: Button ready (needs Apple Developer setup)
-  - **UserMenu Component**: Logout in desktop nav + mobile bottom nav
-  - **Multi-tenant Dashboard Fix**: Stats now filtered by userId
-  - **Orphaned Photos Cleanup**: Removed 11 broken photo records
-  - **Training Data Export**: `scripts/export-training-data.ts` for ML fine-tuning
-    - Exports HITL-scored ChatLogs (quality ≥ 3) as JSONL
-    - Exports NegativeExamples for DPO/RLHF training
-    - Weekly delta exports with `--since` flag
-- **Plant Diary Export + Zebra Printer Integration** (v1.7.3)
-  - **Plant Diary Export**: `/api/plants/[id]/export` endpoint with multi-format output
-    - Structured JSON with identity, status, statistics for blockchain/verification
-    - Pre-chunked semantic sections for ML embeddings pipeline
-    - Full markdown narrative for AI chat paste (Claude, ChatGPT)
-    - SHA256 content hash for Stream Protocol verification
-    - "Export Diary" button in plant detail dropdown menu
-  - **Zebra ZD421CN One-Click Printing**: Server-side via `lp` command
-    - Print API: `POST /api/print/zebra` accepts plant ID, location name, or raw ZPL
-    - Plant detail: Menu → "Print Label" → instant print with toast confirmation
-    - Locations page: Printer icon → instant print for any location
-    - 57x32mm holographic labels tested (thermal transfer mode with ribbon)
-    - Compact templates: `generateCompactPlantTagZPL()`, `generateCompactLocationTagZPL()`
-    - Layout: QR code (mag 6) + ID/Name + details, vertically centered
-- **ML Watering Predictor Enhancements** (v1.7.3)
-  - **Temperature unit fix**: SensorPush stores °F, predictor expects °C - now converts correctly
-  - **Rain-adjusted predictions**: Outdoor locations now factor in recent precipitation
-  - Location model: Added `isOutdoor` boolean for rain exposure
-  - Weather API integration: Fetches 24h/48h precipitation from Open-Meteo
-  - **IMPORTANT**: Rain adjustment values are TUNABLE HYPOTHESES, not empirically validated
-  - See `RAIN_THRESHOLDS` in `src/lib/ml/wateringPredictor.ts` for tuning parameters
-- **Mobile PWA Fixes & Photo Upload to Supabase** (v1.7.2)
-  - Photo uploads now go directly to Supabase Storage (consistent with migrated photos)
-  - PWA viewport locked to prevent unwanted zoom/scroll on mobile
-  - Bottom nav safe area padding for iPhone home indicator
-  - Photo rotation fix: explicit EXIF orientation handling for HEIC and all formats
-  - Modal scroll containment: forms scrollable to submit button on mobile
-  - Modal accidental close protection during device rotation
-- **pgvector Semantic Search** - Cross-collection AI memory (v1.7.1)
-  - Embedding model: Xenova/bge-base-en-v1.5 (768 dimensions) via @xenova/transformers
-  - ChatLog chunking: Splits on `##` headers, infers chunk types (damage_analysis, care_analysis, etc.)
-  - Auto-embedding: New ChatLogs automatically chunked and embedded on save
-  - Hybrid search API: `/api/ml/semantic-search` with quality-weighted scoring
-  - AI chat integration: Searches past consultations, injects relevant context from other plants
-  - Dashboard UI: KnowledgeSearch component for direct knowledge base queries
-  - Backfill script: `scripts/backfill-embeddings.ts` for existing ChatLogs
-- **Supabase Migration** - Full production infrastructure (v1.7.0)
-  - Database: SQLite → Supabase Postgres with pgvector extension enabled
-  - Auth: Supabase Auth with email/password, middleware protection
-  - Storage: 564 photos migrated to Supabase Storage with signed URLs
-  - Multi-tenant ready: Profile model, userId on all primary entities
-  - RLS policies prepared for future Swift app (direct Supabase SDK access)
-  - Data migrated: 70 plants, 871 care logs, 17 chat logs, full breeding pipeline
-- **HITL Quality Scoring** - Granular AI feedback for ML training (v1.6.3)
-  - 0-4 quality scale with retrieval weight computation
-  - SaveChatModal: Score, edit, and save AI responses
-  - NegativeExample model: Bad responses stored separately for RLHF
-  - Failure types: hallucination, missed_context, factual_error, etc.
-  - Journal shows quality badges (color-coded 0-4)
-- **Cross-plant context isolation** - AI chat resets between plants (v1.6.3)
-- **SensorPush Integration** - Live environmental monitoring (v1.6.1)
-  - Library: `/lib/sensorpush.ts` - OAuth API client with token caching
-  - APIs: `/api/sensorpush/sync`, `/api/sensorpush/history`
-  - Location UI shows "Live" badge, disables manual input for sensor-linked locations
-  - 10-minute cron job syncs all sensors
-- **Weather Integration** - Open-Meteo API for outdoor context (v1.6.1)
-  - Library: `/lib/weather.ts` - Free API, Fort Lauderdale coords
-  - API: `/api/weather` - Current + 7-day forecast
-  - AI chat now receives weather + barometric pressure context
-- **Plant Detail Refactor** - 9 tabs → 5 tabs (Overview, Journal, Photos, Flowering, Lineage)
-- **AI Chat Logging** - Save conversations to Journal with HITL confidence tracking
+- **v1.7.6** - Monorepo consolidation, Tailscale print proxy, pot sticker label layout
+- **v1.7.5** - Unified "Breed" navigation, flowering event picker, clone batch photo upload, multi-plant graduation fix
+- **v1.7.4** - Production deployment (www.cladari.ai), Google OAuth, training data export
+- **v1.7.3** - Plant diary export, Zebra printing, rain-adjusted watering predictor (TUNABLE HYPOTHESES in `wateringPredictor.ts`)
+- **v1.7.2** - Mobile PWA fixes, Supabase Storage photo upload, EXIF rotation handling
+- **v1.7.1** - pgvector semantic search (BGE-base-en-v1.5, 768d), auto-embedding ChatLogs, hybrid search API
+- **v1.7.0** - Supabase migration (SQLite → Postgres), Auth, Storage, multi-tenant, pgvector enabled
+- **v1.6.3** - HITL quality scoring (0-4 scale), negative examples for RLHF, cross-plant context isolation
+- **v1.6.1** - SensorPush integration (OAuth, 10-min cron sync), Weather integration (Open-Meteo)
+- **v1.6.0** - Plant detail refactor (9→5 tabs), AI chat logging with HITL confidence
 
 ### Queued Workstreams
 
@@ -368,28 +240,7 @@ cladari/                          # Monorepo root
 - **LoRA training framework** — For plant-specific model fine-tuning
 - Purpose: Offline batch ML pipeline on F2, reports back to Supabase
 
-**pgvector Semantic Search** (IMPLEMENTED v1.7.1)
-Full semantic search infrastructure:
-- **Embedding service**: BGE-base-en-v1.5 via @xenova/transformers (768 dimensions)
-- **Chunking**: ChatLogs split on `##` headers into semantic chunks
-- **Chunk types**: damage_analysis, care_analysis, environmental, recommendation, observation, diagnosis, breeding, history, general
-- **Auto-embedding**: New ChatLogs automatically chunked and embedded on save
-- **Hybrid search API**: `/api/ml/semantic-search` with quality-weighted ranking
-- **Backfill script**: `scripts/backfill-embeddings.ts` for existing ChatLogs
-
-**Search usage:**
-```bash
-# Simple search
-GET /api/ml/semantic-search?q=spider+mites&limit=10
-
-# Advanced search (POST)
-POST /api/ml/semantic-search
-{
-  "query": "yellowing leaves",
-  "chunkTypes": ["damage_analysis", "diagnosis"],
-  "minQuality": 3
-}
-```
+**pgvector Semantic Search** (IMPLEMENTED v1.7.1) — See version history above. Search API: `GET/POST /api/ml/semantic-search`
 
 ---
 
@@ -440,11 +291,7 @@ Cross (CLX-YYYY-###) → Harvest → SeedBatch (SDB-YYYY-###) → Seedling (SDL-
 - Asexual lineage: cloneSource/clones for offsets, TC, divisions
 - Generation tracking: F1, F2, S1, BC1, etc.
 
-### Still Pending (Phase 1 Priorities)
-- Harvest modal UI (API complete)
-- Seed batch modal UI (API complete)
-- Seedling modal UI (API complete)
-- Graduation workflow UI for seedlings (clone batch graduation DONE)
+### Still Pending
 - Batch print functionality (all plants in a location)
 - Standard 2"x1" label templates (need labels)
 - Multi-tenant printing strategy (different printers per user)
@@ -483,152 +330,23 @@ model LocationHistory {
 
 Use case: "Where was ANT-2025-0016 from Dec 10-17?" → Query LocationHistory → Match to sensor data for each period → Calculate weighted environmental exposure
 
-### Zebra Printer Setup (Updated Dec 21, 2025)
-**Hardware**: Zebra ZD421CN-300dpi thermal printer via macOS CUPS (`lp` command)
+### Zebra Printer Setup
+**Hardware**: Zebra ZD421CN-300dpi via macOS CUPS (`lp` command)
+- **Local dev**: `/api/print/zebra` calls `lp` directly
+- **Production**: Forwards to `scripts/print-proxy.ts` via Tailscale Funnel (`https://f1.tail2ea078.ts.net/print`)
+- **UI**: Plant detail menu → "Print Label", Locations page → printer icon
+- **Labels**: Pot sticker 57x32mm (production), Plant tag 2"x1" (templates ready, need labels)
+- **Templates**: `src/lib/zpl.ts` — `generatePotStickerZPL()`, `generatePlantTagZPL()`
 
-**Architecture**: Server-side printing via `/api/print/zebra` endpoint
-- **Local dev**: API calls `lp` directly
-- **Production (Vercel)**: API forwards to local print proxy via Tailscale Funnel
-
-**Print Proxy for Production** (required for www.cladari.ai printing):
-```bash
-# Terminal 1: Start print proxy
-npx tsx scripts/print-proxy.ts
-
-# Terminal 2: Expose via Tailscale Funnel
-/Applications/Tailscale.app/Contents/MacOS/Tailscale funnel 3001
-```
-Funnel URL: `https://f1.tail2ea078.ts.net/print`
-
-**One-Click Printing UI**:
-- **Plant detail page**: Menu → "Print Label" → instant print
-- **Locations page** (`/locations`): Printer icon → instant print
-- Toast notification confirms job ID
-
-**Print API** (`POST /api/print/zebra`):
-```typescript
-// Print plant label
-{ type: 'plant', id: 'cmgsezkjd003tgw74hosd87vo' }
-
-// Print location label
-{ type: 'location', name: 'Balcony' }
-
-// Raw ZPL
-{ zpl: '^XA...^XZ' }
-```
-
-**Working Label Sizes**:
-1. **Pot Sticker (57mm x 32mm)** - PRODUCTION READY
-   - 672 x 378 dots at 300 DPI
-   - Thermal transfer mode (`^MTT`) with ribbon
-   - Darkness: 20 (`^MD20`)
-   - QR code magnification: 6 (left side)
-   - Text: Common name 72pt, species 40pt, ID 36pt, date 30pt
-   - Template: `generatePotStickerZPL()` - optimized for caretaker workflow
-   - Great for holographic/foil stickers
-
-2. **Standard Plant Tag (2" x 1")** - TEMPLATES READY, NEED LABELS
-   - 600 x 300 dots at 300 DPI
-   - Direct thermal mode
-   - Template: `generatePlantTagZPL()` in `/src/lib/zpl.ts`
-
-**Printing via CLI**:
-```bash
-# Print ZPL directly (thermal transfer, 57x32mm)
-echo '^XA^MTT^MD20^PW672^LL378^FO100,150^A0N,60,60^FDTEST^FS^XZ' | lp -d Zebra -o raw -
-
-# Print calibration label
-echo '^XA~WC^XZ' | lp -d Zebra -o raw -
-```
-
-**Key ZPL Commands**:
-- `^MTT` = Thermal transfer (uses ribbon)
-- `^MTD` = Direct thermal (heat-sensitive labels, no ribbon)
-- `^MD{n}` = Darkness (0-30, higher = darker)
-- `^PW{n}` = Print width in dots
-- `^LL{n}` = Label length in dots
-- `^BQN,2,{mag}` = QR code (native ZPL, magnification 1-10)
-
-### Just Completed (Dec 10, 2025 - v1.6.0)
-
-**Plant Detail Page Refactor:**
-- Consolidated 9 tabs → 5 tabs (Overview, Journal, Photos, Flowering, Lineage)
-- **Overview**: Health Metrics + AI Assistant + Quick Actions + Plant Details
-- **Journal**: Unified timeline (care logs, notes, morphology, measurements, AI consultations)
-- **Lineage**: Renamed from "breeding" - ancestry, progeny, breeding participation
-
-**AI Chat Logging with HITL:**
-- **ChatLog model**: Stores conversations with confidence tracking
-- **Confidence levels**: unverified, verified, partially_verified, disputed
-- **Manual save**: "Save" button preserves valuable conversations to Journal
-- **API**: `/api/chat-logs` CRUD endpoints
-
-**New Components:**
+### Key Components
 - `HealthMetrics.tsx` - ML predictions, substrate health, EC/pH trends
-- `QuickActions.tsx` - One-click Care, Flower, Note, Photo buttons (v1.7.5 reorganization)
+- `QuickActions.tsx` - One-click Care, Flower, Note, Photo buttons
 - `JournalTab.tsx` - Unified timeline with type filters
-- `JournalEntryModal.tsx` - Single modal with type selector
-- `LineageTab.tsx` - Family tree display with clone batch origin support (v1.7.5)
-
-### Previously (v1.5.1)
-
-**QR Code Infrastructure:**
-- Plant/Location QR codes with quickcare flow
-- Print APIs (html/zpl/png formats)
-- Tailscale URL encoding for mobile
-
-**Timezone Standardization:**
-- `/lib/timezone.ts` with America/New_York default
-- Fixed date off-by-one bugs
-
-### Previously Completed (Dec 5, 2025)
-- **CloneBatch model** added to schema (CLB-YYYY-###)
-- **API routes**: `/api/clone-batches` (CRUD complete)
-- **UI**: `/batches` page with create modal, stats, list view
-- Supports TC, CUTTING, DIVISION, OFFSET propagation types
-- Links to source plant or external source
-- Postgres schema synced
+- `LineageTab.tsx` - Family tree display with clone batch origin support
 
 ### Phase 2 Backlog: ML Improvements
-
-**Rain-Adjusted Watering - Future Enhancements:**
-Current implementation (v1.7.3) uses simple threshold model with HYPOTHETICAL adjustment values.
-```typescript
-// Current thresholds in src/lib/ml/wateringPredictor.ts
-MINIMUM_EFFECTIVE: 5mm   // Below this = no impact
-MODERATE_THRESHOLD: 10mm // +1.0 day adjustment
-HEAVY_THRESHOLD: 20mm    // +1.5 day adjustment
-SUSTAINED_BONUS: +0.5    // If 48h > 25mm
-```
-
-**Upgrade path to learned correlations:**
-1. **Data collection**: Store daily precipitation with care logs (CareLog.precipitationContext?)
-2. **Correlation analysis**: Build regression model: precipitation_mm → actual_watering_interval
-3. **Substrate awareness**: Chunky aroid mix drains faster than dense soil - factor in pot/substrate type
-4. **Intensity vs duration**: 10mm in 20 minutes (runoff) vs 10mm over 6 hours (deep soak)
-5. **Forecast integration**: Skip watering if heavy rain coming tomorrow
-6. **User feedback loop**: "Rained but I watered anyway because..." → learn exceptions
-
-**Data needed:**
-- Precipitation history stored per care log
-- User feedback: "Was this rain prediction helpful?"
-- Substrate drainage characteristics per plant
-
----
-
-**Substrate Health Analysis needs upgrade:**
-Current: Snapshot of last 3 logs → threshold check
-Needed: Time series since last repot → trend analysis
-
-Should analyze:
-- Input consistency (EC/pH variance over time)
-- Output trend direction (acidifying? EC building?)
-- Delta trend (gap widening or stabilizing?)
-- Data density → confidence weighting
-
-Example output: "Based on 12 readings over 8 weeks, 85% confidence substrate is acidifying at 0.15 pH/month. Consider CalMag buffer."
-
-Infrastructure exists in `/lib/ml/` (healthTrajectory.ts, statisticalAnalyzer.ts) but not wired into recommendations.ts properly.
+- **Rain-adjusted watering**: Current HYPOTHETICAL thresholds in `src/lib/ml/wateringPredictor.ts`. Needs learned correlations from care data + precipitation history.
+- **Substrate health analysis**: Current snapshot (last 3 logs) → needs time series since last repot with trend analysis. Infrastructure in `/lib/ml/` (healthTrajectory.ts, statisticalAnalyzer.ts) not yet wired to recommendations.ts.
 
 ## Domain Context: Anthurium Breeding
 
@@ -756,36 +474,10 @@ npm run build          # Verify no TypeScript errors
 | `README.md` | Project overview | Major milestones |
 
 ### docs/ Folder
-| File | Purpose | Update When |
-|------|---------|-------------|
-| `CLADARI_ENGINEER_MANUAL.md` | Developer reference | Technical changes, API updates |
-| `DEFERRED_TASKS.md` | Security/deployment roadmap | Tasks completed or added |
-| `DB_QUICK_REFERENCE.md` | Database commands | Schema changes |
-| `REPRODUCTIVE_PHENOLOGY.md` | Flowering tracking spec | Flowering feature changes |
-| `UNIFIED_JOURNAL_DESIGN.md` | Journal system architecture | Journal/Quick Actions changes |
-| `LOCATION_MANAGEMENT.md` | Location features | Location/sensor changes |
-| `ML_VISION_PIPELINE.md` | ML vision spec | ML feature changes |
-| `ML_INTEGRATION_ROADMAP.md` | ML roadmap | ML progress |
-| `AI_DATA_STRATEGY.md` | AI/HITL data strategy | Training data changes |
-| `BACKUP_SETUP.md` | Backup configuration | Backup procedure changes |
-| `VISION_AND_PIPELINE.md` | Product roadmap | Strategic direction changes |
-| `TEMPORAL_MORPHOLOGY.md` | Trait tracking spec | Morphology feature changes |
-| `MODULAR_DOMAIN_EXPERT_STACK.md` | AI architecture spec | AI system changes |
-| `TESTING_NOTES.md` | Testing procedures | Test changes |
-| `NEXT_SESSION_BUGS.md` | Bug tracking | Bug discovery/fixes |
-
-### Archive
-| File | Purpose |
-|------|---------|
-| `docs/archive/` | Completed session plans, historical context |
+Feature-specific docs in `docs/`: `CLADARI_ENGINEER_MANUAL.md`, `NEXT_SESSION_BUGS.md`, `DEFERRED_TASKS.md`, `ML_VISION_PIPELINE.md`, `LOCATION_MANAGEMENT.md`, `REPRODUCTIVE_PHENOLOGY.md`, `UNIFIED_JOURNAL_DESIGN.md`, and others. Archive in `docs/archive/`.
 
 ### Quick Update Checklist
-After significant commits:
-1. ✅ Update version in `CLAUDE.md` header
-2. ✅ Add to "Recently Completed" section in `CLAUDE.md`
-3. ✅ Update `OPERATOR_MANUAL.md` if UI changed
-4. ✅ Update relevant `docs/*.md` file for feature area
-5. ✅ Consider `CHANGELOG.md` for release notes
+After version bumps: update CLAUDE.md, OPERATOR_MANUAL.md, CHANGELOG.md, CLADARI_ENGINEER_MANUAL.md, README.md atomically.
 
 ## Strategic Direction (Dec 2025)
 
@@ -847,26 +539,15 @@ Each step in this chain is documented with timestamps, photos, and environmental
 - ROI dashboards ("this protocol saved $X")
 - Enterprise pricing
 
-### Key Mobile Feature: QR Quick Log (IMPLEMENTED v1.5.1)
-The mobile unlock isn't an app - it's frictionless data entry:
-- **Plant QR**: Scan → opens plant page with quickcare modal auto-triggered
-- **Location QR**: Scan "BALCONY" → batch care page with location pre-selected + all plants in that location auto-selected
-- Walk past a bench, notice something, log it in 5 seconds
-- Makes one-off VALUABLE data entry possible in real-time
-- **Network**: Production URL (www.cladari.ai) works from anywhere; Tailscale for local dev
-- **Printing**: Zebra ZD421CN via server-side `lp` command, 57x32mm holographic labels tested
+### Key Mobile Feature: QR Quick Log (v1.5.1)
+- **Plant QR**: Scan → opens plant page with quickcare modal
+- **Location QR**: Scan → batch care page with location pre-selected
+- 5-second data entry while doing care rounds
 
-### Why Not Consumer App
-- Red ocean market (Planta, Greg, etc.)
-- Shallow data (watering reminders) doesn't train useful ML
-- Consumer revenue ceiling ~$2K/month even if successful
-- Distraction from core thesis (verification, breeding intelligence)
-
-### Why Pro Tool + B2B
-- Blue ocean (nobody does breeding pipeline well)
-- Rich data (crosses, harvests, conditions, outcomes)
-- Commercial ops will pay $500/month for breeding cycle optimization
-- Data quality > data quantity for ML training
+### Market Position
+- **Pro tool + B2B**, not consumer (no Planta/Greg competition)
+- Blue ocean: nobody does breeding pipeline well
+- Rich data for ML > shallow watering reminders
 
 ## Owner Context
 
