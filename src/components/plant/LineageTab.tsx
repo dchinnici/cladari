@@ -29,6 +29,19 @@ interface CloneBatch {
   acquiredDate: string
 }
 
+interface SourcedBatch {
+  id: string
+  batchId: string
+  propagationType: string
+  cultivarName?: string | null
+  species?: string | null
+  acquiredDate: string
+  acquiredCount: number
+  currentCount?: number | null
+  status: string
+  _count?: { plants: number }
+}
+
 interface LineageTabProps {
   plant: {
     id: string
@@ -47,6 +60,7 @@ interface LineageTabProps {
     femaleOffspring?: Plant[]
     maleOffspring?: Plant[]
     clones?: Plant[]
+    cloneBatchesSourced?: SourcedBatch[]  // Batches created from this mother
     // Breeding participation
     femaleBreedings?: BreedingRecord[]
     maleBreedings?: BreedingRecord[]
@@ -111,7 +125,8 @@ export function LineageTab({ plant }: LineageTabProps) {
   const hasAncestry = plant.femaleParent || plant.maleParent || plant.cloneSource || plant.breedingRecord || plant.cloneBatch
   const hasProgeny = (plant.femaleOffspring?.length || 0) > 0 ||
                      (plant.maleOffspring?.length || 0) > 0 ||
-                     (plant.clones?.length || 0) > 0
+                     (plant.clones?.length || 0) > 0 ||
+                     (plant.cloneBatchesSourced?.length || 0) > 0
   const hasBreedingParticipation = (plant.femaleBreedings?.length || 0) > 0 ||
                                    (plant.maleBreedings?.length || 0) > 0
 
@@ -291,6 +306,51 @@ export function LineageTab({ plant }: LineageTabProps) {
                     +{plant.clones.length - 4} more
                   </p>
                 )}
+              </div>
+            )}
+
+            {/* Division/Clone Batches from this mother */}
+            {plant.cloneBatchesSourced && plant.cloneBatchesSourced.length > 0 && (
+              <div>
+                <p className="text-xs text-[var(--clay)] mb-2 flex items-center gap-1">
+                  <Layers className="w-3 h-3" />
+                  Batches ({plant.cloneBatchesSourced.length})
+                </p>
+                <div className="space-y-2">
+                  {plant.cloneBatchesSourced.map(batch => (
+                    <Link
+                      key={batch.id}
+                      href={`/batches/${batch.id}`}
+                      className="block p-3 bg-[var(--parchment)] rounded-lg hover:bg-[var(--sage)]/30 transition-colors group"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-mono text-sm text-[var(--forest)]">{batch.batchId}</p>
+                          {(batch.cultivarName || batch.species) && (
+                            <p className="text-sm text-[var(--bark)] mt-0.5 truncate">
+                              {batch.cultivarName || batch.species}
+                            </p>
+                          )}
+                          <p className="text-xs text-[var(--clay)] mt-1 capitalize">
+                            {batch.propagationType.toLowerCase()} · {batch.acquiredCount} started
+                            {batch._count?.plants ? ` · ${batch._count.plants} graduated` : ''}
+                          </p>
+                          <p className="text-xs text-[var(--clay)] mt-0.5">
+                            {new Date(batch.acquiredDate).toLocaleDateString('en-US', {
+                              month: 'short', day: 'numeric', year: 'numeric'
+                            })}
+                            {batch.status !== 'COMPLETE' && (
+                              <span className="ml-2 px-1.5 py-0.5 bg-[var(--moss)]/10 text-[var(--moss)] rounded text-[10px] uppercase">
+                                {batch.status}
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-[var(--clay)] group-hover:text-[var(--forest)] mt-1" />
+                      </div>
+                    </Link>
+                  ))}
+                </div>
               </div>
             )}
           </div>

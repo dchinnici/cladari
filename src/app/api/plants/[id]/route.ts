@@ -82,6 +82,21 @@ export async function GET(
         clones: {
           select: { id: true, plantId: true, hybridName: true, species: true }
         },
+        cloneBatchesSourced: {
+          select: {
+            id: true,
+            batchId: true,
+            propagationType: true,
+            cultivarName: true,
+            species: true,
+            acquiredDate: true,
+            acquiredCount: true,
+            currentCount: true,
+            status: true,
+            _count: { select: { plants: true } }
+          },
+          orderBy: { acquiredDate: 'desc' }
+        },
         // Breeding participation
         femaleBreedings: {
           select: {
