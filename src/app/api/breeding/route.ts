@@ -50,6 +50,19 @@ export async function GET() {
             plantId: true,
             hybridName: true
           }
+        },
+        photos: {
+          select: {
+            id: true,
+            storagePath: true,
+            photoType: true,
+            dateTaken: true,
+            notes: true
+          },
+          orderBy: { dateTaken: 'desc' }
+        },
+        _count: {
+          select: { photos: true }
         }
       },
       orderBy: { crossDate: 'desc' }

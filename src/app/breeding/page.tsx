@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import {
   Heart, Plus, ChevronRight, Sprout, Leaf,
   FlaskConical, TreeDeciduous, Calendar, Target,
-  ChevronDown, X, Droplets, Trash2, Pencil, Scissors, Package
+  ChevronDown, X, Droplets, Trash2, Pencil, Scissors, Package, Camera
 } from 'lucide-react'
 import Link from 'next/link'
 import { Modal } from '@/components/modal'
@@ -51,9 +51,19 @@ interface Harvest {
   id: string
   harvestNumber: number
   harvestDate: string
+  berryCount: number | null
   seedCount: number
   seedViability: string | null
+  notes: string | null
   seedBatches: SeedBatch[]
+}
+
+interface CrossPhoto {
+  id: string
+  storagePath: string | null
+  photoType: string
+  dateTaken: string
+  notes: string | null
 }
 
 interface BreedingRecord {
@@ -69,6 +79,8 @@ interface BreedingRecord {
   malePlant: Plant
   harvests: Harvest[]
   offspring: { id: string; plantId: string; hybridName: string | null }[]
+  photos: CrossPhoto[]
+  _count: { photos: number }
   summary: {
     totalHarvests: number
     totalSeeds: number
@@ -124,6 +136,14 @@ function getBatchStatusColor(status: string): string {
   }
 }
 
+// Supabase Storage URL builder for photo thumbnails
+function getPhotoThumbnailUrl(storagePath: string | null): string | null {
+  if (!storagePath) return null
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (!supabaseUrl) return null
+  return `${supabaseUrl}/storage/v1/render/image/public/cladari-photos/${storagePath}?width=150&quality=75`
+}
+
 export default function BreedingPage() {
   const [crosses, setCrosses] = useState<BreedingRecord[]>([])
   const [plants, setPlants] = useState<Plant[]>([])
@@ -134,6 +154,7 @@ export default function BreedingPage() {
   // Harvest modal state
   const [harvestModalOpen, setHarvestModalOpen] = useState(false)
   const [harvestCrossId, setHarvestCrossId] = useState<string | null>(null)
+  const [editHarvestId, setEditHarvestId] = useState<string | null>(null)
   const [harvestForm, setHarvestForm] = useState({
     harvestDate: getTodayString(),
     berryCount: '',
@@ -190,6 +211,11 @@ export default function BreedingPage() {
     hybridName: '',
     notes: ''
   })
+
+  // Photo upload state
+  const [uploadingPhotoForCross, setUploadingPhotoForCross] = useState<string | null>(null)
+  const photoInputRef = useRef<HTMLInputElement>(null)
+  const photoTargetCrossId = useRef<string | null>(null)
 
   // Form state
   const [crossForm, setCrossForm] = useState({
@@ -332,6 +358,7 @@ export default function BreedingPage() {
   const openHarvestModal = (crossId: string, e: React.MouseEvent) => {
     e.stopPropagation()
     setHarvestCrossId(crossId)
+    setEditHarvestId(null)
     setHarvestForm({
       harvestDate: getTodayString(),
       berryCount: '',
@@ -342,12 +369,31 @@ export default function BreedingPage() {
     setHarvestModalOpen(true)
   }
 
+  const openEditHarvestModal = (crossId: string, harvest: Harvest, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setHarvestCrossId(crossId)
+    setEditHarvestId(harvest.id)
+    setHarvestForm({
+      harvestDate: harvest.harvestDate ? harvest.harvestDate.split('T')[0] : '',
+      berryCount: harvest.berryCount?.toString() || '',
+      seedCount: harvest.seedCount?.toString() || '',
+      seedViability: harvest.seedViability || 'good',
+      notes: harvest.notes || ''
+    })
+    setHarvestModalOpen(true)
+  }
+
   const handleSaveHarvest = async () => {
     if (!harvestCrossId) return
 
     try {
-      const response = await fetch(`/api/breeding/${harvestCrossId}/harvests`, {
-        method: 'POST',
+      const isEdit = !!editHarvestId
+      const url = isEdit
+        ? `/api/breeding/${harvestCrossId}/harvests/${editHarvestId}`
+        : `/api/breeding/${harvestCrossId}/harvests`
+
+      const response = await fetch(url, {
+        method: isEdit ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           harvestDate: harvestForm.harvestDate,
@@ -361,7 +407,7 @@ export default function BreedingPage() {
       if (response.ok) {
         await fetchData()
         setHarvestModalOpen(false)
-        showToast({ type: 'success', title: 'Harvest recorded' })
+        showToast({ type: 'success', title: isEdit ? 'Harvest updated' : 'Harvest recorded' })
       } else {
         const err = await response.json()
         showToast({ type: 'error', title: err.error || 'Failed to save harvest' })
@@ -369,6 +415,82 @@ export default function BreedingPage() {
     } catch (error) {
       console.error('Error saving harvest:', error)
       showToast({ type: 'error', title: 'Error saving harvest' })
+    }
+  }
+
+  const handleDeleteHarvest = async (crossId: string, harvest: Harvest, e: React.MouseEvent) => {
+    e.stopPropagation()
+
+    const hasSeedBatches = harvest.seedBatches.length > 0
+    if (hasSeedBatches) {
+      showToast({
+        type: 'error',
+        title: 'Cannot delete harvest with seed batches — remove batches first'
+      })
+      return
+    }
+
+    if (!confirm(`Delete Harvest #${harvest.harvestNumber}?\n\nThis cannot be undone.`)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/breeding/${crossId}/harvests/${harvest.id}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        await fetchData()
+        showToast({ type: 'success', title: `Harvest #${harvest.harvestNumber} deleted` })
+      } else {
+        const err = await response.json()
+        showToast({ type: 'error', title: err.error || 'Failed to delete harvest' })
+      }
+    } catch (error) {
+      console.error('Error deleting harvest:', error)
+      showToast({ type: 'error', title: 'Error deleting harvest' })
+    }
+  }
+
+  // Photo upload handlers
+  const triggerPhotoUpload = (crossId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    photoTargetCrossId.current = crossId
+    photoInputRef.current?.click()
+  }
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    const crossId = photoTargetCrossId.current
+    if (!file || !crossId) return
+
+    setUploadingPhotoForCross(crossId)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('breedingRecordId', crossId)
+      formData.append('photoType', 'whole_plant')
+      formData.append('dateTaken', new Date().toISOString())
+
+      const response = await fetch('/api/photos', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (response.ok) {
+        await fetchData()
+        showToast({ type: 'success', title: 'Photo uploaded' })
+      } else {
+        const err = await response.json()
+        showToast({ type: 'error', title: err.error || 'Failed to upload photo' })
+      }
+    } catch (error) {
+      console.error('Error uploading photo:', error)
+      showToast({ type: 'error', title: 'Error uploading photo' })
+    } finally {
+      setUploadingPhotoForCross(null)
+      // Reset file input so same file can be selected again
+      if (photoInputRef.current) photoInputRef.current.value = ''
     }
   }
 
@@ -666,6 +788,15 @@ export default function BreedingPage() {
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)]">
+      {/* Hidden file input for cross photo uploads */}
+      <input
+        ref={photoInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/heic"
+        className="hidden"
+        onChange={handlePhotoUpload}
+      />
+
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
@@ -807,6 +938,20 @@ export default function BreedingPage() {
                         <Calendar className="w-3 h-3 inline mr-1" />
                         {new Date(cross.crossDate).toLocaleDateString()}
                       </div>
+                      {/* Photo upload button */}
+                      <button
+                        onClick={(e) => triggerPhotoUpload(cross.id, e)}
+                        className="p-1.5 hover:bg-blue-50 rounded-lg transition-colors group relative"
+                        title="Add photo"
+                        disabled={uploadingPhotoForCross === cross.id}
+                      >
+                        <Camera className={`w-4 h-4 text-[var(--clay)] group-hover:text-blue-500 ${uploadingPhotoForCross === cross.id ? 'animate-pulse' : ''}`} />
+                        {cross._count.photos > 0 && (
+                          <span className="absolute -top-1 -right-1 text-[8px] bg-blue-500 text-white rounded-full w-3.5 h-3.5 flex items-center justify-center">
+                            {cross._count.photos}
+                          </span>
+                        )}
+                      </button>
                       {/* Delete button - only hide if graduated plants exist */}
                       {cross.offspring.length === 0 && (
                         <button
@@ -876,9 +1021,27 @@ export default function BreedingPage() {
                                     {new Date(harvest.harvestDate).toLocaleDateString()}
                                   </span>
                                 </div>
-                                <span className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full">
-                                  {harvest.seedCount} seeds
-                                </span>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full">
+                                    {harvest.seedCount} seeds
+                                  </span>
+                                  <button
+                                    onClick={(e) => openEditHarvestModal(cross.id, harvest, e)}
+                                    className="p-1 hover:bg-black/[0.04] rounded transition-colors"
+                                    title="Edit harvest"
+                                  >
+                                    <Pencil className="w-3 h-3 text-[var(--clay)] hover:text-[var(--moss)]" />
+                                  </button>
+                                  {harvest.seedBatches.length === 0 && (
+                                    <button
+                                      onClick={(e) => handleDeleteHarvest(cross.id, harvest, e)}
+                                      className="p-1 hover:bg-red-50 rounded transition-colors"
+                                      title="Delete harvest"
+                                    >
+                                      <Trash2 className="w-3 h-3 text-[var(--clay)] hover:text-red-500" />
+                                    </button>
+                                  )}
+                                </div>
                               </div>
 
                               {/* Seed Batches */}
@@ -1019,6 +1182,41 @@ export default function BreedingPage() {
                     {cross.notes && (
                       <div className="px-4 pb-4 text-xs text-[var(--clay)]">
                         <span className="font-medium">Notes:</span> {cross.notes}
+                      </div>
+                    )}
+
+                    {/* Photos */}
+                    {cross.photos.length > 0 && (
+                      <div className="px-4 pb-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-xs font-medium text-blue-600 uppercase tracking-wide">
+                            Photos ({cross.photos.length})
+                          </h4>
+                          <button
+                            onClick={(e) => triggerPhotoUpload(cross.id, e)}
+                            className="text-[10px] text-blue-500 hover:text-blue-700 flex items-center gap-0.5"
+                          >
+                            <Plus className="w-2.5 h-2.5" />
+                            Add
+                          </button>
+                        </div>
+                        <div className="flex gap-2 overflow-x-auto pb-1">
+                          {cross.photos.map((photo) => (
+                            <div key={photo.id} className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-black/[0.04]">
+                              {photo.storagePath ? (
+                                <img
+                                  src={getPhotoThumbnailUrl(photo.storagePath) || ''}
+                                  alt={photo.photoType}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-[var(--clay)]">
+                                  <Camera className="w-4 h-4" />
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1186,7 +1384,7 @@ export default function BreedingPage() {
       <Modal
         isOpen={harvestModalOpen}
         onClose={() => setHarvestModalOpen(false)}
-        title="Record Harvest"
+        title={editHarvestId ? 'Edit Harvest' : 'Record Harvest'}
       >
         <div className="space-y-4">
           <div>
@@ -1257,7 +1455,7 @@ export default function BreedingPage() {
               disabled={!harvestForm.seedCount}
               className="flex-1 px-4 py-2.5 bg-[var(--forest)] text-white text-sm rounded-lg hover:bg-[var(--forest)]/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              Save Harvest
+              {editHarvestId ? 'Update Harvest' : 'Save Harvest'}
             </button>
             <button
               onClick={() => setHarvestModalOpen(false)}

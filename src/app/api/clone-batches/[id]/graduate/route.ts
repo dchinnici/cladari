@@ -191,24 +191,93 @@ export async function POST(
         plants.push(plant)
       }
 
+      // Copy batch care logs to each graduated plant
+      const batchCareLogs = await tx.careLog.findMany({
+        where: { cloneBatchId: id }
+      })
+
+      if (batchCareLogs.length > 0) {
+        for (const plant of plants) {
+          for (const log of batchCareLogs) {
+            await tx.careLog.create({
+              data: {
+                plantId: plant.id,
+                date: log.date,
+                action: log.action,
+                inputEC: log.inputEC,
+                inputPH: log.inputPH,
+                outputEC: log.outputEC,
+                outputPH: log.outputPH,
+                isBaselineFeed: log.isBaselineFeed,
+                feedComponents: log.feedComponents,
+                treatmentId: log.treatmentId,
+                dosage: log.dosage,
+                unit: log.unit,
+                details: log.details
+                  ? `[Batch ${cloneBatch.batchId}] ${log.details}`
+                  : `[Batch ${cloneBatch.batchId}]`,
+                nextActionDue: log.nextActionDue,
+                performedBy: log.performedBy,
+              }
+            })
+          }
+        }
+      }
+
+      // Copy batch photos to each graduated plant
+      const batchPhotos = await tx.photo.findMany({
+        where: { cloneBatchId: id }
+      })
+
+      if (batchPhotos.length > 0) {
+        for (const plant of plants) {
+          for (const photo of batchPhotos) {
+            await tx.photo.create({
+              data: {
+                plantId: plant.id,
+                userId: photo.userId,
+                storagePath: photo.storagePath,
+                thumbnailPath: photo.thumbnailPath,
+                originalFilename: photo.originalFilename,
+                url: photo.url,
+                thumbnailUrl: photo.thumbnailUrl,
+                dateTaken: photo.dateTaken,
+                growthStage: photo.growthStage,
+                photoType: photo.photoType,
+                photoContext: photo.photoContext,
+                metadata: photo.metadata,
+                aiAnalysis: photo.aiAnalysis,
+                notes: photo.notes
+                  ? `[Batch ${cloneBatch.batchId}] ${photo.notes}`
+                  : `[Batch ${cloneBatch.batchId}]`,
+              }
+            })
+          }
+        }
+      }
+
       // Update batch status within the same transaction
       await tx.cloneBatch.update({
         where: { id },
         data: { status: newStatus }
       })
 
-      return plants
+      return { plants, careLogsCopied: batchCareLogs.length, photosCopied: batchPhotos.length }
     })
 
     return NextResponse.json({
       success: true,
       graduated: count,
-      plants: createdPlants.map(p => ({
+      plants: createdPlants.plants.map(p => ({
         id: p.id,
         plantId: p.plantId,
         hybridName: p.hybridName,
         propagationType: p.propagationType
       })),
+      transferred: {
+        careLogsPerPlant: createdPlants.careLogsCopied,
+        photosPerPlant: createdPlants.photosCopied
+      },
       batch: {
         id: cloneBatch.id,
         batchId: cloneBatch.batchId,
