@@ -59,6 +59,27 @@ export async function GET() {
       }
     })
 
+    // Fetch actual cover photos for plants where coverPhotoId != most recent photo
+    const missingCoverIds = plants
+      .filter(p => p.coverPhotoId && (!p.photos[0] || p.photos[0].id !== p.coverPhotoId))
+      .map(p => p.coverPhotoId!)
+
+    if (missingCoverIds.length > 0) {
+      const coverPhotos = await prisma.photo.findMany({
+        where: { id: { in: missingCoverIds } },
+        select: { id: true, storagePath: true, url: true, dateTaken: true, plantId: true }
+      })
+      // Swap in the correct cover photo
+      for (const plant of plants) {
+        if (plant.coverPhotoId) {
+          const cover = coverPhotos.find(p => p.id === plant.coverPhotoId)
+          if (cover) {
+            (plant as any).photos = [cover]
+          }
+        }
+      }
+    }
+
     // Batch signed URL generation for photos (parallel instead of sequential)
     const photoPromises = plants.map(plant => {
       const photo = plant.photos[0]
