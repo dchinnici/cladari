@@ -6,6 +6,7 @@ import { Home, Trees, Droplets, MapPin, GitBranch } from 'lucide-react'
 import { ToastContainer } from '@/components/toast'
 import ServiceWorker from '@/components/ServiceWorker'
 import UserMenu, { UserMenuMobile } from '@/components/UserMenu'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -112,6 +113,7 @@ export default function RootLayout({
             <ServiceWorker />
           </div>
         </Providers>
+        <SpeedInsights />
       </body>
     </html>
   )
