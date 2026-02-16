@@ -80,7 +80,10 @@ export function getPhotoUrl(
       if (transformOptions.width) params.set('width', transformOptions.width.toString())
       if (transformOptions.height) params.set('height', transformOptions.height.toString())
       if (transformOptions.quality) params.set('quality', transformOptions.quality.toString())
-      if (transformOptions.resize) params.set('resize', transformOptions.resize)
+
+      // Use 'contain' mode to preserve aspect ratio (no cropping)
+      // Default is 'cover' which crops to fit exact dimensions
+      params.set('resize', transformOptions.resize || 'contain')
 
       return `${supabaseUrl}/storage/v1/render/image/public/${STORAGE_BUCKET}/${photo.storagePath}?${params}`
     }
