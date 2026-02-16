@@ -26,6 +26,19 @@ const STRESS_THRESHOLDS = {
 };
 
 // Helper to fetch environmental history from SensorPush
+// Known sensor test/calibration periods to exclude from environmental analysis
+// Format: { sensorId: [{ start: Date, end: Date, reason: string }] }
+const SENSOR_EXCLUSION_PERIODS: Record<string, Array<{ start: Date; end: Date; reason: string }>> = {
+  // Example: Fridge/freezer sensor identification tests
+  // '12345678.987654321': [
+  //   {
+  //     start: new Date('2024-01-15T00:00:00Z'),
+  //     end: new Date('2024-01-15T23:59:59Z'),
+  //     reason: 'Fridge/freezer sensor ID test'
+  //   }
+  // ]
+};
+
 async function getEnvironmentalHistory(locationId: string | undefined) {
   if (!locationId) return null;
 
@@ -65,14 +78,37 @@ async function getEnvironmentalHistory(locationId: string | undefined) {
       })
     );
 
-    // Combine all samples, dedupe by timestamp
+    // Combine all samples, dedupe by timestamp, and filter anomalies
     const seenTimes = new Set<string>();
     const samples: typeof windowResults[0] = [];
+    const exclusionPeriods = SENSOR_EXCLUSION_PERIODS[location.sensorPushId] || [];
+
     for (const windowSamples of windowResults) {
       for (const sample of windowSamples) {
         if (!seenTimes.has(sample.observed)) {
           seenTimes.add(sample.observed);
-          samples.push(sample);
+
+          const sampleTime = new Date(sample.observed);
+
+          // Check if sample falls within a manual exclusion period
+          const isExcluded = exclusionPeriods.some(period =>
+            sampleTime >= period.start && sampleTime <= period.end
+          );
+
+          if (isExcluded) {
+            const period = exclusionPeriods.find(p => sampleTime >= p.start && sampleTime <= p.end);
+            console.log(`[Chat API] Excluded reading from ${sample.observed}: ${period?.reason}`);
+            continue;
+          }
+
+          // Filter out obvious test data / sensor malfunctions
+          // Anthuriums can't survive <45°F or >110°F - these are sensor tests or errors
+          const isSensorTest = sample.temperature < 45 || sample.temperature > 110;
+          if (!isSensorTest) {
+            samples.push(sample);
+          } else {
+            console.log(`[Chat API] Filtered anomalous reading: ${sample.temperature}°F at ${sample.observed} (likely sensor test)`);
+          }
         }
       }
     }
