@@ -129,7 +129,28 @@ b. Want different designs for different use cases:
 - Email notifications (requires email service)
 - Dashboard "upcoming" section
 
-### 13. SensorPush API Missing Extreme Readings (CRITICAL for AI Analysis)
+### 13. ~~SensorPush Test Data Pollution~~ ✅ FIXED (Feb 16, 2026)
+**Discovered:** 2025-12-22 (fridge/freezer sensor ID tests)
+**Fixed:** 2026-02-16 (automatic anomaly filtering + manual exclusion periods)
+
+**Original Problem:**
+Fridge/freezer sensor identification tests (30°F readings) polluted environmental history, causing AI to misdiagnose plant stress as "critical cold exposure" instead of actual issues like desiccation.
+
+**Solution Implemented:**
+Two-tier filtering in `src/app/api/chat/route.ts`:
+1. **Automatic outlier rejection:** Filters temps <45°F or >110°F (clearly not plant environment)
+2. **Manual exclusion periods:** Configurable date range blacklist per sensor
+
+**Safe Sensor Renaming:**
+PlantDB uses stable sensor IDs (not names), so renaming in SensorPush app won't break historical data. See `docs/SENSORPUSH_MANAGEMENT.md` for full guide.
+
+**Files Changed:**
+- `src/app/api/chat/route.ts` - Anomaly filtering in getEnvironmentalHistory()
+- `docs/SENSORPUSH_MANAGEMENT.md` - NEW: Complete renaming and filtering guide
+
+---
+
+### 13b. SensorPush API Missing Extreme Readings (STILL INVESTIGATING)
 **Discovered:** 2025-12-22
 **Context:** During leaf damage analysis on ANT-2025-0024 (FTG Crystallinum)
 
