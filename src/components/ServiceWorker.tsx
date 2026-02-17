@@ -22,21 +22,6 @@ export default function ServiceWorker() {
       })
     }
 
-    // Add iOS install prompt
-    if ('standalone' in navigator && !(navigator as any).standalone) {
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
-      if (isIOS) {
-        const hasPrompted = localStorage.getItem('iosInstallPrompted')
-        if (!hasPrompted) {
-          setTimeout(() => {
-            const install = confirm('Add Cladari to your home screen for quick access while caring for plants')
-            if (install) {
-              localStorage.setItem('iosInstallPrompted', 'true')
-            }
-          }, 30000) // Show after 30 seconds
-        }
-      }
-    }
   }, [])
 
   return null
