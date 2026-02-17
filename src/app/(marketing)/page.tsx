@@ -10,12 +10,12 @@ import {
   Leaf,
   Dna,
   Database,
-  Search,
+
   BookOpen,
   Shield,
   ArrowRight,
   ChevronDown,
-  ExternalLink,
+
   Microscope,
   GitBranch,
   FlaskConical,
@@ -51,7 +51,7 @@ function Nav({ activeSection, isLoggedIn }: { activeSection: string; isLoggedIn:
     { id: "mission", label: "Mission" },
     { id: "platform", label: "Platform" },
     { id: "sovria", label: "Sovria" },
-    { id: "species", label: "Species DB" },
+
     { id: "research", label: "Research" },
     { id: "blog", label: "Journal" },
   ];
@@ -198,16 +198,6 @@ function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
               </Button>
             </a>
           )}
-          <a href="#species">
-            <Button
-              variant="outline"
-              size="lg"
-              className="gap-2"
-              style={{ borderColor: brand.bark, color: brand.bark }}
-            >
-              Explore Species Database <ExternalLink className="w-4 h-4" />
-            </Button>
-          </a>
         </div>
 
         <a
@@ -632,113 +622,6 @@ function SovriaSection() {
   );
 }
 
-// ── Species Database Tease ───────────────────────
-function SpeciesSection() {
-  const sampleTaxa = [
-    { species: "A. crystallinum", section: "Cardiolonchium", elevation: "200\u20131800 m" },
-    { species: "A. wendlingeri", section: "Xialophyllum", elevation: "700\u20131400 m" },
-    { species: "A. papillilaminum", section: "Cardiolonchium", elevation: "50\u2013700 m" },
-    { species: "A. dressleri", section: "Cardiolonchium", elevation: "800\u20131500 m" },
-    { species: "A. forgetii", section: "Cardiolonchium", elevation: "100\u20131200 m" },
-  ];
-
-  return (
-    <section id="species" className="py-20 px-6" style={{ backgroundColor: brand.cream }}>
-      <div className="max-w-5xl mx-auto">
-        <div className="grid md:grid-cols-2 gap-12 items-start">
-          <div>
-            <span
-              className="text-xs tracking-widest uppercase mb-4 block"
-              style={{ color: brand.moss, fontWeight: 600 }}
-            >
-              Species Reference Database
-            </span>
-            <h2
-              className="text-2xl md:text-3xl mb-6"
-              style={{ color: brand.forest, fontFamily: serif, fontWeight: 400 }}
-            >
-              147 <em>Anthurium</em> taxa.
-              <br />
-              Structured. Searchable. Growing.
-            </h2>
-            <p className="text-sm leading-relaxed mb-4" style={{ color: brand.bark }}>
-              Compiled from published taxonomic literature and peer-reviewed
-              species descriptions, our reference database covers taxonomy,
-              blade dimensions, spathe and spadix morphology, ecological data,
-              and distribution across 15 taxonomic sections.
-            </p>
-            <p className="text-sm leading-relaxed mb-4" style={{ color: brand.bark }}>
-              Each taxon profile is semantically embedded — search by traits,
-              ecology, or morphology in natural language, not just species names.
-              As reclassification work continues to redefine sectional
-              boundaries, the database evolves with the science.
-            </p>
-            <p className="text-sm leading-relaxed mb-6" style={{ color: brand.bark }}>
-              The database grows as we integrate additional published sources
-              and community-verified observations from documented collections.
-            </p>
-            <a href="#species">
-              <Button
-                variant="outline"
-                className="gap-2"
-                style={{ borderColor: brand.forest, color: brand.forest }}
-              >
-                <Search className="w-4 h-4" /> Browse Species Database
-              </Button>
-            </a>
-          </div>
-
-          <div>
-            <div
-              className="rounded-xl overflow-hidden"
-              style={{ border: "1px solid rgba(139, 115, 85, 0.15)" }}
-            >
-              <div
-                className="px-4 py-3 text-xs tracking-wider uppercase flex items-center justify-between"
-                style={{
-                  backgroundColor: brand.forest,
-                  color: "rgba(255,255,255,0.7)",
-                  fontWeight: 600,
-                }}
-              >
-                <span>Sample taxa</span>
-                <span style={{ color: "rgba(255,255,255,0.4)" }}>147 total</span>
-              </div>
-              {sampleTaxa.map((t, i) => (
-                <div
-                  key={i}
-                  className="px-4 py-3 flex items-center justify-between"
-                  style={{
-                    backgroundColor: i % 2 === 0 ? brand.cream : "#f5f2ed",
-                    borderTop: i > 0 ? "1px solid rgba(139,115,85,0.08)" : "none",
-                  }}
-                >
-                  <div>
-                    <span className="text-sm" style={{ color: brand.forest, fontWeight: 500 }}>
-                      <em>{t.species}</em>
-                    </span>
-                    <span className="text-xs ml-2" style={{ color: brand.bark }}>
-                      sect. {t.section}
-                    </span>
-                  </div>
-                  <div className="text-xs text-right" style={{ color: brand.bark }}>
-                    {t.elevation}
-                  </div>
-                </div>
-              ))}
-              <div
-                className="px-4 py-3 text-center text-xs"
-                style={{ backgroundColor: brand.cream, color: brand.moss }}
-              >
-                + 142 more taxa across 15 sections &rarr;
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
 
 // ── Research Vision ──────────────────────────────
 function ResearchSection() {
@@ -1052,7 +935,7 @@ function Footer() {
                 Platform
               </p>
               <div className="space-y-2">
-                {["Species Database", "Research", "Journal", "Sovria"].map((l) => (
+                {["Research", "Journal", "Sovria"].map((l) => (
                   <p key={l} className="text-sm cursor-pointer hover:underline" style={{ color: "rgba(250,246,240,0.6)" }}>
                     {l}
                   </p>
@@ -1113,7 +996,6 @@ export default function LandingPage() {
       <HowItWorksSection />
       <PlatformSection />
       <SovriaSection />
-      <SpeciesSection />
       <ResearchSection />
       <JournalSection />
       <WaitlistSection />
