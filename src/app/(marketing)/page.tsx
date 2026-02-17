@@ -74,8 +74,8 @@ function Nav({ activeSection, isLoggedIn }: { activeSection: string; isLoggedIn:
             <Leaf className="w-4 h-4 text-white" />
           </div>
           <span
-            className="text-lg tracking-tight"
-            style={{ color: brand.forest, fontWeight: 700, fontFamily: serif }}
+            className="text-xl"
+            style={{ color: brand.forest, fontWeight: 600, fontFamily: sans, letterSpacing: "0.02em" }}
           >
             Cladari
           </span>
@@ -108,7 +108,7 @@ function Nav({ activeSection, isLoggedIn }: { activeSection: string; isLoggedIn:
             </Button>
           </Link>
         ) : (
-          <Link href="/login">
+          <a href="#waitlist">
             <Button
               size="sm"
               className="text-sm"
@@ -116,7 +116,7 @@ function Nav({ activeSection, isLoggedIn }: { activeSection: string; isLoggedIn:
             >
               Request Access
             </Button>
-          </Link>
+          </a>
         )}
       </div>
     </nav>
@@ -177,15 +177,27 @@ function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
         </p>
 
         <div className="flex flex-wrap gap-4 mb-16">
-          <Link href={isLoggedIn ? "/dashboard" : "/login"}>
-            <Button
-              size="lg"
-              className="gap-2"
-              style={{ backgroundColor: brand.forest, color: "#fff" }}
-            >
-              {isLoggedIn ? "Go to Dashboard" : "Join the Beta"} <ArrowRight className="w-4 h-4" />
-            </Button>
-          </Link>
+          {isLoggedIn ? (
+            <Link href="/dashboard">
+              <Button
+                size="lg"
+                className="gap-2"
+                style={{ backgroundColor: brand.forest, color: "#fff" }}
+              >
+                Go to Dashboard <ArrowRight className="w-4 h-4" />
+              </Button>
+            </Link>
+          ) : (
+            <a href="#waitlist">
+              <Button
+                size="lg"
+                className="gap-2"
+                style={{ backgroundColor: brand.forest, color: "#fff" }}
+              >
+                Join the Beta <ArrowRight className="w-4 h-4" />
+              </Button>
+            </a>
+          )}
           <a href="#species">
             <Button
               variant="outline"
@@ -902,10 +914,35 @@ function JournalSection() {
 
 // ── Waitlist / CTA ───────────────────────────────
 function WaitlistSection() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !name) return;
+
+    setStatus("sending");
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim(), email: email.trim() }),
+      });
+      if (res.ok) {
+        setStatus("sent");
+        setName("");
+        setEmail("");
+      } else {
+        setStatus("error");
+      }
+    } catch {
+      setStatus("error");
+    }
+  };
 
   return (
-    <section className="py-20 px-6" style={{ backgroundColor: brand.forest }}>
+    <section id="waitlist" className="py-20 px-6" style={{ backgroundColor: brand.forest }}>
       <div className="max-w-3xl mx-auto text-center">
         <Sprout className="w-8 h-8 mx-auto mb-6" style={{ color: brand.clay }} />
         <h2
@@ -921,26 +958,63 @@ function WaitlistSection() {
           like to hear from you.
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto mb-6">
-          <input
-            type="email"
-            placeholder="your@email.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="flex-1 px-4 py-2.5 rounded-lg text-sm outline-none"
-            style={{
-              backgroundColor: "rgba(250,246,240,0.1)",
-              border: "1px solid rgba(250,246,240,0.2)",
-              color: brand.cream,
-            }}
-          />
-          <Button
-            className="gap-2"
-            style={{ backgroundColor: brand.clay, color: "#fff" }}
-          >
-            <Mail className="w-4 h-4" /> Request Access
-          </Button>
-        </div>
+        {status === "sent" ? (
+          <div className="py-8">
+            <p className="text-lg mb-2" style={{ color: brand.cream, fontFamily: serif }}>
+              Thank you, {name || "friend"}.
+            </p>
+            <p className="text-sm" style={{ color: "rgba(250,246,240,0.6)" }}>
+              We&apos;ll be in touch soon to learn about your collection.
+            </p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            <div className="flex flex-col gap-3 max-w-md mx-auto mb-6">
+              <input
+                type="text"
+                placeholder="Your name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                className="px-4 py-2.5 rounded-lg text-sm outline-none"
+                style={{
+                  backgroundColor: "rgba(250,246,240,0.1)",
+                  border: "1px solid rgba(250,246,240,0.2)",
+                  color: brand.cream,
+                }}
+              />
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input
+                  type="email"
+                  placeholder="your@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="flex-1 px-4 py-2.5 rounded-lg text-sm outline-none"
+                  style={{
+                    backgroundColor: "rgba(250,246,240,0.1)",
+                    border: "1px solid rgba(250,246,240,0.2)",
+                    color: brand.cream,
+                  }}
+                />
+                <Button
+                  type="submit"
+                  className="gap-2"
+                  disabled={status === "sending"}
+                  style={{ backgroundColor: brand.clay, color: "#fff", opacity: status === "sending" ? 0.7 : 1 }}
+                >
+                  <Mail className="w-4 h-4" /> {status === "sending" ? "Sending..." : "Request Access"}
+                </Button>
+              </div>
+            </div>
+
+            {status === "error" && (
+              <p className="text-xs mb-4" style={{ color: "#e88" }}>
+                Something went wrong. Please try again.
+              </p>
+            )}
+          </form>
+        )}
 
         <p className="text-xs" style={{ color: "rgba(250,246,240,0.4)" }}>
           Not a mailing list. We&apos;ll reach out personally to discuss your collection and goals.
