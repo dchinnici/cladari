@@ -2,7 +2,7 @@
   "name": "Cladari Plant Management",
   "short_name": "Cladari",
   "description": "Professional plant management system for breeding programs",
-  "start_url": "/",
+  "start_url": "/plants",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#ffffff",
