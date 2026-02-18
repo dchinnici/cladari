@@ -2,6 +2,7 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import prisma from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
@@ -35,6 +36,25 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error) {
+      // Auto-provision Profile for new users
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          await prisma.profile.upsert({
+            where: { id: user.id },
+            update: {},
+            create: {
+              id: user.id,
+              email: user.email!,
+              displayName: user.user_metadata?.full_name || user.user_metadata?.name || user.email,
+            },
+          })
+        }
+      } catch (e) {
+        // Don't block login if Profile creation fails — log and continue
+        console.error('Profile auto-provision failed:', e)
+      }
+
       return NextResponse.redirect(new URL(next, request.url))
     }
   }
