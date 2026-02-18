@@ -23,6 +23,7 @@ import {
   Camera,
   Droplets,
   Gauge,
+  Target,
 } from "lucide-react";
 
 // ── Cladari brand tokens ─────────────────────────
@@ -343,6 +344,90 @@ function HowItWorksSection() {
               )}
             </button>
           ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── For Breeders ─────────────────────────────────
+function BreederBlock() {
+  const reveals = [
+    "Which parent combinations produce specific outcomes",
+    "How growing conditions influence expression",
+    "Which lines consistently carry target traits",
+  ];
+
+  return (
+    <section className="py-16 px-6" style={{ backgroundColor: "#f5f2ed" }}>
+      <div className="max-w-4xl mx-auto">
+        <div className="grid md:grid-cols-5 gap-10 items-start">
+          <div className="md:col-span-3">
+            <div className="flex items-center gap-3 mb-6">
+              <div
+                className="w-10 h-10 rounded-lg flex items-center justify-center"
+                style={{ backgroundColor: `${brand.forest}10` }}
+              >
+                <Target className="w-5 h-5" style={{ color: brand.forest }} />
+              </div>
+              <span
+                className="text-xs tracking-widest uppercase"
+                style={{ color: brand.moss, fontWeight: 600 }}
+              >
+                For Breeders
+              </span>
+            </div>
+
+            <h2
+              className="text-2xl md:text-3xl mb-4"
+              style={{ color: brand.forest, fontFamily: serif, fontWeight: 400 }}
+            >
+              Cladari doesn&apos;t just record your crosses.
+              <br />
+              It helps you design better ones.
+            </h2>
+
+            <p className="text-sm leading-relaxed mb-6" style={{ color: brand.bark }}>
+              By tracking traits across generations and environments, Cladari reveals:
+            </p>
+
+            <div className="space-y-3 mb-8">
+              {reveals.map((r, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <div
+                    className="w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0"
+                    style={{ backgroundColor: brand.moss }}
+                  />
+                  <span className="text-sm" style={{ color: brand.forest, fontWeight: 500 }}>
+                    {r}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <p className="text-sm leading-relaxed" style={{ color: brand.bark }}>
+              Over time, breeding becomes less guesswork and more strategy.
+            </p>
+          </div>
+
+          <div
+            className="md:col-span-2 rounded-xl p-6"
+            style={{ backgroundColor: brand.cream }}
+          >
+            <p
+              className="text-lg leading-snug mb-4"
+              style={{ color: brand.forest, fontFamily: serif, fontWeight: 400 }}
+            >
+              Fewer generations.
+              <br />
+              Clearer goals.
+              <br />
+              More intentional crosses.
+            </p>
+            <p className="text-sm" style={{ color: brand.bark, fontStyle: "italic" }}>
+              A living cookbook for hybrid design.
+            </p>
+          </div>
         </div>
       </div>
     </section>
@@ -905,6 +990,7 @@ export default function LandingPage() {
       <Hero isLoggedIn={isLoggedIn} />
       <ProblemSection />
       <HowItWorksSection />
+      <BreederBlock />
       <PlatformSection />
       <SovriaSection />
       <ResearchSection />
