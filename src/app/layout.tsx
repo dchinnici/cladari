@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Outfit, Fraunces } from 'next/font/google'
+import { Outfit, Lora } from 'next/font/google'
 import './globals.css'
 import { Providers } from './providers'
 import { ToastContainer } from '@/components/toast'
@@ -11,9 +11,9 @@ const outfit = Outfit({
   display: 'swap',
 })
 
-const fraunces = Fraunces({
+const lora = Lora({
   subsets: ['latin'],
-  variable: '--font-fraunces',
+  variable: '--font-lora',
   display: 'swap',
 })
 
@@ -44,7 +44,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`bg-[var(--cream)] ${outfit.variable} ${fraunces.variable}`}>
+      <body className={`bg-[var(--cream)] ${outfit.variable} ${lora.variable}`}>
         <Providers>
           <div className="min-h-screen">
             {children}

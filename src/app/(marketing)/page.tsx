@@ -37,7 +37,7 @@ const brand = {
   mossLight: "#6d946d",
 };
 
-const serif = "var(--font-fraunces), 'Fraunces', serif";
+const serif = "var(--font-lora), 'Lora', serif";
 const sans = "var(--font-outfit), 'Outfit', -apple-system, system-ui, sans-serif";
 
 // ── Navigation ───────────────────────────────────
