@@ -1,10 +1,14 @@
 import Link from 'next/link'
 import { Home, Trees, Droplets, MapPin, GitBranch } from 'lucide-react'
 import UserMenu, { UserMenuMobile } from '@/components/UserMenu'
+import ViewAsBanner from '@/components/ViewAsBanner'
+import FeedbackButton, { FeedbackButtonMobile } from '@/components/FeedbackButton'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
+      <ViewAsBanner />
+
       {/* Desktop nav - hidden on mobile */}
       <nav className="hidden sm:block fixed top-0 left-0 right-0 z-50 bg-white border-b border-black/[0.08]">
         <div className="max-w-7xl mx-auto px-6">
@@ -34,6 +38,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
 
             <div className="flex items-center gap-3">
+              <FeedbackButton />
               <Link
                 href="/batch-care"
                 className="px-3 py-1.5 text-sm font-medium text-white bg-[var(--forest)] hover:bg-[var(--moss)] rounded transition-colors"
@@ -51,7 +56,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       {/* Mobile Bottom Navigation - compact with safe area */}
       <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-black/[0.08] pb-[env(safe-area-inset-bottom)]">
-        <div className="grid grid-cols-6 h-14">
+        <div className="grid grid-cols-7 h-14">
           <Link href="/dashboard" className="flex flex-col items-center justify-center text-[var(--clay)] active:text-[var(--forest)]">
             <Home className="w-5 h-5" />
             <span className="text-[10px] mt-0.5">Home</span>
@@ -72,6 +77,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <GitBranch className="w-5 h-5" />
             <span className="text-[10px] mt-0.5">Breed</span>
           </Link>
+          <FeedbackButtonMobile />
           <UserMenuMobile />
         </div>
       </nav>

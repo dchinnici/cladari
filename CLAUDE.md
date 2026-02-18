@@ -1,6 +1,38 @@
 # CLAUDE.md - Cladari Project Context
 
 ---
+## Production Safety Rules (CRITICAL — Feb 2026)
+
+**Cladari has real users with irreplaceable data. Uptime and data integrity are non-negotiable.**
+
+### Non-Negotiable Rules
+1. **NEVER** use `prisma db push` in production — use `prisma migrate dev` for schema changes
+2. **NEVER** drop or rename columns without a data-preserving migration
+3. **NEVER** hard-delete user records — use soft delete (`isArchived`)
+4. **ALWAYS** back up before schema migrations
+5. **ALWAYS** test schema changes locally before applying to production
+6. **ALWAYS** verify builds pass (`npm run build`) before pushing to main
+
+### Migration Workflow
+```bash
+npx prisma migrate dev --name describe-change  # Create migration locally
+# Review the generated SQL in prisma/migrations/
+npm run build                                    # Verify no TypeScript errors
+# Test locally against dev database
+npx prisma migrate deploy                        # Apply to production
+```
+
+### Cascade Delete Awareness
+- **Profile → ALL owned entities**: Deleting a Profile cascades to plants, locations, breeding records, vendors, clone batches
+- **Plant → ALL child records**: Deleting a Plant cascades to care logs, photos, journal entries, flowering cycles, growth metrics, genetics, chat logs
+- **Safe patterns**: Breeding lineage uses `SetNull` (genealogy preserved), breeding records use `Restrict` (can't delete parents)
+
+### Admin Infrastructure
+- `ADMIN_EMAILS` env var controls admin access (comma-separated emails)
+- Admin "View As" feature in UserMenu for troubleshooting user accounts
+- Beta feedback button sends Telegram notifications to admin
+
+---
 ## Sprint Status
 
 **Backlog Clearing Sprint** (Dec 27, 2025 – Feb 16, 2026) — **COMPLETE**

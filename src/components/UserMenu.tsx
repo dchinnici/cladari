@@ -3,12 +3,15 @@
 import { createSupabaseClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
-import { LogOut, User, ChevronDown } from 'lucide-react'
+import { LogOut, User, ChevronDown, Eye } from 'lucide-react'
 
 export default function UserMenu() {
   const [user, setUser] = useState<{ email?: string; name?: string } | null>(null)
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [isAdminUser, setIsAdminUser] = useState(false)
+  const [adminUsers, setAdminUsers] = useState<any[]>([])
+  const [viewingAs, setViewingAs] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
   const supabase = createSupabaseClient()
@@ -24,6 +27,21 @@ export default function UserMenu() {
       }
       setLoading(false)
     })
+
+    // Check admin status
+    fetch('/api/admin/users')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data) {
+          setIsAdminUser(true)
+          setAdminUsers(data)
+        }
+      })
+      .catch(() => {})
+
+    // Check if viewing as someone
+    const match = document.cookie.match(/cladari-view-as=([^;]+)/)
+    if (match) setViewingAs(match[1])
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -50,6 +68,15 @@ export default function UserMenu() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  async function handleViewAs(userId: string | null) {
+    await fetch('/api/admin/view-as', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    })
+    window.location.reload()
+  }
 
   async function handleLogout() {
     await supabase.auth.signOut()
@@ -93,6 +120,37 @@ export default function UserMenu() {
             <p className="text-sm font-medium text-[var(--bark)] truncate">{user.name}</p>
             <p className="text-xs text-[var(--clay)] truncate">{user.email}</p>
           </div>
+
+          {isAdminUser && (
+            <div className="border-t border-black/[0.08]">
+              <p className="px-4 py-1.5 text-[10px] font-semibold text-[var(--clay)] uppercase tracking-wider">
+                Admin
+              </p>
+              {viewingAs ? (
+                <button
+                  onClick={() => handleViewAs(null)}
+                  className="w-full px-4 py-2 text-left text-sm text-amber-600 hover:bg-amber-50 flex items-center gap-2 transition-colors"
+                >
+                  <Eye className="w-4 h-4" />
+                  Exit View As
+                </button>
+              ) : (
+                adminUsers
+                  .filter(u => u.email !== user?.email)
+                  .map(u => (
+                    <button
+                      key={u.id}
+                      onClick={() => handleViewAs(u.id)}
+                      className="w-full px-4 py-2 text-left text-sm text-[var(--bark)] hover:bg-black/[0.04] flex items-center gap-2 transition-colors"
+                    >
+                      <Eye className="w-4 h-4 text-[var(--clay)]" />
+                      <span className="truncate">{u.displayName || u.email}</span>
+                      <span className="text-[10px] text-[var(--clay)] ml-auto">{u._count.plants}p</span>
+                    </button>
+                  ))
+              )}
+            </div>
+          )}
 
           <button
             onClick={handleLogout}

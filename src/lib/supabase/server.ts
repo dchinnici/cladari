@@ -32,7 +32,9 @@ export async function createSupabaseServerClient() {
 }
 
 /**
- * Get the authenticated user or return null
+ * Get the authenticated user or return null.
+ * Supports admin "View As" — when an admin has the cladari-view-as cookie set,
+ * returns a synthetic user with the target's ID so all queries return their data.
  */
 export async function getUser() {
   const supabase = await createSupabaseServerClient()
@@ -42,7 +44,51 @@ export async function getUser() {
     return null
   }
 
+  // Admin View-As: check for impersonation cookie
+  const cookieStore = await cookies()
+  const viewAsUserId = cookieStore.get('cladari-view-as')?.value
+
+  if (viewAsUserId && viewAsUserId !== user.id) {
+    const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase())
+    if (!user.email || !adminEmails.includes(user.email.toLowerCase())) {
+      return user // Non-admin — ignore cookie silently
+    }
+
+    const prisma = (await import('@/lib/prisma')).default
+    const targetProfile = await prisma.profile.findUnique({
+      where: { id: viewAsUserId },
+      select: { id: true, email: true, displayName: true },
+    })
+
+    if (!targetProfile) {
+      return user // Target doesn't exist — ignore cookie
+    }
+
+    return {
+      ...user,
+      id: targetProfile.id,
+      email: targetProfile.email,
+      user_metadata: {
+        ...user.user_metadata,
+        _viewAsAdmin: user.email,
+        _viewAsTarget: targetProfile.email,
+        _viewAsTargetName: targetProfile.displayName,
+      },
+    }
+  }
+
   return user
+}
+
+/**
+ * Check if the real authenticated user (ignoring view-as) is an admin.
+ */
+export async function isAdmin(): Promise<boolean> {
+  const supabase = await createSupabaseServerClient()
+  const { data: { user }, error } = await supabase.auth.getUser()
+  if (error || !user?.email) return false
+  const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase())
+  return adminEmails.includes(user.email.toLowerCase())
 }
 
 /**
