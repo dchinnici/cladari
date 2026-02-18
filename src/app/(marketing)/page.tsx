@@ -10,22 +10,16 @@ import {
   Leaf,
   Dna,
   Database,
-
   BookOpen,
   Shield,
   ArrowRight,
   ChevronDown,
-
   Microscope,
   GitBranch,
-  FlaskConical,
   Sprout,
   Globe,
   Mail,
-  Zap,
-  Server,
   Brain,
-  Lock,
   Camera,
   Droplets,
   Gauge,
@@ -132,17 +126,8 @@ function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
       style={{ backgroundColor: brand.cream }}
     >
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center gap-2 mb-8">
-          <span
-            className="text-xs tracking-widest uppercase"
-            style={{ color: brand.moss, fontWeight: 600 }}
-          >
-            Biological Documentation Infrastructure
-          </span>
-        </div>
-
         <h1
-          className="text-4xl md:text-5xl lg:text-6xl mb-10"
+          className="text-4xl md:text-5xl lg:text-6xl mb-6"
           style={{
             color: brand.forest,
             fontFamily: serif,
@@ -151,32 +136,20 @@ function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
             lineHeight: 1.15,
           }}
         >
-          Generations of botanical knowledge.
+          We&apos;re losing biological knowledge
           <br />
-          Never connected. <em>Until now.</em>
+          faster than we&apos;re creating it.
         </h1>
 
         <p
-          className="text-lg md:text-xl leading-relaxed mb-6 max-w-3xl"
+          className="text-lg md:text-xl leading-relaxed mb-10 max-w-3xl"
           style={{ color: brand.bark, lineHeight: 1.7 }}
         >
-          Molecular phylogenetics is rewriting how we classify <em>Anthurium</em> — proving
-          that morphology alone was never enough. Meanwhile, decades of phenological
-          observations, environmental response data, and breeding knowledge remain
-          locked in monographs, field notebooks, and growers&apos; heads.
+          Cladari turns plant care into biological knowledge — structured,
+          verified, and built to last.
         </p>
 
-        <p
-          className="text-lg md:text-xl leading-relaxed mb-10 max-w-3xl"
-          style={{ color: brand.forest, fontWeight: 500, lineHeight: 1.7 }}
-        >
-          Cladari connects what&apos;s never been connected — structured phenotypic
-          documentation, environmental data, breeding records, and eventually genomic
-          markers — creating a living dataset where novel correlations become visible
-          for the first time.
-        </p>
-
-        <div className="flex flex-wrap gap-4 mb-16">
+        <div className="flex flex-wrap items-center gap-4 mb-6">
           {isLoggedIn ? (
             <Link href="/dashboard">
               <Button
@@ -198,15 +171,21 @@ function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
               </Button>
             </a>
           )}
+          <a
+            href="#platform"
+            className="inline-flex items-center gap-2 text-sm"
+            style={{ color: brand.moss }}
+          >
+            See How It Works <ChevronDown className="w-4 h-4" />
+          </a>
         </div>
 
-        <a
-          href="#platform"
-          className="inline-flex items-center gap-2 text-sm"
-          style={{ color: brand.moss }}
+        <p
+          className="text-sm"
+          style={{ color: brand.bark, opacity: 0.7 }}
         >
-          See how it works <ChevronDown className="w-4 h-4" />
-        </a>
+          Biological documentation infrastructure for conservation breeding and genetic research.
+        </p>
       </div>
     </section>
   );
@@ -217,56 +196,46 @@ function ProblemSection() {
   const gaps = [
     {
       icon: BookOpen,
-      title: "The Classification is Changing",
-      desc: "DNA-based phylogenetics has shown that most traditional morphology-based sections aren\u2019t monophyletic. The genus is being reclassified in real time \u2014 but the tools for breeders and collectors to keep up don\u2019t exist.",
+      title: "Classification is shifting",
+      desc: "DNA phylogenetics is proving most morphology-based sections aren\u2019t monophyletic.",
     },
     {
       icon: Microscope,
-      title: "Phenotype Without Context",
-      desc: "Millions of herbarium specimens are being digitized. But preserved plants can\u2019t tell you how morphology responds to cultivation conditions, elevation changes, or hybridization. That data lives only in living collections \u2014 and it\u2019s not being captured.",
+      title: "Phenotype lacks context",
+      desc: "Herbarium sheets can\u2019t tell you how a plant responds to cultivation.",
     },
     {
       icon: Shield,
-      title: "Provenance Evaporates",
-      desc: "A plant gets traded, divided, relabeled. Within two generations, nobody can verify what it actually is. Mislabeled species circulate freely. Hybrid origins vanish. The genetic integrity that conservation depends on erodes quietly.",
+      title: "Provenance evaporates",
+      desc: "A plant gets traded, divided, relabeled. Within two generations, nobody can verify what it is.",
     },
   ];
 
   return (
-    <section className="py-20 px-6" style={{ backgroundColor: "#f5f2ed" }}>
+    <section className="py-16 px-6" style={{ backgroundColor: "#f5f2ed" }}>
       <div className="max-w-5xl mx-auto">
         <h2
-          className="text-2xl md:text-3xl mb-4"
+          className="text-2xl md:text-3xl mb-10"
           style={{ color: brand.forest, fontFamily: serif, fontWeight: 400 }}
         >
-          The genus is being rewritten.
+          The genus <em>Anthurium</em> is being reclassified in real time.
           <br />
-          The infrastructure hasn&apos;t caught up.
+          The tools haven&apos;t caught up.
         </h2>
-        <p className="text-base mb-12 max-w-2xl" style={{ color: brand.bark }}>
-          Institutions are digitizing the past. Molecular systematics is redefining
-          relationships. But nobody is building the forward-looking data layer for
-          living collections — the place where phenotype, environment, provenance,
-          and genetics converge.
-        </p>
 
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="space-y-4">
           {gaps.map((g, i) => (
-            <Card
+            <div
               key={i}
-              className="border-0 shadow-none"
+              className="flex items-start gap-4 p-4 rounded-lg"
               style={{ backgroundColor: brand.cream }}
             >
-              <CardContent className="pt-6">
-                <g.icon className="w-5 h-5 mb-4" style={{ color: brand.moss }} />
-                <h3 className="text-base mb-3" style={{ color: brand.forest, fontWeight: 600 }}>
-                  {g.title}
-                </h3>
-                <p className="text-sm leading-relaxed" style={{ color: brand.bark }}>
-                  {g.desc}
-                </p>
-              </CardContent>
-            </Card>
+              <g.icon className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: brand.moss }} />
+              <p className="text-sm leading-relaxed" style={{ color: brand.forest }}>
+                <strong>{g.title}</strong>
+                <span style={{ color: brand.bark }}> — {g.desc}</span>
+              </p>
+            </div>
           ))}
         </div>
       </div>
@@ -276,6 +245,31 @@ function ProblemSection() {
 
 // ── How It Works ─────────────────────────────────
 function HowItWorksSection() {
+  const [expandedCard, setExpandedCard] = useState<number | null>(null);
+
+  const cards = [
+    {
+      icon: Camera,
+      title: "Photo documentation",
+      detail: "Growth, leaf condition, flowering — timestamped and tied to the individual plant. Anatomical tagging classifies each image for ML analysis.",
+    },
+    {
+      icon: Droplets,
+      title: "Care logging",
+      detail: "Watering, fertilizing, repotting, treatments — tap and go. EC/pH substrate chemistry tracked per specimen over time.",
+    },
+    {
+      icon: GitBranch,
+      title: "Breeding pipeline",
+      detail: "Crosses, harvests, seed batches, selections — the full chain with documented parentage and generation tracking.",
+    },
+    {
+      icon: Shield,
+      title: "Provenance tracking",
+      detail: "Continuous documentation chains that verify identity through narrative, not claims. QR-linked records that travel with the plant.",
+    },
+  ];
+
   return (
     <section className="py-20 px-6" style={{ backgroundColor: brand.cream }}>
       <div className="max-w-5xl mx-auto">
@@ -293,125 +287,62 @@ function HowItWorksSection() {
           <br />
           Cladari takes care of the data.
         </h2>
-        <p className="text-base mb-12 max-w-2xl" style={{ color: brand.bark }}>
-          At the individual level, it&apos;s a plant care interface — as simple as
-          snapping a photo, logging a watering, or noting a new leaf. Behind that
-          simplicity, every interaction becomes structured, timestamped,
-          queryable data that compounds over time.
+        <p className="text-base mb-10 max-w-2xl" style={{ color: brand.bark }}>
+          Every interaction becomes structured, timestamped, queryable data —
+          building phenotypic datasets, environmental correlations, and breeding
+          intelligence over time.
         </p>
 
-        <div className="grid md:grid-cols-2 gap-8 mb-16">
-          {/* Left: What you do */}
-          <div className="rounded-xl p-8" style={{ backgroundColor: "#f5f2ed" }}>
-            <h3
-              className="text-lg mb-6"
-              style={{ color: brand.forest, fontFamily: serif, fontWeight: 400 }}
+        <div className="grid sm:grid-cols-2 gap-4 mb-10">
+          {cards.map((card, i) => (
+            <button
+              key={i}
+              onClick={() => setExpandedCard(expandedCard === i ? null : i)}
+              className="text-left rounded-xl p-5 transition-all duration-200"
+              style={{
+                backgroundColor: expandedCard === i ? brand.forest : "#f5f2ed",
+                cursor: "pointer",
+              }}
             >
-              What you do
-            </h3>
-            <div className="space-y-5">
-              {[
-                {
-                  icon: Camera,
-                  text: "Take photos during care rounds",
-                  sub: "Growth, leaf condition, flowering \u2014 timestamped and tied to the plant",
-                },
-                {
-                  icon: Droplets,
-                  text: "Log care activity",
-                  sub: "Watering, fertilizing, repotting, treatments \u2014 tap and go",
-                },
-                {
-                  icon: Leaf,
-                  text: "Record observations",
-                  sub: "New growth, pest signs, flowering events, morphology notes",
-                },
-                {
-                  icon: GitBranch,
-                  text: "Document breeding and lineage",
-                  sub: "Crosses, harvests, seed batches, divisions \u2014 the full chain",
-                },
-              ].map((item, i) => (
-                <div key={i} className="flex items-start gap-4">
-                  <div
-                    className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: `${brand.moss}18` }}
-                  >
-                    <item.icon className="w-4 h-4" style={{ color: brand.moss }} />
-                  </div>
-                  <div>
-                    <p className="text-sm" style={{ color: brand.forest, fontWeight: 600 }}>
-                      {item.text}
-                    </p>
-                    <p className="text-xs mt-0.5" style={{ color: brand.bark }}>
-                      {item.sub}
-                    </p>
-                  </div>
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                  style={{
+                    backgroundColor: expandedCard === i ? "rgba(250,246,240,0.1)" : `${brand.moss}18`,
+                  }}
+                >
+                  <card.icon
+                    className="w-4 h-4"
+                    style={{ color: expandedCard === i ? brand.clay : brand.moss }}
+                  />
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Right: What it enables */}
-          <div className="rounded-xl p-8" style={{ backgroundColor: brand.forest }}>
-            <h3
-              className="text-lg mb-6"
-              style={{ color: brand.cream, fontFamily: serif, fontWeight: 400 }}
-            >
-              What it enables
-            </h3>
-            <div className="space-y-5">
-              {[
-                {
-                  icon: Microscope,
-                  text: "Phenotypic data at scale",
-                  sub: "Structured morphological records across collections, not just anecdotes",
-                },
-                {
-                  icon: FlaskConical,
-                  text: "Environmental correlations",
-                  sub: "Connect care outcomes to temperature, humidity, VPD, light, and substrate chemistry",
-                },
-                {
-                  icon: Dna,
-                  text: "Breeding intelligence",
-                  sub: "Track trait inheritance across generations with documented parentage and growing conditions",
-                },
-                {
-                  icon: Shield,
-                  text: "Provenance that holds up",
-                  sub: "Continuous documentation chains that verify identity through narrative, not claims",
-                },
-              ].map((item, i) => (
-                <div key={i} className="flex items-start gap-4">
-                  <div
-                    className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: "rgba(250,246,240,0.1)" }}
-                  >
-                    <item.icon className="w-4 h-4" style={{ color: brand.clay }} />
-                  </div>
-                  <div>
-                    <p className="text-sm" style={{ color: brand.cream, fontWeight: 600 }}>
-                      {item.text}
-                    </p>
-                    <p className="text-xs mt-0.5" style={{ color: "rgba(250,246,240,0.6)" }}>
-                      {item.sub}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Plain-language bridge */}
-        <div className="text-center max-w-2xl mx-auto">
-          <p className="text-sm leading-relaxed" style={{ color: brand.bark }}>
-            Whether you&apos;re a hobbyist who wants better care insights or a
-            researcher who needs structured phenotypic data — the work is the
-            same. The platform meets you where you are and the data matures with
-            your collection.
-          </p>
+                <span
+                  className="text-sm flex-1"
+                  style={{
+                    color: expandedCard === i ? brand.cream : brand.forest,
+                    fontWeight: 600,
+                  }}
+                >
+                  {card.title}
+                </span>
+                <ChevronDown
+                  className="w-4 h-4 transition-transform duration-200 flex-shrink-0"
+                  style={{
+                    color: expandedCard === i ? "rgba(250,246,240,0.5)" : brand.bark,
+                    transform: expandedCard === i ? "rotate(180deg)" : "rotate(0deg)",
+                  }}
+                />
+              </div>
+              {expandedCard === i && (
+                <p
+                  className="text-sm leading-relaxed mt-3 pl-12"
+                  style={{ color: "rgba(250,246,240,0.7)" }}
+                >
+                  {card.detail}
+                </p>
+              )}
+            </button>
+          ))}
         </div>
       </div>
     </section>
@@ -420,10 +351,12 @@ function HowItWorksSection() {
 
 // ── Platform ─────────────────────────────────────
 function PlatformSection() {
+  const [activeTab, setActiveTab] = useState(0);
+
   const layers = [
     {
       icon: Database,
-      label: "Structured Observation",
+      tab: "Observation",
       title: "Continuous biological documentation",
       desc: "Every care event, morphological observation, flowering cycle, and environmental reading becomes structured, timestamped data. Not notes in a spreadsheet \u2014 queryable records with full context that accumulate into biological narratives.",
       details: [
@@ -435,7 +368,7 @@ function PlatformSection() {
     },
     {
       icon: GitBranch,
-      label: "Lineage & Provenance",
+      tab: "Lineage",
       title: "Every specimen tells its full story",
       desc: "From pollination record through every division, trade, and generation \u2014 Cladari creates documentation chains that build over time. A plant with two years of structured history tells a story that counterfeiting cannot replicate.",
       details: [
@@ -448,7 +381,7 @@ function PlatformSection() {
     },
     {
       icon: Gauge,
-      label: "Environmental Intelligence",
+      tab: "Environment",
       title: "Autonomous data collection, continuous context",
       desc: "Sensor plugins connect consumer and commercial hardware for autonomous environmental monitoring. Every data point is correlated with the care record \u2014 so when something changes in your collection, you can see exactly what the environment was doing.",
       details: [
@@ -462,6 +395,8 @@ function PlatformSection() {
     },
   ];
 
+  const active = layers[activeTab];
+
   return (
     <section id="platform" className="py-20 px-6" style={{ backgroundColor: brand.cream }}>
       <div className="max-w-5xl mx-auto">
@@ -472,58 +407,64 @@ function PlatformSection() {
           The Platform
         </span>
         <h2
-          className="text-2xl md:text-3xl mb-12"
+          className="text-2xl md:text-3xl mb-10"
           style={{ color: brand.forest, fontFamily: serif, fontWeight: 400 }}
         >
           What&apos;s under the hood
         </h2>
 
-        <div className="space-y-16">
+        {/* Segmented control */}
+        <div
+          className="inline-flex rounded-lg p-1 mb-10"
+          style={{ backgroundColor: "#f5f2ed" }}
+        >
           {layers.map((layer, i) => (
-            <div key={i} className="grid md:grid-cols-5 gap-8 items-start">
-              <div className="md:col-span-2">
-                <div className="flex items-center gap-3 mb-4">
-                  <div
-                    className="w-10 h-10 rounded-lg flex items-center justify-center"
-                    style={{ backgroundColor: `${brand.forest}10` }}
-                  >
-                    <layer.icon className="w-5 h-5" style={{ color: brand.forest }} />
-                  </div>
-                  <span
-                    className="text-xs tracking-widest uppercase"
-                    style={{ color: brand.moss, fontWeight: 600 }}
-                  >
-                    {layer.label}
-                  </span>
-                </div>
-                <h3
-                  className="text-xl mb-3"
-                  style={{ color: brand.forest, fontFamily: serif, fontWeight: 400 }}
-                >
-                  {layer.title}
-                </h3>
-                <p className="text-sm leading-relaxed" style={{ color: brand.bark }}>
-                  {layer.desc}
-                </p>
-              </div>
-
-              <div className="md:col-span-3">
-                <div className="rounded-xl p-6" style={{ backgroundColor: "#f5f2ed" }}>
-                  <ul className="space-y-3">
-                    {layer.details.map((d, j) => (
-                      <li key={j} className="flex items-start gap-3">
-                        <div
-                          className="w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0"
-                          style={{ backgroundColor: brand.moss }}
-                        />
-                        <span className="text-sm" style={{ color: brand.forest }}>{d}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </div>
+            <button
+              key={i}
+              onClick={() => setActiveTab(i)}
+              className="flex items-center gap-2 px-4 py-2 rounded-md text-sm transition-all duration-200"
+              style={{
+                backgroundColor: activeTab === i ? brand.forest : "transparent",
+                color: activeTab === i ? "#fff" : brand.bark,
+                fontWeight: activeTab === i ? 600 : 400,
+                cursor: "pointer",
+              }}
+            >
+              <layer.icon className="w-4 h-4" />
+              {layer.tab}
+            </button>
           ))}
+        </div>
+
+        {/* Active tab content */}
+        <div className="grid md:grid-cols-5 gap-8 items-start">
+          <div className="md:col-span-2">
+            <h3
+              className="text-xl mb-3"
+              style={{ color: brand.forest, fontFamily: serif, fontWeight: 400 }}
+            >
+              {active.title}
+            </h3>
+            <p className="text-sm leading-relaxed" style={{ color: brand.bark }}>
+              {active.desc}
+            </p>
+          </div>
+
+          <div className="md:col-span-3">
+            <div className="rounded-xl p-6" style={{ backgroundColor: "#f5f2ed" }}>
+              <ul className="space-y-3">
+                {active.details.map((d, j) => (
+                  <li key={j} className="flex items-start gap-3">
+                    <div
+                      className="w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0"
+                      style={{ backgroundColor: brand.moss }}
+                    />
+                    <span className="text-sm" style={{ color: brand.forest }}>{d}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -533,90 +474,39 @@ function PlatformSection() {
 // ── Sovria Section ───────────────────────────────
 function SovriaSection() {
   return (
-    <section id="sovria" className="py-20 px-6" style={{ backgroundColor: "#f5f2ed" }}>
-      <div className="max-w-5xl mx-auto">
-        <div className="grid md:grid-cols-2 gap-12 items-start">
-          <div>
-            <span
-              className="text-xs tracking-widest uppercase mb-4 block"
-              style={{ color: brand.clay, fontWeight: 600 }}
-            >
-              Powered by Sovria
-            </span>
-            <h2
-              className="text-2xl md:text-3xl mb-6"
-              style={{ color: brand.forest, fontFamily: serif, fontWeight: 400 }}
-            >
-              Botanical intelligence that outperforms
-              frontier models — on the power budget
-              of a desktop.
-            </h2>
-            <p className="text-sm leading-relaxed mb-4" style={{ color: brand.bark }}>
-              Ask a general-purpose AI to discuss <em>Anthurium</em> sect.
-              <em> Cardiolonchium</em> with taxonomic precision, and you&apos;ll
-              quickly find the limits. Botanical Latin, morphometric nuance,
-              and sectional classification aren&apos;t in the training data — at
-              least not with the accuracy that serious work demands.
-            </p>
-            <p className="text-sm leading-relaxed mb-6" style={{ color: brand.bark }}>
-              Sovria is a domain-specific AI stack built for accuracy,
-              efficiency, and data sovereignty. It combines semantic vector
-              databases, structured embeddings, and fine-tuned botanical models
-              to deliver intelligence that&apos;s grounded in verified datasets —
-              not probabilistic guesses from trillion-parameter models.
-            </p>
-
-            <Button
-              variant="outline"
-              className="gap-2"
-              style={{ borderColor: brand.clay, color: brand.clay }}
-            >
-              Learn more about Sovria <ArrowRight className="w-4 h-4" />
-            </Button>
-          </div>
-
-          <div className="space-y-4">
-            {[
-              {
-                icon: Zap,
-                title: "Efficient by Design",
-                desc: "Domain-specific models trained on verified botanical data outperform frontier LLMs on taxonomic tasks \u2014 while running on hardware you could put under a desk. Better results, a fraction of the compute.",
-              },
-              {
-                icon: Lock,
-                title: "Data Sovereignty",
-                desc: "Your data, your terms. Private by default \u2014 but with opt-in pathways for contributors who want their observations to strengthen the shared dataset. The best insights require community-scale data. The model only works if participation is voluntary and transparent.",
-              },
-              {
-                icon: Brain,
-                title: "Source of Truth Architecture",
-                desc: "Cladari provides the verified data. Sovria makes sense of it. Every insight traces back to documented observations, not hallucinated correlations. When it tells you something, it can show you why.",
-              },
-              {
-                icon: Server,
-                title: "Domain-Specific Stack",
-                desc: "Semantic vector search, structured embeddings, statistical analyzers, and fine-tuned models \u2014 purpose-built for botanical intelligence. Sovria is designed to power domain expertise across verticals.",
-              },
-            ].map((item, i) => (
-              <div key={i} className="flex items-start gap-4 p-4 rounded-lg" style={{ backgroundColor: brand.cream }}>
-                <div
-                  className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-                  style={{ backgroundColor: `${brand.clay}15` }}
-                >
-                  <item.icon className="w-4 h-4" style={{ color: brand.clay }} />
-                </div>
-                <div>
-                  <p className="text-sm mb-1" style={{ color: brand.forest, fontWeight: 600 }}>
-                    {item.title}
-                  </p>
-                  <p className="text-xs leading-relaxed" style={{ color: brand.bark }}>
-                    {item.desc}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
+    <section id="sovria" className="py-16 px-6" style={{ backgroundColor: "#f5f2ed" }}>
+      <div className="max-w-3xl mx-auto text-center">
+        <div
+          className="w-10 h-10 rounded-lg flex items-center justify-center mx-auto mb-6"
+          style={{ backgroundColor: `${brand.clay}15` }}
+        >
+          <Brain className="w-5 h-5" style={{ color: brand.clay }} />
         </div>
+        <span
+          className="text-xs tracking-widest uppercase mb-4 block"
+          style={{ color: brand.clay, fontWeight: 600 }}
+        >
+          Powered by Sovria
+        </span>
+        <h2
+          className="text-2xl md:text-3xl mb-6"
+          style={{ color: brand.forest, fontFamily: serif, fontWeight: 400 }}
+        >
+          Domain-specific botanical AI
+        </h2>
+        <p className="text-base leading-relaxed mb-8" style={{ color: brand.bark }}>
+          Sovria outperforms frontier models on taxonomic tasks — on a fraction of
+          the compute. Private by default. Every insight traces back to documented
+          observations, not probabilistic guesses.
+        </p>
+
+        <Button
+          variant="outline"
+          className="gap-2"
+          style={{ borderColor: brand.clay, color: brand.clay }}
+        >
+          Learn more about Sovria <ArrowRight className="w-4 h-4" />
+        </Button>
       </div>
     </section>
   );
@@ -626,13 +516,22 @@ function SovriaSection() {
 // ── Research Vision ──────────────────────────────
 function ResearchSection() {
   const questions = [
+    "Can phenotypic clustering from photographic data identify misclassified taxa in mixed collections?",
     "How does Cardiolonchium blade morphology vary across elevation in cultivation vs. native habitat?",
     "Do intersectional F1 hybrids express spathe characteristics from the maternal or paternal parent?",
     "Can environmental stress signatures predict flowering periodicity in velvet-leaf species?",
     "What substrate chemistry profiles correlate with optimal growth across taxonomic sections?",
-    "Can phenotypic clustering from photographic data identify misclassified taxa in mixed collections?",
     "Where do morphology-based and DNA-based classifications diverge \u2014 and what does that mean for breeders?",
   ];
+
+  const [activeQ, setActiveQ] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveQ((prev) => (prev + 1) % questions.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [questions.length]);
 
   return (
     <section id="research" className="py-20 px-6" style={{ backgroundColor: "#f5f2ed" }}>
@@ -653,18 +552,12 @@ function ResearchSection() {
               <br />
               but the data will let us.
             </h2>
-            <p className="text-sm leading-relaxed mb-4" style={{ color: brand.bark }}>
-              Institutions are investing in digitizing herbarium collections —
-              transforming millions of preserved specimens into searchable
-              datasets. That work is essential. But it captures the past.
-            </p>
             <p className="text-sm leading-relaxed mb-6" style={{ color: brand.bark }}>
-              Cladari captures the present: how living plants respond to
-              cultivation conditions, which traits emerge in F1 hybrids, how
-              phenotype shifts across environments. When structured phenotypic
-              data from living collections pairs with genomic markers, genuinely
-              novel correlations — invisible to both individual growers and
-              herbarium-based research — become possible.
+              Institutions are digitizing the dead. Cladari documents the living —
+              how plants respond to cultivation, which traits emerge in hybrids,
+              how phenotype shifts across environments. When structured data from
+              living collections pairs with genomic markers, genuinely novel
+              correlations become possible.
             </p>
 
             <div className="flex items-start gap-3 p-4 rounded-lg" style={{ backgroundColor: brand.cream }}>
@@ -675,9 +568,7 @@ function ResearchSection() {
                 </p>
                 <p className="text-xs leading-relaxed" style={{ color: brand.bark }}>
                   Nanopore sequencing will add DNA-based identity to the biological
-                  biography. As molecular phylogenetics continues to reclassify
-                  the genus, Cladari&apos;s structured phenotype data becomes the bridge
-                  between what the genome says and what the plant shows.
+                  biography — bridging what the genome says and what the plant shows.
                 </p>
               </div>
             </div>
@@ -690,23 +581,43 @@ function ResearchSection() {
             >
               Questions the platform enables
             </p>
-            <div className="space-y-3">
-              {questions.map((q, i) => (
-                <div
+
+            {/* Single question display with rotation */}
+            <div
+              className="p-6 rounded-xl min-h-[120px] flex flex-col justify-center"
+              style={{ backgroundColor: brand.cream }}
+            >
+              <span
+                className="text-xs mb-3 block"
+                style={{ color: brand.moss, fontWeight: 700, fontFamily: "monospace" }}
+              >
+                {String(activeQ + 1).padStart(2, "0")} / {String(questions.length).padStart(2, "0")}
+              </span>
+              <p
+                className="text-base leading-relaxed"
+                style={{ color: brand.forest, fontFamily: serif }}
+              >
+                <em>{questions[activeQ]}</em>
+              </p>
+            </div>
+
+            {/* Progress dots */}
+            <div className="flex items-center gap-2 mt-4">
+              {questions.map((_, i) => (
+                <button
                   key={i}
-                  className="flex items-start gap-3 p-3 rounded-lg"
-                  style={{ backgroundColor: brand.cream }}
-                >
-                  <span
-                    className="text-xs mt-0.5 flex-shrink-0"
-                    style={{ color: brand.moss, fontWeight: 700, fontFamily: "monospace" }}
-                  >
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <p className="text-sm leading-relaxed" style={{ color: brand.forest }}>
-                    <em>{q}</em>
-                  </p>
-                </div>
+                  onClick={() => setActiveQ(i)}
+                  className="transition-all duration-200"
+                  style={{
+                    width: activeQ === i ? 20 : 6,
+                    height: 6,
+                    borderRadius: 3,
+                    backgroundColor: activeQ === i ? brand.moss : `${brand.moss}30`,
+                    cursor: "pointer",
+                    border: "none",
+                    padding: 0,
+                  }}
+                />
               ))}
             </div>
           </div>
