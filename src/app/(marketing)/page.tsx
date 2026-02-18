@@ -37,8 +37,8 @@ const brand = {
   mossLight: "#6d946d",
 };
 
-const serif = "var(--font-instrument-serif), 'Instrument Serif', serif";
-const sans = "var(--font-dm-sans), 'DM Sans', -apple-system, system-ui, sans-serif";
+const serif = "var(--font-fraunces), 'Fraunces', serif";
+const sans = "var(--font-outfit), 'Outfit', -apple-system, system-ui, sans-serif";
 
 // ── Navigation ───────────────────────────────────
 function Nav({ activeSection, isLoggedIn }: { activeSection: string; isLoggedIn: boolean }) {

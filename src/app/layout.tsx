@@ -1,22 +1,20 @@
 import type { Metadata, Viewport } from 'next'
-import { DM_Sans, Instrument_Serif } from 'next/font/google'
+import { Outfit, Fraunces } from 'next/font/google'
 import './globals.css'
 import { Providers } from './providers'
 import { ToastContainer } from '@/components/toast'
 import ServiceWorker from '@/components/ServiceWorker'
 
-const dmSans = DM_Sans({
+const outfit = Outfit({
   subsets: ['latin'],
-  variable: '--font-dm-sans',
+  variable: '--font-outfit',
   display: 'swap',
 })
 
-const instrumentSerif = Instrument_Serif({
-  weight: '400',
+const fraunces = Fraunces({
   subsets: ['latin'],
-  variable: '--font-instrument-serif',
+  variable: '--font-fraunces',
   display: 'swap',
-  style: ['normal', 'italic'],
 })
 
 export const viewport: Viewport = {
@@ -46,7 +44,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`bg-[var(--cream)] ${dmSans.variable} ${instrumentSerif.variable}`}>
+      <body className={`bg-[var(--cream)] ${outfit.variable} ${fraunces.variable}`}>
         <Providers>
           <div className="min-h-screen">
             {children}
