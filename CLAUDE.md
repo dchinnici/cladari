@@ -29,6 +29,21 @@
 - [ ] SWP vs top watering tracking
 - [ ] Autocomplete/search for text fields
 
+### Marketing Site Updates (Feb 18, 2026)
+- ✅ **Homepage restructure** — Progressive disclosure: Declare → Guide → Deep Dive
+  - Hero: "We're losing biological knowledge faster than we're creating it"
+  - Problem section: Condensed to 3 one-liner cards
+  - How It Works: 4 expandable accordion cards (useState toggle)
+  - Platform: Tabbed interface with segmented control (3 tabs)
+  - Sovria teaser: Condensed to centered single-paragraph block
+  - Research questions: Auto-rotating carousel (6s interval)
+- ✅ **Breeder-focused block** added between How It Works and Platform
+- ✅ **Typography overhaul** — Lora (serif) + Outfit (sans)
+  - History: DM Sans + Instrument Serif → Fraunces + Outfit → **Lora + Outfit** (current)
+  - Fraunces dropped due to ornamental distortion at display sizes (optical size axis)
+  - Typography shared with sovria.com for brand consistency
+- ✅ **Sovria.com rebuilt** — Complete pivot from $50K hardware product to domain-specific AI infrastructure positioning. See `/Users/davidchinnici/sov-web/CLAUDE.md` for details.
+
 ---
 
 ## What This Is
@@ -42,6 +57,7 @@ Cladari is a production plant database for managing a high-value Anthurium breed
 - **Hosting**: Vercel (production: www.cladari.ai)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
+- **Typography**: Lora (serif headings) + Outfit (sans body) via `next/font/google`
 - **Structure**: Monorepo (consolidated Dec 21, 2025)
 
 ## Emergency Recovery
