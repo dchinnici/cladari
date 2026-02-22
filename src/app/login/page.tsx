@@ -15,6 +15,7 @@ function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get('redirectTo') || '/dashboard'
+  const authError = searchParams.get('error')
   const supabase = createSupabaseClient()
 
   async function handleOAuthLogin(provider: 'google') {
@@ -110,6 +111,17 @@ function LoginForm() {
 
   return (
     <>
+      {/* Auth callback error */}
+      {authError && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded mb-6 text-sm">
+          {authError === 'code_exchange_failed'
+            ? 'The login link has expired or was already used. Please try again.'
+            : authError === 'no_code'
+            ? 'Invalid login link. Please try again.'
+            : `Authentication error: ${authError}`}
+        </div>
+      )}
+
       {/* Error Message */}
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6 text-sm">

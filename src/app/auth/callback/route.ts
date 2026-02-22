@@ -35,6 +35,14 @@ export async function GET(request: NextRequest) {
 
     const { error } = await supabase.auth.exchangeCodeForSession(code)
 
+    if (error) {
+      console.error('Auth callback code exchange failed:', {
+        error: error.message,
+        code: error.status,
+        next,
+      })
+    }
+
     if (!error) {
       // Auto-provision Profile for new users
       try {
@@ -60,5 +68,6 @@ export async function GET(request: NextRequest) {
   }
 
   // Return to login on error
-  return NextResponse.redirect(new URL('/login?error=auth_callback_error', request.url))
+  const errorMsg = code ? 'code_exchange_failed' : 'no_code'
+  return NextResponse.redirect(new URL(`/login?error=${errorMsg}`, request.url))
 }
