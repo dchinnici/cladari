@@ -976,10 +976,37 @@ function Footer() {
 export default function LandingPage() {
   const [activeSection] = useState("mission");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [authProcessing, setAuthProcessing] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     const supabase = createSupabaseClient();
+
+    // Handle implicit flow hash fragments (invites, magic links)
+    // The #access_token=... fragment is client-side only — server/middleware can't see it
+    const hash = window.location.hash;
+    if (hash && hash.includes('access_token')) {
+      setAuthProcessing(true);
+      const params = new URLSearchParams(hash.substring(1));
+      const access_token = params.get('access_token');
+      const refresh_token = params.get('refresh_token');
+
+      if (access_token && refresh_token) {
+        supabase.auth.setSession({ access_token, refresh_token }).then(({ error }) => {
+          if (!error) {
+            fetch('/api/auth/ensure-profile', { method: 'POST' }).then(() => {
+              router.push('/dashboard');
+            });
+          } else {
+            console.error('Failed to set session from hash fragment:', error.message);
+            setAuthProcessing(false);
+          }
+        });
+      } else {
+        setAuthProcessing(false);
+      }
+      return;
+    }
 
     // Check existing session
     supabase.auth.getUser().then(({ data }) => {
@@ -987,19 +1014,20 @@ export default function LandingPage() {
         setIsLoggedIn(true);
       }
     });
-
-    // Listen for auth state changes (catches invite/reset hash fragments)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
-        // Auto-provision profile for invite users landing here
-        fetch('/api/auth/ensure-profile', { method: 'POST' }).then(() => {
-          router.push('/dashboard');
-        });
-      }
-    });
-
-    return () => subscription.unsubscribe();
   }, [router]);
+
+  if (authProcessing) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: brand.cream }}>
+        <div className="text-center space-y-4">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center mx-auto" style={{ backgroundColor: brand.forest }}>
+            <Leaf className="w-5 h-5 text-white" />
+          </div>
+          <p style={{ color: brand.bark, fontFamily: sans }}>Setting up your account...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ fontFamily: sans }}>
