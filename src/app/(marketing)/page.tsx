@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -975,14 +976,30 @@ function Footer() {
 export default function LandingPage() {
   const [activeSection] = useState("mission");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
-    createSupabaseClient()
-      .auth.getUser()
-      .then(({ data }) => {
-        setIsLoggedIn(!!data.user);
-      });
-  }, []);
+    const supabase = createSupabaseClient();
+
+    // Check existing session
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        setIsLoggedIn(true);
+      }
+    });
+
+    // Listen for auth state changes (catches invite/reset hash fragments)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+        // Auto-provision profile for invite users landing here
+        fetch('/api/auth/ensure-profile', { method: 'POST' }).then(() => {
+          router.push('/dashboard');
+        });
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [router]);
 
   return (
     <div style={{ fontFamily: sans }}>
