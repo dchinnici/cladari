@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell } from 'recharts'
 import KnowledgeSearch from '@/components/KnowledgeSearch'
+import WelcomeBanner from '@/components/WelcomeBanner'
 
 export default function Dashboard() {
   const { data: stats, isLoading, error } = useQuery({
@@ -85,6 +86,9 @@ export default function Dashboard() {
           <h1 className="text-2xl font-semibold text-[var(--forest)]">Dashboard</h1>
           <p className="text-sm text-[var(--clay)]">Overview of your breeding program</p>
         </div>
+
+        {/* Welcome Banner for new users */}
+        {stats?.totalPlants === 0 && <WelcomeBanner />}
 
         {/* Top Stats Row */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

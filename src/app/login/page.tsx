@@ -10,6 +10,8 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [showEmailForm, setShowEmailForm] = useState(false)
+  const [showResetForm, setShowResetForm] = useState(false)
+  const [resetSent, setResetSent] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get('redirectTo') || '/dashboard'
@@ -79,6 +81,33 @@ function LoginForm() {
     }
   }
 
+  async function handlePasswordReset(e: React.FormEvent) {
+    e.preventDefault()
+    if (!email) {
+      setError('Please enter your email address')
+      return
+    }
+    setError(null)
+    setLoading(true)
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      })
+
+      if (error) {
+        setError(error.message)
+        return
+      }
+
+      setResetSent(true)
+    } catch {
+      setError('An unexpected error occurred')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <>
       {/* Error Message */}
@@ -123,7 +152,64 @@ function LoginForm() {
         >
           Sign in with Email
         </button>
+      ) : showResetForm ? (
+        // Password Reset Form
+        resetSent ? (
+          <div className="text-center space-y-4">
+            <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded text-sm">
+              Password reset link sent! Check your email and click the link to set a new password.
+            </div>
+            <button
+              type="button"
+              onClick={() => { setShowResetForm(false); setResetSent(false) }}
+              className="text-sm text-[var(--clay)] hover:text-[var(--bark)]"
+            >
+              Back to sign in
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handlePasswordReset} className="space-y-4">
+            <p className="text-sm text-[var(--clay)]">
+              Enter your email and we&apos;ll send you a link to reset your password.
+            </p>
+            <div>
+              <label
+                htmlFor="reset-email"
+                className="block text-sm font-medium text-[var(--bark)] mb-1"
+              >
+                Email
+              </label>
+              <input
+                id="reset-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="w-full px-4 py-3 border border-black/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--forest)]/20 focus:border-[var(--forest)]"
+                required
+                disabled={loading}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 px-4 bg-[var(--forest)] text-white font-medium rounded-lg hover:bg-[var(--moss)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Sending...' : 'Send Reset Link'}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowResetForm(false)}
+              className="w-full text-sm text-[var(--clay)] hover:text-[var(--bark)]"
+            >
+              Back to sign in
+            </button>
+          </form>
+        )
       ) : (
+        // Email/Password Login Form
         <form onSubmit={handleEmailLogin} className="space-y-4">
           <div>
             <label
@@ -145,12 +231,21 @@ function LoginForm() {
           </div>
 
           <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-[var(--bark)] mb-1"
-            >
-              Password
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-[var(--bark)]"
+              >
+                Password
+              </label>
+              <button
+                type="button"
+                onClick={() => { setShowResetForm(true); setError(null) }}
+                className="text-xs text-[var(--moss)] hover:text-[var(--forest)]"
+              >
+                Forgot password?
+              </button>
+            </div>
             <input
               id="password"
               type="password"
