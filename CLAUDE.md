@@ -33,6 +33,20 @@ npx prisma migrate deploy                        # Apply to production
 - Beta feedback button sends Telegram notifications to admin
 
 ---
+## Follow-Up: Domain Migration Cleanup (by March 5, 2026)
+
+Domain migrated from `cladari.ai` → `cladari.co` on Feb 26, 2026. Old domains redirect via Vercel 308s. Once stable for a week, clean up these safety-net entries:
+
+1. **Supabase Auth** → Authentication → URL Configuration → Remove:
+   - `https://www.cladari.ai/auth/callback`
+   - `https://www.cladari.ai/**`
+2. **Google Cloud Console** → APIs & Services → Credentials → OAuth Client → Remove from Authorized JavaScript origins:
+   - `https://cladari.ai`
+   - `https://www.cladari.ai`
+3. **Vercel Environment Variables** → Confirm `NEXT_PUBLIC_QR_BASE_URL=https://cladari.co` is set
+
+---
+
 ## Sprint Status
 
 **Backlog Clearing Sprint** (Dec 27, 2025 – Feb 16, 2026) — **COMPLETE**
