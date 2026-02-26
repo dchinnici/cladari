@@ -581,7 +581,7 @@ function SovriaSection() {
           className="text-xs tracking-widest uppercase mb-4 block"
           style={{ color: brand.clay, fontWeight: 600 }}
         >
-          Powered by Sovria
+          Powered by Sovria®
         </span>
         <h2
           className="text-2xl md:text-3xl mb-6"
@@ -946,7 +946,7 @@ function Footer() {
                 {[
                   { label: "Research", href: "#" },
                   { label: "Journal", href: "#" },
-                  { label: "Sovria", href: "https://sovria.com" },
+                  { label: "Sovria®", href: "https://sovria.com" },
                 ].map((l) => (
                   <a key={l.label} href={l.href} target={l.href.startsWith("http") ? "_blank" : undefined} rel={l.href.startsWith("http") ? "noopener noreferrer" : undefined} className="block text-sm cursor-pointer hover:underline" style={{ color: "rgba(250,246,240,0.6)" }}>
                     {l.label}
@@ -973,7 +973,7 @@ function Footer() {
 
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6">
           <p className="text-xs" style={{ color: "rgba(250,246,240,0.3)" }}>
-            &copy; 2026 Cladari &middot; Powered by <a href="https://sovria.com" target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: "inherit" }}>Sovria</a>
+            &copy; 2026 Cladari &middot; Powered by <a href="https://sovria.com" target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: "inherit" }}>Sovria®</a>
           </p>
           <div className="flex items-center gap-2">
             <Globe className="w-3 h-3" style={{ color: "rgba(250,246,240,0.3)" }} />
