@@ -104,15 +104,24 @@ function Nav({ activeSection, isLoggedIn }: { activeSection: string; isLoggedIn:
             </Button>
           </Link>
         ) : (
-          <a href="#waitlist">
-            <Button
-              size="sm"
-              className="text-sm"
-              style={{ backgroundColor: brand.forest, color: "#fff" }}
+          <div className="flex items-center gap-3">
+            <Link
+              href="/login"
+              className="text-sm transition-colors"
+              style={{ color: brand.bark, fontWeight: 500 }}
             >
-              Request Access
-            </Button>
-          </a>
+              Log in
+            </Link>
+            <a href="#waitlist">
+              <Button
+                size="sm"
+                className="text-sm"
+                style={{ backgroundColor: brand.forest, color: "#fff" }}
+              >
+                Request Access
+              </Button>
+            </a>
+          </div>
         )}
       </div>
     </nav>

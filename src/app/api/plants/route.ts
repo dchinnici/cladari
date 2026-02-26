@@ -158,6 +158,15 @@ const createPlantSchema = z.object({
   notes: z.string().optional().nullable(),
   tags: z.array(z.string()).optional().default([]),
   isEliteGenetics: z.boolean().optional().default(false),
+  // New fields for comprehensive add page
+  locationId: z.string().optional().nullable(),
+  femaleParentId: z.string().optional().nullable(),
+  maleParentId: z.string().optional().nullable(),
+  cloneSourceId: z.string().optional().nullable(),
+  currentPotSize: z.union([z.string(), z.number()]).transform(val => (val === '' ? null : Number(val))).optional().nullable(),
+  currentPotType: z.string().optional().nullable(),
+  isMother: z.boolean().optional().default(false),
+  isForSale: z.boolean().optional().default(false),
 })
 
 export async function POST(request: Request) {
@@ -213,6 +222,15 @@ export async function POST(request: Request) {
         notes: body.notes || null,
         tags: JSON.stringify(body.tags),
         isEliteGenetics: body.isEliteGenetics,
+        // New fields
+        locationId: body.locationId || null,
+        femaleParentId: body.femaleParentId || null,
+        maleParentId: body.maleParentId || null,
+        cloneSourceId: body.cloneSourceId || null,
+        currentPotSize: body.currentPotSize || null,
+        currentPotType: body.currentPotType || null,
+        isMother: body.isMother,
+        isForSale: body.isForSale,
       }
     })
 

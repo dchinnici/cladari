@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Droplets, Search, SlidersHorizontal, Plus, AlertTriangle, Clock } from 'lucide-react'
 import { showToast } from '@/components/toast'
 import { Modal } from '@/components/modal'
@@ -44,9 +45,8 @@ export default function PlantsPage() {
     return plant.lastActivityDate ? new Date(plant.lastActivityDate) : new Date(plant.updatedAt)
   }
 
+  const router = useRouter()
   const [searchTerm, setSearchTerm] = useState('')
-  const [createOpen, setCreateOpen] = useState(false)
-  const [creating, setCreating] = useState(false)
   const [filterOpen, setFilterOpen] = useState(false)
   const [quickCareOpen, setQuickCareOpen] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
@@ -59,15 +59,6 @@ export default function PlantsPage() {
   })
   const [sortBy, setSortBy] = useState('oldest') // Default to oldest = plants needing attention first
   const [locations, setLocations] = useState<any[]>([])
-  const [createForm, setCreateForm] = useState({
-    hybridName: '',
-    species: '',
-    speciesComplex: '',
-    breederCode: '',
-    acquisitionCost: '',
-    accessionDate: '', // Set on client side to avoid hydration mismatch
-    healthStatus: 'healthy',
-  })
 
   // React Query - fetch plants with client-side caching
   const { data: plants = [], isLoading, refetch } = useQuery({
@@ -87,11 +78,6 @@ export default function PlantsPage() {
     staleTime: 30 * 1000,  // 30 seconds
     gcTime: 5 * 60 * 1000,  // 5 minutes
   })
-
-  // Set date on client to avoid hydration mismatch
-  useEffect(() => {
-    setCreateForm(f => ({ ...f, accessionDate: getTodayString() }))
-  }, [])
 
   // Restore scroll position, filters, and sort on mount
   useEffect(() => {
@@ -169,7 +155,7 @@ export default function PlantsPage() {
       // N for new plant
       if (e.key === 'n' && !e.metaKey && !e.ctrlKey) {
         e.preventDefault()
-        setCreateOpen(true)
+        router.push('/plants/new')
       }
 
       // F for filter
@@ -347,12 +333,12 @@ export default function PlantsPage() {
           >
             <SlidersHorizontal className="w-4 h-4 text-[var(--bark)]" />
           </button>
-          <button
-            onClick={() => setCreateOpen(true)}
-            className="p-2 border border-black/[0.08] rounded"
+          <Link
+            href="/plants/new"
+            className="p-2 border border-black/[0.08] rounded hover:bg-black/[0.04] transition-colors"
           >
             <Plus className="w-4 h-4 text-[var(--bark)]" />
-          </button>
+          </Link>
         </div>
 
         {/* Sort options - text links, not fancy dropdown */}
@@ -456,64 +442,6 @@ export default function PlantsPage() {
             ))}
           </div>
         )}
-
-        {/* Create Plant Modal */}
-        <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)} title="Add New Plant">
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm text-[var(--bark)] mb-1">Hybrid Name</label>
-                <input value={createForm.hybridName} onChange={e=>setCreateForm({...createForm, hybridName: e.target.value})} className="w-full p-2 rounded border border-black/[0.08] text-sm" placeholder="e.g., RA8 x RA5" />
-              </div>
-              <div>
-                <label className="block text-sm text-[var(--bark)] mb-1">Species</label>
-                <input value={createForm.species} onChange={e=>setCreateForm({...createForm, species: e.target.value})} className="w-full p-2 rounded border border-black/[0.08] text-sm" placeholder="e.g., papillilaminum" />
-              </div>
-              <div>
-                <label className="block text-sm text-[var(--bark)] mb-1">Section</label>
-                <input value={createForm.speciesComplex} onChange={e=>setCreateForm({...createForm, speciesComplex: e.target.value})} className="w-full p-2 rounded border border-black/[0.08] text-sm" placeholder="e.g., Cardiolonchium" />
-              </div>
-              <div>
-                <label className="block text-sm text-[var(--bark)] mb-1">Breeder Code</label>
-                <input value={createForm.breederCode} onChange={e=>setCreateForm({...createForm, breederCode: e.target.value})} className="w-full p-2 rounded border border-black/[0.08] text-sm" placeholder="e.g., RA8" />
-              </div>
-              <div>
-                <label className="block text-sm text-[var(--bark)] mb-1">Acquisition Cost</label>
-                <input type="number" value={createForm.acquisitionCost} onChange={e=>setCreateForm({...createForm, acquisitionCost: e.target.value})} className="w-full p-2 rounded border border-black/[0.08] text-sm" placeholder="e.g., 250" />
-              </div>
-              <div>
-                <label className="block text-sm text-[var(--bark)] mb-1">Accession Date</label>
-                <input type="date" value={createForm.accessionDate} onChange={e=>setCreateForm({...createForm, accessionDate: e.target.value})} className="w-full p-2 rounded border border-black/[0.08] text-sm" />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <button onClick={()=>setCreateOpen(false)} className="px-4 py-2 rounded border border-black/[0.08] text-sm text-[var(--bark)]">Cancel</button>
-              <button disabled={creating} onClick={async ()=>{
-                setCreating(true)
-                try{
-                  const res = await fetch('/api/plants', {
-                    method: 'POST',
-                    headers: {'Content-Type':'application/json'},
-                    body: JSON.stringify(createForm)
-                  })
-                  if(res.ok){
-                    showToast({ type: 'success', title: 'Plant created', message: 'New plant was added successfully.' })
-                    setCreateOpen(false)
-                    setCreateForm({ hybridName:'', species:'', speciesComplex:'', breederCode:'', acquisitionCost:'', accessionDate: getTodayString(), healthStatus: 'healthy' })
-                    refetch()
-                  } else {
-                    showToast({ type: 'error', title: 'Create failed', message: 'Could not create plant. Please try again.' })
-                  }
-                } catch(e){
-                  console.error('Create plant failed', e)
-                  showToast({ type: 'error', title: 'Network or server error' })
-                } finally {
-                  setCreating(false)
-                }
-              }} className="px-4 py-2 rounded bg-[var(--forest)] text-white text-sm">{creating ? 'Saving...' : 'Save'}</button>
-            </div>
-          </div>
-        </Modal>
 
         {/* Filter Modal */}
         <Modal isOpen={filterOpen} onClose={() => setFilterOpen(false)} title="Filter Plants">

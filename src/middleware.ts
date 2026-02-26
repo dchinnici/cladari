@@ -31,14 +31,19 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Intercept Supabase auth redirects (invites, password resets, magic links)
+  // Intercept Supabase auth redirects (invites, magic links)
   // These arrive with a ?code= param on whatever URL Supabase redirects to.
   // Route them through /auth/callback which knows how to exchange the code.
+  // EXCEPTION: /reset-password must handle its own code exchange client-side
+  // so the PASSWORD_RECOVERY event fires and the form appears.
   const authCode = request.nextUrl.searchParams.get('code')
-  if (authCode && !request.nextUrl.pathname.startsWith('/auth/callback')) {
+  if (authCode
+    && !request.nextUrl.pathname.startsWith('/auth/callback')
+    && !request.nextUrl.pathname.startsWith('/reset-password')
+  ) {
     const callbackUrl = new URL('/auth/callback', request.url)
     callbackUrl.searchParams.set('code', authCode)
-    // Preserve the intended destination (e.g. /reset-password for password resets)
+    // Preserve the intended destination
     const destination = request.nextUrl.pathname === '/' ? '/dashboard' : request.nextUrl.pathname
     callbackUrl.searchParams.set('next', destination)
     return NextResponse.redirect(callbackUrl)

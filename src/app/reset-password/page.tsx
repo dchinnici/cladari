@@ -14,18 +14,29 @@ export default function ResetPasswordPage() {
   const supabase = createSupabaseClient()
 
   useEffect(() => {
-    // Supabase automatically picks up the recovery token from the URL hash
-    // and establishes a session. We listen for that event.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') {
         setReady(true)
       }
     })
 
-    // Also check if we already have a session (user clicked link and session was established)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) setReady(true)
-    })
+    // Handle PKCE flow: if ?code= is in the URL, exchange it client-side
+    // so the PASSWORD_RECOVERY event fires (middleware skips this route)
+    const params = new URLSearchParams(window.location.search)
+    const code = params.get('code')
+    if (code) {
+      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+        if (error) {
+          console.error('Recovery code exchange failed:', error.message)
+        }
+        // PASSWORD_RECOVERY event will fire via onAuthStateChange above
+      })
+    } else {
+      // No code — check if we already have a recovery session (e.g. hash fragment flow)
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) setReady(true)
+      })
+    }
 
     return () => subscription.unsubscribe()
   }, [supabase.auth])
