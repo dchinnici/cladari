@@ -595,13 +595,15 @@ function SovriaSection() {
           observations, not probabilistic guesses.
         </p>
 
-        <Button
-          variant="outline"
-          className="gap-2"
-          style={{ borderColor: brand.clay, color: brand.clay }}
-        >
-          Learn more about Sovria <ArrowRight className="w-4 h-4" />
-        </Button>
+        <a href="https://sovria.com" target="_blank" rel="noopener noreferrer">
+          <Button
+            variant="outline"
+            className="gap-2"
+            style={{ borderColor: brand.clay, color: brand.clay }}
+          >
+            Learn more about Sovria <ArrowRight className="w-4 h-4" />
+          </Button>
+        </a>
       </div>
     </section>
   );
@@ -941,10 +943,14 @@ function Footer() {
                 Platform
               </p>
               <div className="space-y-2">
-                {["Research", "Journal", "Sovria"].map((l) => (
-                  <p key={l} className="text-sm cursor-pointer hover:underline" style={{ color: "rgba(250,246,240,0.6)" }}>
-                    {l}
-                  </p>
+                {[
+                  { label: "Research", href: "#" },
+                  { label: "Journal", href: "#" },
+                  { label: "Sovria", href: "https://sovria.com" },
+                ].map((l) => (
+                  <a key={l.label} href={l.href} target={l.href.startsWith("http") ? "_blank" : undefined} rel={l.href.startsWith("http") ? "noopener noreferrer" : undefined} className="block text-sm cursor-pointer hover:underline" style={{ color: "rgba(250,246,240,0.6)" }}>
+                    {l.label}
+                  </a>
                 ))}
               </div>
             </div>
@@ -967,7 +973,7 @@ function Footer() {
 
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6">
           <p className="text-xs" style={{ color: "rgba(250,246,240,0.3)" }}>
-            &copy; 2026 Cladari &middot; Powered by Sovria
+            &copy; 2026 Cladari &middot; Powered by <a href="https://sovria.com" target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: "inherit" }}>Sovria</a>
           </p>
           <div className="flex items-center gap-2">
             <Globe className="w-3 h-3" style={{ color: "rgba(250,246,240,0.3)" }} />
