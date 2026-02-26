@@ -35,14 +35,14 @@ The Cladari Plant Database is a comprehensive Anthurium breeding management syst
 
 ### What's Working ✅
 ```
-✅ PRODUCTION LIVE: www.cladari.ai on Vercel with Google OAuth
+✅ PRODUCTION LIVE: www.cladari.co on Vercel with Google OAuth
 ✅ SUPABASE CLOUD: PostgreSQL database, Auth, Photo Storage - PRODUCTION DEPLOYED
 ✅ PGVECTOR SEMANTIC SEARCH: Cross-collection AI memory with quality-weighted retrieval
 ✅ KNOWLEDGE SEARCH: Dashboard widget for exploring past AI consultations
 ✅ UNIFIED BREED UI: Combined Breeding + Batches under single "Breed" entry point
 ✅ FLOWERING EVENT PICKER: One-tap flowering events via Quick Actions
 ✅ CLONE BATCH GRADUATION: Multi-plant graduation with transaction safety
-✅ Web UI (https://www.cladari.ai or localhost:3000): Plant browsing, detail pages, editing
+✅ Web UI (https://www.cladari.co or localhost:3000): Plant browsing, detail pages, editing
 ✅ PostgreSQL Database: 70+ plants, relationships, vendor data
 ✅ Multi-user Auth: Supabase Auth with protected routes (Google OAuth + email/password)
 ✅ Cloud Photo Storage: ~700 photos on Supabase Storage
@@ -93,7 +93,7 @@ Dec 21: UNIFIED BREED UI + FLOWERING EVENTS (v1.7.5)
         - Polymorphic photo support: Photos attach to breeding records and batches
 
 Dec 20: PRODUCTION DEPLOYMENT + OAUTH (v1.7.4)
-        - Vercel production: Live at https://www.cladari.ai
+        - Vercel production: Live at https://www.cladari.co
         - Google OAuth: Sign in with Google (account picker enabled)
         - Multi-tenant dashboard fix: Stats filtered by userId
         - Training data export: scripts/export-training-data.ts

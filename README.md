@@ -5,8 +5,8 @@
 A production-grade web application for managing high-value Anthurium collections with comprehensive tracking of genetics, morphology, care schedules, breeding programs, and AI-assisted plant health analysis.
 
 [![Version](https://img.shields.io/badge/version-1.7.9-green.svg)](https://github.com/yourusername/cladari)
-[![Status](https://img.shields.io/badge/status-production-brightgreen.svg)](https://www.cladari.ai)
-[![Live](https://img.shields.io/badge/live-www.cladari.ai-blue.svg)](https://www.cladari.ai)
+[![Status](https://img.shields.io/badge/status-production-brightgreen.svg)](https://www.cladari.co)
+[![Live](https://img.shields.io/badge/live-www.cladari.co-blue.svg)](https://www.cladari.co)
 
 ---
 
@@ -120,7 +120,7 @@ npm run dev
 
 ### Access Points
 - **Development**: http://localhost:3000
-- **Production**: https://www.cladari.ai
+- **Production**: https://www.cladari.co
 - **Database UI**: `npx prisma studio`
 
 ---

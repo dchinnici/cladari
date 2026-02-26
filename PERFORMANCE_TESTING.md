@@ -247,7 +247,7 @@ vercel --prod
 # Visit: https://vercel.com/your-project/deployments
 
 # 4. Test on production URL
-# Open: https://www.cladari.ai/plants
+# Open: https://www.cladari.co/plants
 
 # 5. Monitor Vercel Analytics
 # Check: LCP, FCP, CLS metrics in Vercel dashboard

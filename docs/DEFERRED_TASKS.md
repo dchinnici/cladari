@@ -92,7 +92,7 @@
 
 | Task | Status | Effort | Notes |
 |------|--------|--------|-------|
-| Supabase custom domain | 🔵 DEFERRED | $10/mo | Would change ugly `wtvydonwfnypzzeizptw.supabase.co` to `api.cladari.ai` in OAuth consent screen |
+| Supabase custom domain | 🔵 DEFERRED | $10/mo | Would change ugly `wtvydonwfnypzzeizptw.supabase.co` to `api.cladari.co` in OAuth consent screen |
 
 **Decision:** Not worth $10/month for alpha stage. The ugly project ID in OAuth consent is cosmetic - users still see "Cladari" as app name. Revisit if user feedback indicates trust issues.
 
@@ -155,7 +155,7 @@
 ### Before Vercel Deploy ✅ COMPLETE (Dec 20, 2025)
 - [x] All P0 tasks complete
 - [x] Environment variables configured in Vercel
-- [x] Custom domain configured (www.cladari.ai)
+- [x] Custom domain configured (www.cladari.co)
 - [x] Google OAuth configured and working
 - [ ] Supabase RLS policies applied (scripts ready, not yet applied)
 - [x] CORS settings for production domain

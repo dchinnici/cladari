@@ -17,7 +17,7 @@ const PORT = 3001;
 
 const server = createServer(async (req, res) => {
   // CORS headers for production app
-  res.setHeader('Access-Control-Allow-Origin', 'https://www.cladari.ai');
+  res.setHeader('Access-Control-Allow-Origin', 'https://cladari.co');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 

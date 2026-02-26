@@ -24,7 +24,7 @@ const MIGRATION_USER_EMAIL = process.env.MIGRATION_USER_EMAIL || 'dchinnici@gmai
 if (!MIGRATION_USER_ID) {
   console.error('❌ ERROR: MIGRATION_USER_ID not set!')
   console.error('   1. Go to Supabase Dashboard → Authentication → Users')
-  console.error('   2. Create a user with email: dave@cladari.ai')
+  console.error('   2. Create a user with email: dave@cladari.co')
   console.error('   3. Copy the user UUID')
   console.error('   4. Run: MIGRATION_USER_ID=<uuid> npx tsx scripts/migrate-to-supabase.ts')
   process.exit(1)

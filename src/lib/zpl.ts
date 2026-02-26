@@ -439,7 +439,7 @@ export function generatePotStickerZPL(data: PotStickerData): string {
     speciesOrCross,
     accessionDate,
     repotDate,
-    baseUrl = 'https://www.cladari.ai'
+    baseUrl = 'https://cladari.co'
   } = data;
 
   const qrUrl = `${baseUrl}/q/p/${databaseId}`;

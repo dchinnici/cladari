@@ -86,7 +86,7 @@ Cladari is a production plant database for managing a high-value Anthurium breed
 - **Database**: Supabase Postgres + Prisma ORM
 - **Auth**: Supabase Auth (Google OAuth + email/password)
 - **Storage**: Supabase Storage (photos)
-- **Hosting**: Vercel (production: www.cladari.ai)
+- **Hosting**: Vercel (production: www.cladari.co)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
 - **Typography**: Lora (serif headings) + Outfit (sans body) via `next/font/google`
@@ -251,7 +251,7 @@ cladari/                          # Monorepo root
 
 - **v1.7.6** - Monorepo consolidation, Tailscale print proxy, pot sticker label layout
 - **v1.7.5** - Unified "Breed" navigation, flowering event picker, clone batch photo upload, multi-plant graduation fix
-- **v1.7.4** - Production deployment (www.cladari.ai), Google OAuth, training data export
+- **v1.7.4** - Production deployment (www.cladari.co), Google OAuth, training data export
 - **v1.7.3** - Plant diary export, Zebra printing, rain-adjusted watering predictor (TUNABLE HYPOTHESES in `wateringPredictor.ts`)
 - **v1.7.2** - Mobile PWA fixes, Supabase Storage photo upload, EXIF rotation handling
 - **v1.7.1** - pgvector semantic search (BGE-base-en-v1.5, 768d), auto-embedding ChatLogs, hybrid search API
@@ -294,7 +294,7 @@ cladari/                          # Monorepo root
 
 ## Current State (Dec 2025)
 ### Working Well
-- **Production Live** (v1.7.4) - www.cladari.ai on Vercel, Google OAuth, multi-tenant
+- **Production Live** (v1.7.4) - www.cladari.co on Vercel, Google OAuth, multi-tenant
 - **Mobile PWA** (v1.7.2) - Viewport locked, safe area padding, scroll containment
 - **Photo Upload** (v1.7.2) - All uploads go to Supabase Storage, EXIF rotation handling (~696 photos)
 - **Semantic Search** (v1.7.1) - pgvector embeddings, quality-weighted retrieval, auto-chunking
@@ -569,7 +569,7 @@ Each step in this chain is documented with timestamps, photos, and environmental
 - ✅ pgvector semantic search for AI context retrieval
 - ✅ QR code scanning → quick care logging
 - ✅ PWA for mobile access
-- ✅ **Production deployment** (www.cladari.ai on Vercel)
+- ✅ **Production deployment** (www.cladari.co on Vercel)
 - ✅ **Google OAuth** (one-click sign in)
 - ✅ **Training data pipeline** (HITL export for fine-tuning)
 - Finish breeding pipeline UI (harvest/seedling modals, graduation)

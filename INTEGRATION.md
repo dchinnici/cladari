@@ -324,7 +324,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJ..."
 SUPABASE_SERVICE_ROLE_KEY="eyJ..."
 
 # API Configuration
-NEXT_PUBLIC_API_URL="https://www.cladari.ai"  # Production
+NEXT_PUBLIC_API_URL="https://www.cladari.co"  # Production
 # NEXT_PUBLIC_API_URL="http://localhost:3000"  # Development
 ```
 
@@ -504,7 +504,7 @@ The PlantDB-Sovria integration creates a unique botanical intelligence system th
 
 This integration is **not just connecting two systems** - it's creating a new category of personal AI that understands both your botanical collection and your life context, enabling insights that neither system could provide alone.
 
-**Current Status:** Phase 2 complete (v1.7.5). Production deployment live at www.cladari.ai.
+**Current Status:** Phase 2 complete (v1.7.5). Production deployment live at www.cladari.co.
 **Next Step:** Phase 3 - Specialist AI models and advanced ML features.
 
 ### v1.7.5 Updates (December 2025)

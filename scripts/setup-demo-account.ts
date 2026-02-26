@@ -38,7 +38,7 @@ async function setDemoPassword() {
     return false;
   }
 
-  console.log('✓ Password set for demo@cladari.ai');
+  console.log('✓ Password set for demo@cladari.co');
   return true;
 }
 
@@ -325,8 +325,8 @@ async function main() {
 
   // Summary
   console.log('\n=== DEMO ACCOUNT READY ===');
-  console.log('URL: https://www.cladari.ai');
-  console.log('Email: demo@cladari.ai');
+  console.log('URL: https://www.cladari.co');
+  console.log('Email: demo@cladari.co');
   console.log('Password: CladariDemo2026');
   console.log('\nNote: Chat logs and embeddings are NOT cloned (keeps demo clean for ML)');
 }

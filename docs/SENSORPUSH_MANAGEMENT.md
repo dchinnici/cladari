@@ -34,12 +34,12 @@ SensorPush API response = { id: "12345678.987654321", name: "Balcony" }  // Name
 **Option B: Manual Trigger**
 ```bash
 # Visit in browser or curl:
-https://www.cladari.ai/api/sensorpush/sync
+https://www.cladari.co/api/sensorpush/sync
 ```
 
 ### **Step 3: Verify**
 
-1. Visit: https://www.cladari.ai/locations
+1. Visit: https://www.cladari.co/locations
 2. Check that sensor-linked locations show new names
 3. Historical environmental data should still work
 
@@ -97,7 +97,7 @@ const SENSOR_EXCLUSION_PERIODS: Record<string, Array<{ start: Date; end: Date; r
 **To find your sensor ID:**
 ```bash
 # Visit:
-https://www.cladari.ai/api/sensorpush/sensors
+https://www.cladari.co/api/sensorpush/sensors
 
 # Response shows:
 {
@@ -119,7 +119,7 @@ https://www.cladari.ai/api/sensorpush/sensors
 **Fix:** Trigger manual sync or wait for next cron (6am EST)
 
 ```bash
-curl https://www.cladari.ai/api/sensorpush/sync
+curl https://www.cladari.co/api/sensorpush/sync
 ```
 
 ---
@@ -146,7 +146,7 @@ curl https://www.cladari.ai/api/sensorpush/sync
 
 2. Get current sensor IDs:
    ```bash
-   curl https://www.cladari.ai/api/sensorpush/sensors
+   curl https://www.cladari.co/api/sensorpush/sensors
    ```
 
 3. If ID changed, manually update Location model:
@@ -164,7 +164,7 @@ curl https://www.cladari.ai/api/sensorpush/sync
 
 ```bash
 # List all sensors with locations
-curl https://www.cladari.ai/api/sensorpush/sensors
+curl https://www.cladari.co/api/sensorpush/sensors
 
 # Should show:
 {

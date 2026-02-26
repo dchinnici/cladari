@@ -48,7 +48,7 @@
 
 ### 5. Multi-Tenant Printing
 **Current:** Zebra printing uses `lp` command on Dave's local Mac
-**Problem:** Won't work for other users on cladari.ai
+**Problem:** Won't work for other users on cladari.co
 **Options:**
 - QZ Tray (browser plugin, requires user install)
 - PDF generation for user to print locally

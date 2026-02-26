@@ -3,7 +3,7 @@
 
 ## 🌿 Welcome to Your Plant Management System
 
-This guide will help you use all the features of your Anthurium collection database. Access it at **https://www.cladari.ai** (production) or localhost:3000 (development). No technical knowledge required!
+This guide will help you use all the features of your Anthurium collection database. Access it at **https://www.cladari.co** (production) or localhost:3000 (development). No technical knowledge required!
 
 ---
 
@@ -381,7 +381,7 @@ Track your breeding program from pollination to accessioned plants, plus asexual
 
 ### Accessing the Breed Module
 
-1. Go to **https://www.cladari.ai/breeding** (or localhost:3000/breeding for dev)
+1. Go to **https://www.cladari.co/breeding** (or localhost:3000/breeding for dev)
 2. Use the **tab navigation** to switch between:
    - **Crosses**: Sexual reproduction (pollination → seeds → seedlings)
    - **Batches**: Asexual propagation (TC, cuttings, divisions, offsets)
@@ -692,7 +692,7 @@ Track your breeding program at **/breeding**:
 ## 📝 Quick Reference Card
 
 ### Essential URLs
-- **Production App**: https://www.cladari.ai
+- **Production App**: https://www.cladari.co
 - **Dev Server**: http://localhost:3000
 - **Database Viewer**: http://localhost:5555 (run `npx prisma studio`)
 

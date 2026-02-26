@@ -54,7 +54,7 @@ async function main() {
 
   console.log('\n✅ Mapping complete!\n');
   console.log('💡 To update location sensor mappings in the database:');
-  console.log('   Visit: https://www.cladari.ai/locations');
+  console.log('   Visit: https://www.cladari.co/locations');
   console.log('   Or run: npx tsx scripts/update-sensor-mappings.ts\n');
 }
 

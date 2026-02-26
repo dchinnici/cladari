@@ -40,7 +40,7 @@ All notable changes to the Cladari Plant Management System will be documented in
 ## [1.7.4] - 2025-12-20
 
 ### Added
-- **Production Deployment** - Live at https://www.cladari.ai on Vercel
+- **Production Deployment** - Live at https://www.cladari.co on Vercel
 - **Google OAuth Login** - Sign in with Google (account picker enabled)
 - **Apple OAuth** - Button ready (needs Apple Developer setup)
 - **UserMenu Component** - Logout button in desktop nav and mobile bottom nav

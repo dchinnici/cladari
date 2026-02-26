@@ -972,7 +972,7 @@ function Footer() {
           <div className="flex items-center gap-2">
             <Globe className="w-3 h-3" style={{ color: "rgba(250,246,240,0.3)" }} />
             <span className="text-xs" style={{ color: "rgba(250,246,240,0.3)" }}>
-              www.cladari.ai
+              cladari.co
             </span>
           </div>
         </div>
