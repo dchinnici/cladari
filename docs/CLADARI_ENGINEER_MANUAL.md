@@ -1280,6 +1280,49 @@ npx prisma generate
 **DELETE /api/chat-logs/{id}**
 - Deletes chat log permanently
 
+### Admin Endpoints
+
+All admin endpoints require the authenticated user's email to be in the `ADMIN_EMAILS` env var.
+
+**GET /api/admin/users**
+- Returns all user profiles with data counts (plants, locations, breeding records)
+- Used by UserMenu "View As" dropdown
+
+**GET /api/admin/users/{id}**
+- Returns detailed profile + Supabase auth status (provider, last sign-in)
+- Shows whether Supabase auth and Postgres Profile are in sync
+
+**DELETE /api/admin/users/{id}?mode=purge|revoke|delete-data**
+- **purge**: Delete Supabase auth user AND Postgres Profile + all cascaded data (full removal)
+- **revoke**: Delete Supabase auth only, keep Postgres data (for training/audit)
+- **delete-data**: Delete Postgres Profile + data only, keep Supabase login
+- User deletion is two-system: Supabase Auth (login identity) and Postgres Profile (data) are decoupled
+
+**POST /api/admin/view-as**
+- Sets/clears admin impersonation cookie (`cladari-view-as`)
+- Body: `{ userId: string | null }` — null clears impersonation
+- Cookie expires after 4 hours
+
+```bash
+# Usage from browser console (must be signed in as admin):
+# Inspect a user
+fetch('/api/admin/users/UUID_HERE').then(r => r.json()).then(console.log)
+
+# Full purge (Supabase + Postgres)
+fetch('/api/admin/users/UUID_HERE?mode=purge', { method: 'DELETE' }).then(r => r.json()).then(console.log)
+
+# Revoke login only (keep data for training)
+fetch('/api/admin/users/UUID_HERE?mode=revoke', { method: 'DELETE' }).then(r => r.json()).then(console.log)
+```
+
+### Multi-Tenant Constraints (Feb 2026)
+
+These fields are unique **per user**, not globally:
+- `Location.name` — `@@unique([userId, name])`
+- `Vendor.name` — `@@unique([userId, name])`
+
+Auth callback (`/auth/callback`) handles email conflicts: when Google OAuth creates a new Supabase UUID for an email that already has a Postgres Profile (e.g., user first signed up with email/password, later signs in with Google), the callback migrates the existing Profile and all owned data to the new UUID.
+
 ---
 
 ## 🎯 Quick Reference
