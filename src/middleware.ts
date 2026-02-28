@@ -60,7 +60,8 @@ export async function middleware(request: NextRequest) {
     '/batches',
     '/locations',
     '/batch-care',
-    '/genetics'
+    '/genetics',
+    '/settings'
   ]
 
   // Check if current path is protected

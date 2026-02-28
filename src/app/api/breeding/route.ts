@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
-import { generateCrossId } from '@/lib/breeding-ids'
+import { generateCrossId, generateWithRetry } from '@/lib/breeding-ids'
 import { getUser } from '@/lib/supabase/server'
 
 // GET /api/breeding - List all breeding records
@@ -126,17 +126,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Male plant not found' }, { status: 404 })
     }
 
-    // Generate crossId if not provided
-    const crossId = body.crossId || await generateCrossId()
-
-    // Check for duplicate crossId
-    const existing = await prisma.breedingRecord.findUnique({ where: { crossId } })
-    if (existing) {
-      return NextResponse.json(
-        { error: `CrossId ${crossId} already exists` },
-        { status: 409 }
-      )
-    }
+    // Generate crossId if not provided, with retry on collision
+    const crossId = body.crossId || await generateWithRetry(
+      generateCrossId,
+      async (id) => !!(await prisma.breedingRecord.findUnique({ where: { crossId: id } }))
+    )
 
     const record = await prisma.breedingRecord.create({
       data: {

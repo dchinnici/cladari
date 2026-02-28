@@ -120,7 +120,15 @@ export async function GET(
 
     if (isOutdoor) {
       try {
-        const weather = await getWeather()
+        // Get user's location for weather data
+        const profile = await prisma.profile.findUnique({
+          where: { id: plant.userId },
+          select: { latitude: true, longitude: true, timezone: true },
+        })
+        if (!profile?.latitude || !profile?.longitude) {
+          throw new Error('No location configured')
+        }
+        const weather = await getWeather(profile.latitude, profile.longitude, profile.timezone || 'America/New_York')
         // Get last 24h and 48h precipitation from daily forecast
         // daily[0] is today, daily[1] is yesterday (if we had historical)
         // For now, use current + today's sum as approximation

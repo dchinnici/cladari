@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
-import { generateCloneBatchId } from '@/lib/breeding-ids'
+import { generateCloneBatchId, generateWithRetry } from '@/lib/breeding-ids'
 import { getUser } from '@/lib/supabase/server'
 
 // GET /api/clone-batches - List all clone batches
@@ -80,17 +80,11 @@ export async function POST(request: Request) {
       }
     }
 
-    // Generate batchId if not provided
-    const batchId = body.batchId || await generateCloneBatchId()
-
-    // Check for duplicate batchId
-    const existing = await prisma.cloneBatch.findUnique({ where: { batchId } })
-    if (existing) {
-      return NextResponse.json(
-        { error: `BatchId ${batchId} already exists` },
-        { status: 409 }
-      )
-    }
+    // Generate batchId if not provided, with retry on collision
+    const batchId = body.batchId || await generateWithRetry(
+      generateCloneBatchId,
+      async (id) => !!(await prisma.cloneBatch.findUnique({ where: { batchId: id } }))
+    )
 
     const batch = await prisma.cloneBatch.create({
       data: {

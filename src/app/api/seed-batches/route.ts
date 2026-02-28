@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
-import { generateSeedBatchId } from '@/lib/breeding-ids'
+import { generateSeedBatchId, generateWithRetry } from '@/lib/breeding-ids'
 
 // GET /api/seed-batches - List all seed batches
 export async function GET(request: Request) {
@@ -65,17 +65,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Harvest not found' }, { status: 404 })
     }
 
-    // Generate batchId if not provided
-    const batchId = body.batchId || await generateSeedBatchId()
-
-    // Check for duplicate batchId
-    const existing = await prisma.seedBatch.findUnique({ where: { batchId } })
-    if (existing) {
-      return NextResponse.json(
-        { error: `BatchId ${batchId} already exists` },
-        { status: 409 }
-      )
-    }
+    // Generate batchId if not provided, with retry on collision
+    const batchId = body.batchId || await generateWithRetry(
+      generateSeedBatchId,
+      async (id) => !!(await prisma.seedBatch.findUnique({ where: { batchId: id } }))
+    )
 
     const batch = await prisma.seedBatch.create({
       data: {

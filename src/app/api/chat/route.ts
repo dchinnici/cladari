@@ -14,8 +14,8 @@ const anthropic = createAnthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-// Balcony sensor ID (outdoor, has barometric pressure)
-const OUTDOOR_SENSOR_ID = '16938503.1326776003983611910';
+// Default outdoor sensor ID (Dave's balcony sensor — only used if user has no profile settings)
+const DEFAULT_OUTDOOR_SENSOR_ID = '16938503.1326776003983611910';
 
 // Stress thresholds for Anthurium (especially Cardiolonchium)
 const STRESS_THRESHOLDS = {
@@ -264,23 +264,50 @@ async function getEnvironmentalHistory(locationId: string | undefined) {
   }
 }
 
-// Helper to get outdoor conditions (barometric pressure from balcony sensor + weather)
-async function getOutdoorConditions() {
+// Helper to get outdoor conditions (barometric pressure from sensor + weather)
+// Returns null if user has no location configured (weather features disabled)
+async function getOutdoorConditions(userId: string) {
   try {
-    // Get barometric pressure from outdoor sensor
-    const samplesResponse = await getSamples([OUTDOOR_SENSOR_ID], 1);
-    const samples = samplesResponse.sensors[OUTDOOR_SENSOR_ID];
-    const outdoorSensor = samples?.[0];
+    const profile = await prisma.profile.findUnique({
+      where: { id: userId },
+      select: { latitude: true, longitude: true, timezone: true, city: true },
+    });
 
-    // Get weather data
-    const weather = await getWeather();
+    // No location configured — skip weather entirely
+    if (!profile?.latitude || !profile?.longitude) {
+      return null;
+    }
+
+    // Get weather data for user's location
+    const weather = await getWeather(
+      profile.latitude,
+      profile.longitude,
+      profile.timezone || 'America/New_York'
+    );
+
+    // Try to get barometric pressure from outdoor sensor (if user has one linked)
+    // For now, only Dave's account has this — future: store per-user outdoor sensor ID
+    let barometricPressure: number | undefined;
+    let sensorTemp: number | undefined;
+    let sensorHumidity: number | undefined;
+    try {
+      const samplesResponse = await getSamples([DEFAULT_OUTDOOR_SENSOR_ID], 1);
+      const samples = samplesResponse.sensors[DEFAULT_OUTDOOR_SENSOR_ID];
+      const outdoorSensor = samples?.[0];
+      barometricPressure = outdoorSensor?.barometric_pressure;
+      sensorTemp = outdoorSensor?.temperature;
+      sensorHumidity = outdoorSensor?.humidity;
+    } catch {
+      // No sensor data available — that's fine
+    }
 
     return {
-      barometricPressure: outdoorSensor?.barometric_pressure,
-      sensorTemp: outdoorSensor?.temperature,
-      sensorHumidity: outdoorSensor?.humidity,
+      barometricPressure,
+      sensorTemp,
+      sensorHumidity,
       weather: weather.current,
       forecast: weather.daily.slice(0, 3), // Next 3 days
+      city: profile.city,
     };
   } catch (error) {
     console.error('[Chat API] Error fetching outdoor conditions:', error);
@@ -608,8 +635,8 @@ You're speaking to a master breeder - be professional, precise, and acknowledge 
     // Fetch environmental history from SensorPush (if location has sensor)
     const envHistory = await getEnvironmentalHistory(plantContext.locationId);
 
-    // Fetch outdoor conditions (barometric pressure + weather)
-    const outdoor = await getOutdoorConditions();
+    // Fetch outdoor conditions (barometric pressure + weather) — null if user has no location
+    const outdoor = await getOutdoorConditions(user.id);
 
     // Search for relevant past consultations across the collection
     // Use the latest user message as the search query
@@ -717,12 +744,11 @@ ${envHistory.dailySummary}
 
 IMPORTANT: When analyzing leaf damage or developmental issues, correlate with stress events and trends above. Overnight humidity drops and VPD spikes are critical for emerging leaves.` : ''}
 
-${outdoor ? `OUTDOOR CONDITIONS & WEATHER (Fort Lauderdale):
+${outdoor ? `OUTDOOR CONDITIONS & WEATHER${outdoor.city ? ` (${outdoor.city})` : ''}:
 Current Weather: ${outdoor.weather.weatherDescription}, ${outdoor.weather.temperature.toFixed(0)}°F (feels ${outdoor.weather.apparentTemperature.toFixed(0)}°F)
 Wind: ${outdoor.weather.windSpeed.toFixed(0)} mph ${windDirectionToCompass(outdoor.weather.windDirection)}${outdoor.weather.windGusts > outdoor.weather.windSpeed + 5 ? `, gusts ${outdoor.weather.windGusts.toFixed(0)} mph` : ''}
 Cloud Cover: ${outdoor.weather.cloudCover}% | UV Index: ${outdoor.weather.uvIndex.toFixed(1)}
-${outdoor.weather.rain > 0 ? `Rain: ${outdoor.weather.rain.toFixed(1)}mm\n` : ''}${outdoor.barometricPressure ? `Barometric Pressure: ${outdoor.barometricPressure.toFixed(2)} inHg (from balcony sensor)\n` : ''}
-Balcony Sensor: ${outdoor.sensorTemp?.toFixed(1)}°F, ${outdoor.sensorHumidity?.toFixed(1)}% RH
+${outdoor.weather.rain > 0 ? `Rain: ${outdoor.weather.rain.toFixed(1)}mm\n` : ''}${outdoor.barometricPressure ? `Barometric Pressure: ${outdoor.barometricPressure.toFixed(2)} inHg (from outdoor sensor)\n` : ''}${outdoor.sensorTemp ? `Outdoor Sensor: ${outdoor.sensorTemp.toFixed(1)}°F, ${outdoor.sensorHumidity?.toFixed(1)}% RH` : ''}
 
 3-Day Forecast:
 ${outdoor.forecast.map(d => `  ${d.date}: ${d.weatherDescription}, ${d.tempMin.toFixed(0)}-${d.tempMax.toFixed(0)}°F${d.precipitationProbability > 20 ? `, ${d.precipitationProbability}% chance rain` : ''}`).join('\n')}

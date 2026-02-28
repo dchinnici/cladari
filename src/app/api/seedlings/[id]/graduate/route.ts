@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
-import { generatePlantId } from '@/lib/breeding-ids'
+import { generatePlantId, generateWithRetry } from '@/lib/breeding-ids'
 import { getUser } from '@/lib/supabase/server'
 
 /**
@@ -77,17 +77,11 @@ export async function POST(
     const femalePlant = breedingRecord.femalePlant
     const malePlant = breedingRecord.malePlant
 
-    // Generate plant ID
-    const plantId = body.plantId || await generatePlantId()
-
-    // Check for duplicate
-    const existingPlant = await prisma.plant.findUnique({ where: { plantId } })
-    if (existingPlant) {
-      return NextResponse.json(
-        { error: `PlantId ${plantId} already exists` },
-        { status: 409 }
-      )
-    }
+    // Generate plant ID with retry on collision
+    const plantId = body.plantId || await generateWithRetry(
+      generatePlantId,
+      async (id) => !!(await prisma.plant.findUnique({ where: { plantId: id } }))
+    )
 
     // Build hybrid name from parents if not provided
     let hybridName = body.hybridName

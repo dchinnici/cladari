@@ -1,15 +1,12 @@
 /**
  * Open-Meteo Weather API Integration
  *
- * Free, no API key required weather data for Fort Lauderdale.
+ * Free, no API key required weather data.
  * Used to contextualize outdoor sensor readings (rain vs fog vs humid).
+ * Coordinates come from user's Profile settings — no location = no weather.
  *
  * API Docs: https://open-meteo.com/en/docs
  */
-
-// Fort Lauderdale coordinates (445 N Andrews Ave)
-const LATITUDE = 26.1276;
-const LONGITUDE = -80.1440;
 
 const OPEN_METEO_BASE = 'https://api.open-meteo.com/v1/forecast';
 
@@ -111,11 +108,18 @@ export interface WeatherData {
 
 /**
  * Fetch current weather and 7-day forecast from Open-Meteo
+ * @param latitude - User's latitude from Profile settings
+ * @param longitude - User's longitude from Profile settings
+ * @param timezone - User's IANA timezone (defaults to America/New_York)
  */
-export async function getWeather(): Promise<WeatherData> {
+export async function getWeather(
+  latitude: number,
+  longitude: number,
+  timezone: string = 'America/New_York'
+): Promise<WeatherData> {
   const params = new URLSearchParams({
-    latitude: LATITUDE.toString(),
-    longitude: LONGITUDE.toString(),
+    latitude: latitude.toString(),
+    longitude: longitude.toString(),
     current: [
       'temperature_2m',
       'relative_humidity_2m',
@@ -143,7 +147,7 @@ export async function getWeather(): Promise<WeatherData> {
     temperature_unit: 'fahrenheit',
     wind_speed_unit: 'mph',
     precipitation_unit: 'mm',
-    timezone: 'America/New_York',
+    timezone,
     forecast_days: '7',
   });
 

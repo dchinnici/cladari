@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
-import { generateSeedlingId } from '@/lib/breeding-ids'
+import { generateSeedlingId, generateWithRetry } from '@/lib/breeding-ids'
 
 // GET /api/seedlings - List seedlings with filters
 export async function GET(request: Request) {
@@ -88,16 +88,10 @@ export async function POST(request: Request) {
     // Create seedlings
     const createdSeedlings = []
     for (const data of seedlingsData) {
-      const seedlingId = data.seedlingId || await generateSeedlingId()
-
-      // Check for duplicate
-      const existing = await prisma.seedling.findUnique({ where: { seedlingId } })
-      if (existing) {
-        return NextResponse.json(
-          { error: `SeedlingId ${seedlingId} already exists` },
-          { status: 409 }
-        )
-      }
+      const seedlingId = data.seedlingId || await generateWithRetry(
+        generateSeedlingId,
+        async (id) => !!(await prisma.seedling.findUnique({ where: { seedlingId: id } }))
+      )
 
       const seedling = await prisma.seedling.create({
         data: {

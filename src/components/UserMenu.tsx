@@ -3,7 +3,8 @@
 import { createSupabaseClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
-import { LogOut, User, ChevronDown, Eye } from 'lucide-react'
+import { LogOut, User, ChevronDown, Eye, Settings } from 'lucide-react'
+import Link from 'next/link'
 
 export default function UserMenu() {
   const [user, setUser] = useState<{ email?: string; name?: string } | null>(null)
@@ -120,6 +121,15 @@ export default function UserMenu() {
             <p className="text-sm font-medium text-[var(--bark)] truncate">{user.name}</p>
             <p className="text-xs text-[var(--clay)] truncate">{user.email}</p>
           </div>
+
+          <Link
+            href="/settings"
+            onClick={() => setIsOpen(false)}
+            className="w-full px-4 py-2 text-left text-sm text-[var(--bark)] hover:bg-black/[0.04] flex items-center gap-2 transition-colors"
+          >
+            <Settings className="w-4 h-4 text-[var(--clay)]" />
+            Settings
+          </Link>
 
           {isAdminUser && (
             <div className="border-t border-black/[0.08]">

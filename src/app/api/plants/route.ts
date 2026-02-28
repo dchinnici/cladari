@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getUser, getSignedPhotoUrl } from '@/lib/supabase/server'
+import { generatePlantId, generateWithRetry } from '@/lib/breeding-ids'
 
 export async function GET() {
   try {
@@ -132,12 +133,6 @@ export async function GET() {
   }
 }
 
-function generatePlantId() {
-  const year = new Date().getFullYear()
-  const rand = Math.floor(Math.random() * 10000).toString().padStart(4, '0')
-  return `ANT-${year}-${rand}`
-}
-
 import { z } from 'zod'
 
 // Validation Schema
@@ -186,21 +181,11 @@ export async function POST(request: Request) {
 
     const body = parseResult.data
 
-    // Generate or accept provided plantId
-    let plantId: string = (body.plantId || '').trim()
-    let attempts = 0
-    while (!plantId && attempts < 5) {
-      const candidate = generatePlantId()
-      const exists = await prisma.plant.findUnique({ where: { plantId: candidate } })
-      if (!exists) {
-        plantId = candidate
-      }
-      attempts++
-    }
-
-    if (!plantId) {
-      return NextResponse.json({ error: 'Could not generate plantId' }, { status: 500 })
-    }
+    // Generate or accept provided plantId with retry on collision
+    const plantId = (body.plantId || '').trim() || await generateWithRetry(
+      generatePlantId,
+      async (id) => !!(await prisma.plant.findUnique({ where: { plantId: id } }))
+    )
 
     const created = await prisma.plant.create({
       data: {
