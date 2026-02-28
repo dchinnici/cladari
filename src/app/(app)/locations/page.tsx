@@ -83,7 +83,8 @@ export default function LocationsPage() {
           title: editingLocation ? 'Location updated' : 'Location created'
         })
       } else {
-        showToast({ type: 'error', title: 'Failed to save location' })
+        const data = await response.json().catch(() => ({}))
+        showToast({ type: 'error', title: data.error || 'Failed to save location' })
       }
     } catch (error) {
       console.error('Error saving location:', error)

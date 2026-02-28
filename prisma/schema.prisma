@@ -437,7 +437,7 @@ model Measurement {
 
 model Vendor {
   id              String   @id @default(cuid())
-  name            String   @unique
+  name            String
   type            String   // nursery, private, import, local
 
   // Multi-user: Owner
@@ -461,7 +461,7 @@ model Vendor {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  @@index([name])
+  @@unique([userId, name])
   @@index([userId])
 }
 
@@ -488,7 +488,7 @@ model Purchase {
 
 model Location {
   id              String   @id @default(cuid())
-  name            String   @unique
+  name            String
   type            String   // greenhouse, tent, indoor, outdoor
   isOutdoor       Boolean  @default(false) // Exposed to rain? Used for weather-adjusted watering predictions
 
@@ -534,7 +534,7 @@ model Location {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  @@index([name])
+  @@unique([userId, name])
   @@index([userId])
 }
 

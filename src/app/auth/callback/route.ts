@@ -48,15 +48,47 @@ export async function GET(request: NextRequest) {
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
-          await prisma.profile.upsert({
-            where: { id: user.id },
-            update: {},
-            create: {
-              id: user.id,
-              email: user.email!,
-              displayName: user.user_metadata?.full_name || user.user_metadata?.name || user.email,
-            },
-          })
+          try {
+            await prisma.profile.upsert({
+              where: { id: user.id },
+              update: { email: user.email! },
+              create: {
+                id: user.id,
+                email: user.email!,
+                displayName: user.user_metadata?.full_name || user.user_metadata?.name || user.email,
+              },
+            })
+          } catch (upsertError: any) {
+            // P2002 = unique constraint violation (likely email exists under different ID)
+            if (upsertError?.code === 'P2002') {
+              // Find existing profile with this email and update its ID to the current auth user
+              const existing = await prisma.profile.findUnique({
+                where: { email: user.email! },
+              })
+              if (existing && existing.id !== user.id) {
+                // Transfer profile ownership to the new auth ID
+                // This handles: email/password user → Google OAuth sign-in (different Supabase UUID)
+                await prisma.$executeRawUnsafe(
+                  `UPDATE "Profile" SET id = $1, email = $2 WHERE id = $3`,
+                  user.id,
+                  user.email!,
+                  existing.id,
+                )
+                // Update all FK references from old ID to new ID
+                const tables = ['Plant', 'Location', 'Vendor', 'BreedingRecord', 'CloneBatch']
+                for (const table of tables) {
+                  await prisma.$executeRawUnsafe(
+                    `UPDATE "${table}" SET "userId" = $1 WHERE "userId" = $2`,
+                    user.id,
+                    existing.id,
+                  )
+                }
+                console.log(`Profile migrated: ${existing.id} → ${user.id} (${user.email})`)
+              }
+            } else {
+              throw upsertError
+            }
+          }
         }
       } catch (e) {
         // Don't block login if Profile creation fails — log and continue

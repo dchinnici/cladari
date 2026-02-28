@@ -65,8 +65,20 @@ export async function POST(request: Request) {
     })
 
     return NextResponse.json(newLocation)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating location:', error)
+    if (error?.code === 'P2002') {
+      return NextResponse.json(
+        { error: 'A location with that name already exists' },
+        { status: 409 }
+      )
+    }
+    if (error?.code === 'P2003') {
+      return NextResponse.json(
+        { error: 'Account setup incomplete — please sign out and sign back in' },
+        { status: 400 }
+      )
+    }
     return NextResponse.json(
       { error: 'Failed to create location' },
       { status: 500 }
