@@ -30,7 +30,19 @@ npx prisma migrate deploy                        # Apply to production
 ### Admin Infrastructure
 - `ADMIN_EMAILS` env var controls admin access (comma-separated emails)
 - Admin "View As" feature in UserMenu for troubleshooting user accounts
+- Admin user management: `DELETE /api/admin/users/[id]?mode=purge|revoke|delete-data`
+  - `purge`: delete Supabase auth + Postgres Profile + all cascaded data
+  - `revoke`: delete Supabase auth only (keep data for training)
+  - `delete-data`: delete Postgres only (keep login ability)
+- Admin user inspect: `GET /api/admin/users/[id]` — Profile + auth status + data counts
+- **User deletion is two-system**: Supabase Auth (login) and Postgres Profile (data) are decoupled. Use the admin endpoint to handle both atomically.
 - Beta feedback button sends Telegram notifications to admin
+
+### Multi-Tenant Constraints (Fixed Feb 28, 2026)
+- `Location.name` — `@@unique([userId, name])` (was global `@unique`, blocked users from common names)
+- `Vendor.name` — `@@unique([userId, name])` (same fix)
+- Auth callback handles email conflicts: when Google OAuth creates new UUID for existing email, migrates Profile + owned data to new UUID
+- `DEMO_ACCOUNT_PASSWORD` env var — demo credentials moved out of source code
 
 ---
 ## Follow-Up: Domain Migration Cleanup (by March 5, 2026)
@@ -64,6 +76,16 @@ Domain migrated from `cladari.ai` → `cladari.co` on Feb 26, 2026. Old domains 
 - ✅ Note button fixed (freeform notes)
 - ✅ Division batch lineage display
 - ✅ Production Vercel env var restoration
+
+### Beta Onboarding Sprint (Feb 28, 2026)
+- ✅ Multi-tenant unique constraints (Location.name, Vendor.name scoped per user)
+- ✅ Auth callback email conflict recovery (Profile UUID migration)
+- ✅ Admin user deletion endpoint (purge/revoke/delete-data modes)
+- ✅ Location API error messaging (P2002/P2003 → user-friendly messages)
+- ✅ Demo account credentials moved to .env (GitGuardian compliance)
+- ✅ Sovria® trademark on marketing page
+- [ ] Admin dashboard UI (`/(admin)` routes — user management, activity feed, feedback inbox)
+- [ ] Email allowlist / registration gating (post-beta)
 
 ### Still Open (Carry to Next Sprint)
 - [ ] Multi-tenant SensorPush credentials

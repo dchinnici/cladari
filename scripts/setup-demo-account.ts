@@ -26,7 +26,12 @@ import { randomUUID } from 'crypto';
 const DAVE_USER_ID = '01b9f666-3b6f-4a7f-8028-5ca833c4b02e';
 const DEMO_USER_ID = '8073760b-13dd-4019-b4a2-3506cd222e7e';
 const DEMO_EMAIL = 'demo@cladari.co';
-const DEMO_PASSWORD = 'CladariDemo2026';
+const DEMO_PASSWORD = process.env.DEMO_ACCOUNT_PASSWORD;
+
+if (!DEMO_PASSWORD) {
+  console.error('DEMO_ACCOUNT_PASSWORD not set in .env');
+  process.exit(1);
+}
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
