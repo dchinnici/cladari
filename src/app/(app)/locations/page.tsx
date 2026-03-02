@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { MapPin, Plus, Edit, Trash2, QrCode, Radio, Printer } from 'lucide-react'
+import { MapPin, Plus, Edit, Trash2, QrCode, Radio, Printer, RefreshCw } from 'lucide-react'
 import { Modal } from '@/components/modal'
 import { showToast } from '@/components/toast'
 
@@ -10,6 +10,10 @@ export default function LocationsPage() {
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [editingLocation, setEditingLocation] = useState<any>(null)
+  const [sensors, setSensors] = useState<any[]>([])
+  const [loadingSensors, setLoadingSensors] = useState(false)
+  const [syncing, setSyncing] = useState(false)
+  const [selectedSensorId, setSelectedSensorId] = useState<string>('')
 
   const [locationForm, setLocationForm] = useState({
     name: '',
@@ -47,6 +51,80 @@ export default function LocationsPage() {
       console.error('Error fetching locations:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchSensors = async () => {
+    setLoadingSensors(true)
+    try {
+      const response = await fetch('/api/sensorpush/sensors')
+      if (response.ok) {
+        const data = await response.json()
+        setSensors(data.sensors || [])
+      }
+    } catch (error) {
+      console.error('Error fetching sensors:', error)
+    } finally {
+      setLoadingSensors(false)
+    }
+  }
+
+  const handleSyncNow = async () => {
+    setSyncing(true)
+    try {
+      const response = await fetch('/api/sensorpush/sync')
+      const data = await response.json()
+      if (response.ok) {
+        const updatedCount = data.updates?.filter((u: any) => u.updated).length || 0
+        showToast({ type: 'success', title: `Synced ${updatedCount} sensor${updatedCount !== 1 ? 's' : ''}` })
+        await fetchLocations()
+      } else {
+        showToast({ type: 'error', title: data.error || 'Sync failed' })
+      }
+    } catch (error) {
+      showToast({ type: 'error', title: 'Sync failed — check SensorPush credentials' })
+    } finally {
+      setSyncing(false)
+    }
+  }
+
+  const handleSensorChange = async (locationId: string, newSensorId: string) => {
+    try {
+      if (newSensorId === '') {
+        // Unlink sensor
+        const response = await fetch('/api/sensorpush/sync', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ locationId })
+        })
+        if (response.ok) {
+          showToast({ type: 'success', title: 'Sensor unlinked' })
+          setSelectedSensorId('')
+          // Update editingLocation to reflect change
+          setEditingLocation((prev: any) => prev ? { ...prev, sensorPushId: null } : null)
+        } else {
+          const data = await response.json()
+          showToast({ type: 'error', title: data.error || 'Failed to unlink sensor' })
+        }
+      } else {
+        // Link sensor
+        const response = await fetch('/api/sensorpush/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ locationId, sensorPushId: newSensorId })
+        })
+        if (response.ok) {
+          showToast({ type: 'success', title: 'Sensor linked' })
+          setSelectedSensorId(newSensorId)
+          setEditingLocation((prev: any) => prev ? { ...prev, sensorPushId: newSensorId } : null)
+        } else {
+          const data = await response.json()
+          showToast({ type: 'error', title: data.error || 'Failed to link sensor' })
+        }
+      }
+      await fetchLocations()
+    } catch (error) {
+      showToast({ type: 'error', title: 'Error updating sensor' })
     }
   }
 
@@ -117,6 +195,7 @@ export default function LocationsPage() {
 
   const openEditModal = (location: any) => {
     setEditingLocation(location)
+    setSelectedSensorId(location.sensorPushId || '')
     setLocationForm({
       name: location.name || '',
       type: location.type || 'greenhouse',
@@ -137,6 +216,7 @@ export default function LocationsPage() {
       capacity: location.capacity?.toString() || '',
       notes: location.notes || ''
     })
+    fetchSensors()
     setModalOpen(true)
   }
 
@@ -186,13 +266,24 @@ export default function LocationsPage() {
             <h1 className="text-2xl font-semibold text-[var(--forest)]">Locations</h1>
             <p className="text-sm text-[var(--clay)]">{locations.length} growing environments</p>
           </div>
-          <button
-            onClick={openCreateModal}
-            className="flex items-center gap-2 px-3 py-2 bg-[var(--forest)] text-white text-sm rounded"
-          >
-            <Plus className="w-4 h-4" />
-            Add Location
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleSyncNow}
+              disabled={syncing}
+              className="flex items-center gap-2 px-3 py-2 border border-emerald-300 text-emerald-700 text-sm rounded hover:bg-emerald-50 disabled:opacity-50"
+              title="Sync all SensorPush sensors now"
+            >
+              <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+              {syncing ? 'Syncing...' : 'Sync'}
+            </button>
+            <button
+              onClick={openCreateModal}
+              className="flex items-center gap-2 px-3 py-2 bg-[var(--forest)] text-white text-sm rounded"
+            >
+              <Plus className="w-4 h-4" />
+              Add Location
+            </button>
+          </div>
         </div>
 
         {/* Locations Grid */}
@@ -404,10 +495,44 @@ export default function LocationsPage() {
             </div>
           </div>
 
-          {editingLocation?.sensorPushId && (
-            <div className="flex items-center gap-2 p-2 bg-emerald-50 border border-emerald-200 rounded text-sm text-emerald-700">
-              <Radio className="w-4 h-4" />
-              <span>Temperature, Humidity, and VPD are synced from SensorPush</span>
+          {editingLocation && (
+            <div>
+              <label className="block text-sm text-[var(--bark)] mb-1">
+                <span className="flex items-center gap-1.5">
+                  <Radio className="w-3.5 h-3.5 text-emerald-600" />
+                  SensorPush Sensor
+                </span>
+              </label>
+              {loadingSensors ? (
+                <p className="text-xs text-[var(--clay)] p-2">Loading sensors...</p>
+              ) : sensors.length > 0 ? (
+                <>
+                  <select
+                    value={selectedSensorId}
+                    onChange={(e) => handleSensorChange(editingLocation.id, e.target.value)}
+                    className="w-full p-2 rounded border border-black/[0.08] text-sm focus:outline-none focus:border-emerald-400"
+                  >
+                    <option value="">No sensor linked</option>
+                    {sensors.map((sensor: any) => {
+                      const isLinkedElsewhere = sensor.linkedTo && sensor.linkedTo !== editingLocation.name
+                      return (
+                        <option key={sensor.id} value={sensor.id} disabled={!!isLinkedElsewhere}>
+                          {sensor.name}
+                          {isLinkedElsewhere ? ` (linked to ${sensor.linkedTo})` : ''}
+                          {sensor.latestReading ? ` — ${sensor.latestReading.temperatureF?.toFixed(1)}°F, ${sensor.latestReading.humidity?.toFixed(0)}% RH` : ''}
+                        </option>
+                      )
+                    })}
+                  </select>
+                  {selectedSensorId && (
+                    <p className="text-xs text-emerald-600 mt-1">
+                      Temp, Humidity, and VPD will auto-sync from this sensor
+                    </p>
+                  )}
+                </>
+              ) : (
+                <p className="text-xs text-[var(--clay)] p-2">No SensorPush sensors found in account</p>
+              )}
             </div>
           )}
 
@@ -415,15 +540,15 @@ export default function LocationsPage() {
             <div>
               <label className="block text-sm text-[var(--bark)] mb-1">
                 Humidity %
-                {editingLocation?.sensorPushId && <span className="text-emerald-600 text-xs ml-1">(auto)</span>}
+                {selectedSensorId && <span className="text-emerald-600 text-xs ml-1">(auto)</span>}
               </label>
               <input
                 type="number"
                 value={locationForm.humidity}
                 onChange={(e) => setLocationForm({ ...locationForm, humidity: e.target.value })}
-                disabled={!!editingLocation?.sensorPushId}
+                disabled={!!selectedSensorId}
                 className={`w-full p-2 rounded border text-sm ${
-                  editingLocation?.sensorPushId
+                  selectedSensorId
                     ? 'bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed'
                     : 'border-black/[0.08]'
                 }`}
@@ -433,16 +558,16 @@ export default function LocationsPage() {
             <div>
               <label className="block text-sm text-[var(--bark)] mb-1">
                 Temp °F
-                {editingLocation?.sensorPushId && <span className="text-emerald-600 text-xs ml-1">(auto)</span>}
+                {selectedSensorId && <span className="text-emerald-600 text-xs ml-1">(auto)</span>}
               </label>
               <input
                 type="number"
                 step="0.1"
                 value={locationForm.temperature}
                 onChange={(e) => setLocationForm({ ...locationForm, temperature: e.target.value })}
-                disabled={!!editingLocation?.sensorPushId}
+                disabled={!!selectedSensorId}
                 className={`w-full p-2 rounded border text-sm ${
-                  editingLocation?.sensorPushId
+                  selectedSensorId
                     ? 'bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed'
                     : 'border-black/[0.08]'
                 }`}
@@ -466,16 +591,16 @@ export default function LocationsPage() {
             <div>
               <label className="block text-sm text-[var(--bark)] mb-1">
                 VPD kPa
-                {editingLocation?.sensorPushId && <span className="text-emerald-600 text-xs ml-1">(auto)</span>}
+                {selectedSensorId && <span className="text-emerald-600 text-xs ml-1">(auto)</span>}
               </label>
               <input
                 type="number"
                 step="0.1"
                 value={locationForm.vpd}
                 onChange={(e) => setLocationForm({ ...locationForm, vpd: e.target.value })}
-                disabled={!!editingLocation?.sensorPushId}
+                disabled={!!selectedSensorId}
                 className={`w-full p-2 rounded border text-sm ${
-                  editingLocation?.sensorPushId
+                  selectedSensorId
                     ? 'bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed'
                     : 'border-black/[0.08]'
                 }`}

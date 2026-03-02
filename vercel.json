@@ -4,7 +4,7 @@
   "crons": [
     {
       "path": "/api/sensorpush/sync",
-      "schedule": "0 6 * * *"
+      "schedule": "0 */6 * * *"
     },
     {
       "path": "/api/notifications/daily-digest",

@@ -1232,6 +1232,19 @@ export default function PlantDetailPage() {
                   </button>
                   <button
                     onClick={() => {
+                      setOverviewForm({
+                        name: plant.hybridName || '',
+                        species: plant.species || '',
+                        crossNotation: plant.crossNotation || '',
+                        section: plant.section || '',
+                        acquisitionCost: plant.acquisitionCost?.toString() || '',
+                        acquisitionDate: plant.accessionDate ? new Date(plant.accessionDate).toISOString().split('T')[0] : '',
+                        healthStatus: plant.healthStatus || '',
+                        propagationType: plant.propagationType || '',
+                        generation: plant.generation || '',
+                        breeder: plant.breeder || '',
+                        breederCode: plant.breederCode || ''
+                      })
                       setOverviewModalOpen(true)
                       setMenuOpen(false)
                     }}
@@ -1621,18 +1634,24 @@ export default function PlantDetailPage() {
                           </select>
                         </div>
                         <div className="flex items-center gap-2 text-sm">
-                          <DollarSign className="w-4 h-4 text-[var(--clay)]" />
-                          <span className="font-medium">Cost:</span>
-                          <span>${plant.acquisitionCost || 'N/A'}</span>
+                          <span className="font-medium">Species:</span>
+                          <span>{plant.species || 'N/A'}</span>
                         </div>
                         <div className="flex items-center gap-2 text-sm">
-                          <Calendar className="w-4 h-4 text-[var(--clay)]" />
-                          <span className="font-medium">Acquired:</span>
-                          <span>{plant.accessionDate ? new Date(plant.accessionDate).toLocaleDateString() : 'N/A'}</span>
+                          <span className="font-medium">Cross Notation:</span>
+                          <span>{plant.crossNotation || 'N/A'}</span>
                         </div>
                         <div className="flex items-center gap-2 text-sm">
                           <span className="font-medium">Section:</span>
                           <span>{plant.section || 'N/A'}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="font-medium">Generation:</span>
+                          <span>{plant.generation || 'N/A'}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="font-medium">Propagation:</span>
+                          <span className="capitalize">{plant.propagationType?.replace('_', ' ') || 'N/A'}</span>
                         </div>
                       </div>
 
@@ -1650,12 +1669,22 @@ export default function PlantDetailPage() {
                           </span>
                         </div>
                         <div className="flex items-center gap-2 text-sm">
-                          <span className="font-medium">Vendor:</span>
-                          <span>{plant.vendor?.name || 'N/A'}</span>
+                          <Calendar className="w-4 h-4 text-[var(--clay)]" />
+                          <span className="font-medium">Acquired:</span>
+                          <span>{plant.accessionDate ? new Date(plant.accessionDate).toLocaleDateString() : 'N/A'}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <DollarSign className="w-4 h-4 text-[var(--clay)]" />
+                          <span className="font-medium">Cost:</span>
+                          <span>${plant.acquisitionCost || 'N/A'}</span>
                         </div>
                         <div className="flex items-center gap-2 text-sm">
                           <span className="font-medium">Breeder:</span>
-                          <span>{plant.breeder || 'N/A'}</span>
+                          <span>{plant.breeder || 'N/A'}{plant.breederCode ? ` (${plant.breederCode})` : ''}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="font-medium">Vendor:</span>
+                          <span>{plant.vendor?.name || 'N/A'}</span>
                         </div>
                         <label className="flex items-center gap-2 cursor-pointer text-sm">
                           <input
