@@ -54,13 +54,32 @@ export default function LocationsPage() {
     }
   }
 
-  const fetchSensors = async () => {
+  const fetchSensors = async (forLocationName?: string) => {
     setLoadingSensors(true)
     try {
       const response = await fetch('/api/sensorpush/sensors')
       if (response.ok) {
         const data = await response.json()
-        setSensors(data.sensors || [])
+        const sensorList = data.sensors || []
+        setSensors(sensorList)
+
+        // Validate selectedSensorId — if the sensor is linked to a DIFFERENT location,
+        // it means the DB is stale (sensor was moved without auto-unlink).
+        // Auto-correct both the UI state and the DB.
+        if (selectedSensorId && forLocationName) {
+          const matchedSensor = sensorList.find((s: any) => s.id === selectedSensorId)
+          if (!matchedSensor || (matchedSensor.linkedTo && matchedSensor.linkedTo !== forLocationName)) {
+            setSelectedSensorId('')
+            // Also clean up the stale DB mapping
+            if (editingLocation?.id) {
+              fetch('/api/sensorpush/sync', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ locationId: editingLocation.id })
+              }).then(() => fetchLocations()).catch(() => {})
+            }
+          }
+        }
       }
     } catch (error) {
       console.error('Error fetching sensors:', error)
@@ -76,7 +95,12 @@ export default function LocationsPage() {
       const data = await response.json()
       if (response.ok) {
         const updatedCount = data.updates?.filter((u: any) => u.updated).length || 0
-        showToast({ type: 'success', title: `Synced ${updatedCount} sensor${updatedCount !== 1 ? 's' : ''}` })
+        const failedNames = data.updates?.filter((u: any) => !u.updated).map((u: any) => u.locationName) || []
+        const unmappedCount = data.unmappedSensors?.length || 0
+        let msg = `Synced ${updatedCount} sensor${updatedCount !== 1 ? 's' : ''}`
+        if (failedNames.length > 0) msg += ` (no reading: ${failedNames.join(', ')})`
+        if (unmappedCount > 0) msg += ` · ${unmappedCount} unmapped`
+        showToast({ type: updatedCount > 0 ? 'success' : 'warning', title: msg })
         await fetchLocations()
       } else {
         showToast({ type: 'error', title: data.error || 'Sync failed' })
@@ -216,7 +240,7 @@ export default function LocationsPage() {
       capacity: location.capacity?.toString() || '',
       notes: location.notes || ''
     })
-    fetchSensors()
+    fetchSensors(location.name)
     setModalOpen(true)
   }
 
