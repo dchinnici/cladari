@@ -193,7 +193,7 @@ export default function PlantsPage() {
       // Additional filters
       const matchesHealth = !filters.healthStatus || plant.healthStatus === filters.healthStatus
       const matchesBreeder = !filters.breederCode || plant.breederCode === filters.breederCode
-      const matchesLocation = !filters.locationId || plant.locationId === filters.locationId
+      const matchesLocation = !filters.locationId || plant.currentLocation?.id === filters.locationId
       const matchesSection = !filters.section || plant.section === filters.section
       const matchesAttention = !filters.needsAttention || isStale(plant)
 
