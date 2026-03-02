@@ -78,11 +78,35 @@ export async function POST(
     }
 
     // Determine plant attributes from batch
-    const hybridName = body.hybridName || cloneBatch.cultivarName || cloneBatch.species || null
+    const baseHybridName = body.hybridName || cloneBatch.cultivarName || cloneBatch.species || null
     const species = body.species || cloneBatch.species || null
     const section = body.section || cloneBatch.sourcePlant?.section || null
     const locationId = body.locationId || cloneBatch.locationId || null
     const healthStatus = body.healthStatus || 'healthy'
+
+    // Auto-suffix clone names: OS-A, OS-B for offsets; TC-A, TC-B for tissue culture; CT-A for cuttings
+    // Starts from the next letter after any previously graduated plants from this batch
+    const clonePrefixMap: Record<string, string> = {
+      'OFFSET': 'OS',
+      'DIVISION': 'DV',
+      'TC': 'TC',
+      'CUTTING': 'CT',
+      'SEED': '',  // Seeds don't get clone suffixes
+    }
+    const clonePrefix = clonePrefixMap[cloneBatch.propagationType] ?? ''
+    const alreadyGraduated = cloneBatch.plants.length
+    const shouldSuffix = clonePrefix && baseHybridName && (count > 1 || alreadyGraduated > 0)
+
+    function getCloneSuffix(index: number): string {
+      // A=0, B=1, ..., Z=25, AA=26, AB=27, etc.
+      let n = index
+      let suffix = ''
+      do {
+        suffix = String.fromCharCode(65 + (n % 26)) + suffix
+        n = Math.floor(n / 26) - 1
+      } while (n >= 0)
+      return suffix
+    }
 
     // Map batch propagationType to Plant model values
     // Note: Plant dropdown options are: seed, cutting, tissue_culture, division, purchase
@@ -170,6 +194,11 @@ export async function POST(
     const createdPlants = await prisma.$transaction(async (tx) => {
       const plants = []
       for (let i = 0; i < count; i++) {
+        // Apply clone suffix: "Red Crystal Quilted" → "Red Crystal Quilted OS-A"
+        const hybridName = shouldSuffix
+          ? `${baseHybridName} ${clonePrefix}-${getCloneSuffix(alreadyGraduated + i)}`
+          : baseHybridName
+
         const plant = await tx.plant.create({
           data: {
             plantId: plantIds[i],

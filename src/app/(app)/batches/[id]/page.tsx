@@ -1129,6 +1129,43 @@ export default function BatchDetailPage({ params }: { params: Promise<{ id: stri
             </div>
           </div>
 
+          {/* Name preview — shows auto-suffixed names */}
+          {(() => {
+            const baseName = graduateForm.hybridName || batch?.species || ''
+            const propType = batch?.propagationType || ''
+            const prefixMap: Record<string, string> = { OFFSET: 'OS', DIVISION: 'DV', TC: 'TC', CUTTING: 'CT' }
+            const prefix = prefixMap[propType] || ''
+            const gradCount = parseInt(graduateForm.count) || 1
+            const alreadyGrad = batch?.plants.length || 0
+            const willSuffix = prefix && baseName && (gradCount > 1 || alreadyGrad > 0)
+
+            if (!willSuffix || !baseName) return null
+
+            const getSuffix = (idx: number) => {
+              let n = idx; let s = ''
+              do { s = String.fromCharCode(65 + (n % 26)) + s; n = Math.floor(n / 26) - 1 } while (n >= 0)
+              return s
+            }
+
+            const names = Array.from({ length: Math.min(gradCount, 5) }, (_, i) =>
+              `${baseName} ${prefix}-${getSuffix(alreadyGrad + i)}`
+            )
+
+            return (
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <p className="text-xs font-medium text-gray-500 mb-1">Name preview</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {names.map((name, i) => (
+                    <span key={i} className="text-xs bg-white px-2 py-1 rounded border border-gray-200 text-[var(--forest)] font-mono">
+                      {name}
+                    </span>
+                  ))}
+                  {gradCount > 5 && <span className="text-xs text-gray-400 self-center">+{gradCount - 5} more</span>}
+                </div>
+              </div>
+            )
+          })()}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Accession Date</label>
             <input
