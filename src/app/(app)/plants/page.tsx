@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Droplets, Search, SlidersHorizontal, Plus, AlertTriangle, Clock } from 'lucide-react'
+import { Droplets, Search, SlidersHorizontal, Plus, AlertTriangle, Clock, CheckSquare, Square, ArrowRightLeft, X } from 'lucide-react'
 import { showToast } from '@/components/toast'
 import { Modal } from '@/components/modal'
 import QuickCare from '@/components/QuickCare'
@@ -59,6 +59,13 @@ export default function PlantsPage() {
   })
   const [sortBy, setSortBy] = useState('oldest') // Default to oldest = plants needing attention first
   const [locations, setLocations] = useState<any[]>([])
+
+  // Bulk move state
+  const [selectMode, setSelectMode] = useState(false)
+  const [selectedPlantIds, setSelectedPlantIds] = useState<Set<string>>(new Set())
+  const [moveModalOpen, setMoveModalOpen] = useState(false)
+  const [moveTargetLocationId, setMoveTargetLocationId] = useState<string>('')
+  const [isMoving, setIsMoving] = useState(false)
 
   // React Query - fetch plants with client-side caching
   const { data: plants = [], isLoading, refetch } = useQuery({
@@ -248,6 +255,64 @@ export default function PlantsPage() {
     }
   }
 
+  // Selection helpers
+  const togglePlantSelection = (plantId: string) => {
+    setSelectedPlantIds(prev => {
+      const next = new Set(prev)
+      if (next.has(plantId)) {
+        next.delete(plantId)
+      } else {
+        next.add(plantId)
+      }
+      return next
+    })
+  }
+
+  const selectAllVisible = () => {
+    setSelectedPlantIds(new Set(filteredPlants.map(p => p.id)))
+  }
+
+  const deselectAll = () => {
+    setSelectedPlantIds(new Set())
+  }
+
+  const exitSelectMode = () => {
+    setSelectMode(false)
+    setSelectedPlantIds(new Set())
+  }
+
+  const handleBulkMove = async () => {
+    if (selectedPlantIds.size === 0 || !moveTargetLocationId) return
+
+    setIsMoving(true)
+    try {
+      const response = await fetch('/api/plants/bulk-move', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plantIds: Array.from(selectedPlantIds),
+          locationId: moveTargetLocationId,
+        }),
+      })
+      const data = await response.json()
+
+      if (data.success) {
+        const targetName = locations.find(l => l.id === moveTargetLocationId)?.name || 'new location'
+        showToast({ type: 'success', title: `Moved ${data.moved} plants`, message: `to ${targetName}` })
+        refetch()
+        setMoveModalOpen(false)
+        exitSelectMode()
+      } else {
+        showToast({ type: 'error', title: 'Move failed', message: data.error })
+      }
+    } catch (error) {
+      console.error('Bulk move error:', error)
+      showToast({ type: 'error', title: 'Move failed' })
+    } finally {
+      setIsMoving(false)
+    }
+  }
+
   const activeFilterCount = Object.values(filters).filter(v => v !== '' && v !== false).length
   const stalePlantCount = plants.filter(isStale).length
   const needsWaterCount = plants.filter(p => getDaysSinceLastCare(p) !== null && getDaysSinceLastCare(p)! >= 5).length
@@ -341,22 +406,41 @@ export default function PlantsPage() {
           </Link>
         </div>
 
-        {/* Sort options - text links, not fancy dropdown */}
-        <div className="flex items-center gap-4 mb-4 text-sm">
-          <span className="text-[var(--clay)]">Sort:</span>
-          {[
-            { key: 'oldest', label: 'Needs attention' },
-            { key: 'newest', label: 'Recent activity' },
-            { key: 'alphabetical', label: 'A-Z' },
-          ].map((option) => (
+        {/* Sort options + select mode toggle */}
+        <div className="flex items-center justify-between mb-4 text-sm">
+          <div className="flex items-center gap-4">
+            <span className="text-[var(--clay)]">Sort:</span>
+            {[
+              { key: 'oldest', label: 'Needs attention' },
+              { key: 'newest', label: 'Recent activity' },
+              { key: 'alphabetical', label: 'A-Z' },
+            ].map((option) => (
+              <button
+                key={option.key}
+                onClick={() => setSortBy(option.key)}
+                className={sortBy === option.key ? 'text-[var(--forest)] font-medium' : 'text-[var(--bark)]'}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          {selectMode ? (
             <button
-              key={option.key}
-              onClick={() => setSortBy(option.key)}
-              className={sortBy === option.key ? 'text-[var(--forest)] font-medium' : 'text-[var(--bark)]'}
+              onClick={exitSelectMode}
+              className="flex items-center gap-1.5 text-[var(--clay)] hover:text-[var(--bark)]"
             >
-              {option.label}
+              <X className="w-3.5 h-3.5" />
+              Cancel
             </button>
-          ))}
+          ) : (
+            <button
+              onClick={() => setSelectMode(true)}
+              className="flex items-center gap-1.5 text-[var(--bark)] hover:text-[var(--forest)]"
+            >
+              <CheckSquare className="w-3.5 h-3.5" />
+              Select
+            </button>
+          )}
         </div>
 
         {/* Plant grid */}
@@ -370,78 +454,166 @@ export default function PlantsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
-            {filteredPlants.map((plant) => (
-              <Link
-                href={`/plants/${plant.id}`}
-                key={plant.id}
-                onClick={() => {
-                  sessionStorage.setItem('plantsPageScroll', window.scrollY.toString())
-                  sessionStorage.setItem('plantsPageFilters', JSON.stringify(filters))
-                  sessionStorage.setItem('plantsPageSort', sortBy)
-                  sessionStorage.setItem('plantsPageSearch', searchTerm)
-                }}
-                className="card-interactive overflow-hidden block"
-              >
-                {/* Photo - 2:3 portrait with object-cover (original working layout) */}
-                {plant.photos && plant.photos.length > 0 ? (
-                  <div className="aspect-[2/3] bg-[var(--parchment)]">
-                    <img
-                      src={getPhotoUrl(plant.photos[0], 'card')}
-                      alt={plant.hybridName || plant.species || 'Plant'}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                  </div>
-                ) : (
-                  <div className="aspect-[2/3] bg-[var(--parchment)] flex items-center justify-center">
-                    <span className="text-3xl text-[var(--sage)]">🌿</span>
-                  </div>
+            {/* Select all bar when in select mode */}
+            {selectMode && filteredPlants.length > 0 && (
+              <div className="col-span-full flex items-center justify-between px-1 -mt-1 mb-1">
+                <button
+                  onClick={selectedPlantIds.size === filteredPlants.length ? deselectAll : selectAllVisible}
+                  className="text-xs text-[var(--forest)] font-medium"
+                >
+                  {selectedPlantIds.size === filteredPlants.length ? 'Deselect all' : `Select all ${filteredPlants.length}`}
+                </button>
+                {selectedPlantIds.size > 0 && (
+                  <span className="text-xs text-[var(--clay)]">{selectedPlantIds.size} selected</span>
                 )}
+              </div>
+            )}
+            {filteredPlants.map((plant) => {
+              const isSelected = selectedPlantIds.has(plant.id)
+              const CardWrapper = selectMode ? 'div' : Link
+              const cardProps = selectMode
+                ? {
+                    onClick: () => togglePlantSelection(plant.id),
+                    className: `card-interactive overflow-hidden block cursor-pointer relative ${
+                      isSelected ? 'ring-2 ring-[var(--forest)]' : ''
+                    }`,
+                  }
+                : {
+                    href: `/plants/${plant.id}`,
+                    onClick: () => {
+                      sessionStorage.setItem('plantsPageScroll', window.scrollY.toString())
+                      sessionStorage.setItem('plantsPageFilters', JSON.stringify(filters))
+                      sessionStorage.setItem('plantsPageSort', sortBy)
+                      sessionStorage.setItem('plantsPageSearch', searchTerm)
+                    },
+                    className: 'card-interactive overflow-hidden block',
+                  }
 
-                <div className="p-3">
-                  {/* Plant name */}
-                  <h3 className="font-medium text-sm text-[var(--forest)] leading-tight line-clamp-2">
-                    {plant.hybridName || plant.species || 'Unknown'}
-                  </h3>
-
-                  {/* Plant ID */}
-                  <p className="text-xs text-[var(--clay)] font-mono mt-0.5">{plant.plantId}</p>
-
-                  {/* Last care - key info with dynamic thresholds */}
-                  {(() => {
-                    const status = getCareStatus(plant)
-                    const colorClass = status.status === 'overdue'
-                      ? 'text-[var(--alert-red)]'
-                      : status.status === 'warning'
-                      ? 'text-[var(--spadix-yellow)]'
-                      : 'text-[var(--moss)]'
-                    return (
-                      <div className="flex items-center gap-1 mt-2 text-xs">
-                        <Clock className="w-3 h-3 text-[var(--clay)]" />
-                        <span className={colorClass}>
-                          {formatLastCare(plant)}
-                        </span>
-                        {/* Show dynamic interval hint for plants with enough data */}
-                        {status.thresholds.isDynamic && (
-                          <span className="text-[var(--clay)]" title={`Based on ${status.thresholds.eventCount} care events`}>
-                            (~{status.thresholds.averageInterval}d avg)
-                          </span>
-                        )}
-                      </div>
-                    )
-                  })()}
-
-                  {/* Location if available */}
-                  {plant.currentLocation && (
-                    <p className="text-xs text-[var(--clay)] mt-1 truncate">
-                      {plant.currentLocation.name}
-                    </p>
+              return (
+                <CardWrapper key={plant.id} {...(cardProps as any)}>
+                  {/* Checkbox overlay in select mode */}
+                  {selectMode && (
+                    <div className="absolute top-2 left-2 z-10">
+                      {isSelected ? (
+                        <CheckSquare className="w-5 h-5 text-[var(--forest)] drop-shadow-sm" />
+                      ) : (
+                        <Square className="w-5 h-5 text-white drop-shadow-sm" />
+                      )}
+                    </div>
                   )}
-                </div>
-              </Link>
-            ))}
+
+                  {/* Photo - 2:3 portrait with object-cover */}
+                  {plant.photos && plant.photos.length > 0 ? (
+                    <div className={`aspect-[2/3] bg-[var(--parchment)] ${selectMode && isSelected ? 'opacity-80' : ''}`}>
+                      <img
+                        src={getPhotoUrl(plant.photos[0], 'card')}
+                        alt={plant.hybridName || plant.species || 'Plant'}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    </div>
+                  ) : (
+                    <div className={`aspect-[2/3] bg-[var(--parchment)] flex items-center justify-center ${selectMode && isSelected ? 'opacity-80' : ''}`}>
+                      <span className="text-3xl text-[var(--sage)]">🌿</span>
+                    </div>
+                  )}
+
+                  <div className="p-3">
+                    <h3 className="font-medium text-sm text-[var(--forest)] leading-tight line-clamp-2">
+                      {plant.hybridName || plant.species || 'Unknown'}
+                    </h3>
+                    <p className="text-xs text-[var(--clay)] font-mono mt-0.5">{plant.plantId}</p>
+                    {(() => {
+                      const status = getCareStatus(plant)
+                      const colorClass = status.status === 'overdue'
+                        ? 'text-[var(--alert-red)]'
+                        : status.status === 'warning'
+                        ? 'text-[var(--spadix-yellow)]'
+                        : 'text-[var(--moss)]'
+                      return (
+                        <div className="flex items-center gap-1 mt-2 text-xs">
+                          <Clock className="w-3 h-3 text-[var(--clay)]" />
+                          <span className={colorClass}>
+                            {formatLastCare(plant)}
+                          </span>
+                          {status.thresholds.isDynamic && (
+                            <span className="text-[var(--clay)]" title={`Based on ${status.thresholds.eventCount} care events`}>
+                              (~{status.thresholds.averageInterval}d avg)
+                            </span>
+                          )}
+                        </div>
+                      )
+                    })()}
+                    {plant.currentLocation && (
+                      <p className="text-xs text-[var(--clay)] mt-1 truncate">
+                        {plant.currentLocation.name}
+                      </p>
+                    )}
+                  </div>
+                </CardWrapper>
+              )
+            })}
           </div>
         )}
+
+        {/* Floating action bar when plants are selected */}
+        {selectMode && selectedPlantIds.size > 0 && (
+          <div
+            className="fixed bottom-20 sm:bottom-6 left-1/2 -translate-x-1/2 z-40 bg-[var(--forest)] text-white rounded-full shadow-lg px-5 py-3 flex items-center gap-4"
+            style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 0px))' }}
+          >
+            <span className="text-sm font-medium">{selectedPlantIds.size} selected</span>
+            <button
+              onClick={() => {
+                setMoveTargetLocationId('')
+                setMoveModalOpen(true)
+              }}
+              className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-full text-sm transition-colors"
+            >
+              <ArrowRightLeft className="w-3.5 h-3.5" />
+              Move
+            </button>
+          </div>
+        )}
+
+        {/* Move Modal */}
+        <Modal isOpen={moveModalOpen} onClose={() => setMoveModalOpen(false)} title="Move Plants">
+          <div className="space-y-4">
+            <p className="text-sm text-[var(--clay)]">
+              Move {selectedPlantIds.size} plant{selectedPlantIds.size !== 1 ? 's' : ''} to a new location.
+            </p>
+            <div>
+              <label className="block text-sm text-[var(--bark)] mb-1">Destination</label>
+              <select
+                value={moveTargetLocationId}
+                onChange={(e) => setMoveTargetLocationId(e.target.value)}
+                className="w-full p-2 rounded border border-black/[0.08] text-sm focus:outline-none focus:border-[var(--moss)]"
+              >
+                <option value="">Select location...</option>
+                {locations.map((location) => (
+                  <option key={location.id} value={location.id}>
+                    {location.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={() => setMoveModalOpen(false)}
+                className="flex-1 px-4 py-2 rounded border border-black/[0.08] text-sm text-[var(--bark)]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleBulkMove}
+                disabled={!moveTargetLocationId || isMoving}
+                className="flex-1 px-4 py-2 rounded bg-[var(--forest)] text-white text-sm disabled:opacity-50"
+              >
+                {isMoving ? 'Moving...' : 'Move'}
+              </button>
+            </div>
+          </div>
+        </Modal>
 
         {/* Filter Modal */}
         <Modal isOpen={filterOpen} onClose={() => setFilterOpen(false)} title="Filter Plants">
