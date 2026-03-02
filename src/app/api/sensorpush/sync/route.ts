@@ -48,10 +48,37 @@ export async function GET(request: Request) {
         id: true,
         name: true,
         sensorPushId: true,
+        lastSensorSync: true,
         temperature: true,
         humidity: true,
       },
     });
+
+    // Detect and clean duplicate sensorPushId mappings (keep most recently synced)
+    const sensorLocationMap = new Map<string, typeof locations>();
+    for (const loc of locations) {
+      const key = loc.sensorPushId!;
+      if (!sensorLocationMap.has(key)) sensorLocationMap.set(key, []);
+      sensorLocationMap.get(key)!.push(loc);
+    }
+    for (const [sensorId, locs] of sensorLocationMap) {
+      if (locs.length > 1) {
+        // Keep the one with the most recent sync, clear the rest
+        const sorted = locs.sort((a, b) =>
+          (b.lastSensorSync?.getTime() || 0) - (a.lastSensorSync?.getTime() || 0)
+        );
+        for (let i = 1; i < sorted.length; i++) {
+          console.log(`[Sync] Clearing duplicate sensorPushId ${sensorId} from ${sorted[i].name} (keeping ${sorted[0].name})`);
+          await prisma.location.update({
+            where: { id: sorted[i].id },
+            data: { sensorPushId: null, lastSensorSync: null, temperature: null, humidity: null, vpd: null },
+          });
+          // Remove from locations array so we don't try to sync it
+          const idx = locations.indexOf(sorted[i]);
+          if (idx !== -1) locations.splice(idx, 1);
+        }
+      }
+    }
 
     const updates: Array<{
       locationName: string;

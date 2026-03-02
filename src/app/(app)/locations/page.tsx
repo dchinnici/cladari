@@ -549,9 +549,17 @@ export default function LocationsPage() {
                     })}
                   </select>
                   {selectedSensorId && (
-                    <p className="text-xs text-emerald-600 mt-1">
-                      Temp, Humidity, and VPD will auto-sync from this sensor
-                    </p>
+                    <div className="flex items-center justify-between mt-1">
+                      <p className="text-xs text-emerald-600">
+                        Temp, Humidity, and VPD will auto-sync from this sensor
+                      </p>
+                      <button
+                        onClick={() => handleSensorChange(editingLocation.id, '')}
+                        className="text-xs text-red-500 hover:text-red-700 underline"
+                      >
+                        Unlink
+                      </button>
+                    </div>
                   )}
                 </>
               ) : (
