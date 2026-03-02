@@ -169,7 +169,19 @@ export async function POST(request: Request) {
       );
     }
 
-    // Update location with sensor mapping
+    // Unlink this sensor from any other location first
+    await prisma.location.updateMany({
+      where: {
+        sensorPushId,
+        id: { not: locationId },
+      },
+      data: {
+        sensorPushId: null,
+        lastSensorSync: null,
+      },
+    });
+
+    // Link sensor to new location
     const location = await prisma.location.update({
       where: { id: locationId },
       data: { sensorPushId },
@@ -234,6 +246,9 @@ export async function DELETE(request: Request) {
       data: {
         sensorPushId: null,
         lastSensorSync: null,
+        temperature: null,
+        humidity: null,
+        vpd: null,
       },
     });
 
