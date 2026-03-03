@@ -4,7 +4,7 @@
 
 A production-grade web application for managing high-value Anthurium collections with comprehensive tracking of genetics, morphology, care schedules, breeding programs, and AI-assisted plant health analysis.
 
-[![Version](https://img.shields.io/badge/version-1.7.9-green.svg)](https://github.com/yourusername/cladari)
+[![Version](https://img.shields.io/badge/version-1.8.0-green.svg)](https://github.com/yourusername/cladari)
 [![Status](https://img.shields.io/badge/status-production-brightgreen.svg)](https://www.cladari.co)
 [![Live](https://img.shields.io/badge/live-www.cladari.co-blue.svg)](https://www.cladari.co)
 
@@ -15,6 +15,7 @@ A production-grade web application for managing high-value Anthurium collections
 ### 🌱 Plant Management
 - **Unique ID System** - ANT-YYYY-#### accession numbers
 - **Complete Lineage Tracking** - Sexual and asexual propagation
+- **Bulk Move** - Select multiple plants and relocate between grow spaces in one action
 - **13 Anthurium Sections** - Full taxonomic support
 - **Financial Valuation** - Acquisition cost and market value tracking
 
@@ -23,6 +24,7 @@ A production-grade web application for managing high-value Anthurium collections
 - **Category Detection** - INTRASPECIFIC, INTERSPECIFIC, INTERSECTIONAL
 - **Seed Batches** - Germination tracking with environmental conditions
 - **Clone Batches** - TC, division, cutting, offset management
+- **Auto-Suffix Naming** - Graduated clones auto-named (OS-A, DV-B, TC-C, etc.)
 - **Graduation Workflow** - Seedlings and clones promote to Plant records
 
 ### 🤖 AI-Powered Analysis
@@ -30,6 +32,7 @@ A production-grade web application for managing high-value Anthurium collections
 - **Photo Analysis** - Multi-image health assessments with 4 quick-action modes
 - **Environmental Correlation** - SensorPush data integrated into AI context
 - **Semantic Search** - Cross-collection knowledge base via pgvector embeddings
+- **Thinking Indicators** - Contextual status messages during extended processing
 - **HITL Quality Scoring** - Human feedback loop for ML training
 
 ### 📊 Environmental Monitoring
@@ -135,11 +138,17 @@ cladari/
 │   ├── app/                   # Next.js App Router
 │   │   ├── api/               # REST API endpoints
 │   │   │   ├── chat/          # AI chat (Opus 4 + context)
+│   │   │   ├── plants/bulk-move/ # Batch relocate plants
+│   │   │   ├── admin/users/   # Admin user management
 │   │   │   ├── ml/            # ML endpoints (semantic-search, diagnose)
 │   │   │   └── sensorpush/    # Environmental monitoring
-│   │   ├── plants/            # Plant management UI
-│   │   ├── breeding/          # Breeding pipeline UI
-│   │   └── batches/           # Clone batch management
+│   │   ├── (app)/             # Authenticated routes (shared nav)
+│   │   │   ├── plants/        # Plant management UI
+│   │   │   ├── breeding/      # Breeding pipeline UI
+│   │   │   ├── batches/       # Clone batch management
+│   │   │   ├── genetics/      # RA codes & breeding values
+│   │   │   └── settings/      # User preferences
+│   │   └── (marketing)/       # Public landing page
 │   ├── components/            # React components
 │   └── lib/
 │       ├── ml/                # ML modules (embeddings, predictors)
@@ -166,6 +175,7 @@ cladari/
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| **1.8.0** | Mar 2026 | Bulk move, auto-suffix naming, AI thinking indicators, admin management |
 | **1.7.9** | Dec 2025 | Telegram daily care notifications at 8am EST |
 | **1.7.8** | Dec 2025 | AI quick actions, photo context classification, dynamic thresholds |
 | **1.7.7** | Dec 2025 | Enhanced stress analysis, Opus 4 restoration |
@@ -187,7 +197,7 @@ See [CHANGELOG.md](CHANGELOG.md) for full history.
 ### Planned
 - **ML Vision Pipeline** - SAM2 + DINOv2 for morphological analysis
 - **Voice Memo Import** - Whisper transcription for hands-free logging
-- **Taxon Reference System** - Verified specimen database for AI comparison
+- **Taxon Reference Integration** - 154 species scraped + embedded, not yet wired to AI chat
 
 ---
 

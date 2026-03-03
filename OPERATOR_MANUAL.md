@@ -1,5 +1,5 @@
 # Cladari PlantDB - Operator Manual
-**Version 1.7.9** | **Updated: December 27, 2025**
+**Version 1.8.0** | **Updated: March 3, 2026**
 
 ## 🌿 Welcome to Your Plant Management System
 
@@ -14,13 +14,14 @@ This guide will help you use all the features of your Anthurium collection datab
 3. [Care Management](#-care-management)
 4. [Photo Management](#-photo-management)
 5. [AI Photo Analysis](#-ai-photo-analysis)
-6. [Telegram Notifications](#-telegram-notifications) *(NEW)*
+6. [Telegram Notifications](#-telegram-notifications)
 7. [EC/pH Monitoring](#-ecph-monitoring)
 8. [Batch Operations](#-batch-operations)
 9. [Breeding Pipeline](#-breeding-pipeline)
-10. [Dashboard Features](#-dashboard-features)
-11. [Keyboard Shortcuts](#-keyboard-shortcuts)
-12. [Troubleshooting](#-troubleshooting)
+10. [Settings](#-settings) *(NEW)*
+11. [Dashboard Features](#-dashboard-features)
+12. [Keyboard Shortcuts](#-keyboard-shortcuts)
+13. [Troubleshooting](#-troubleshooting)
 
 ---
 
@@ -31,7 +32,7 @@ This guide will help you use all the features of your Anthurium collection datab
 1. **Open Terminal** on your Mac
 2. **Navigate to the project**:
    ```bash
-   cd /Users/davidchinnici/cladari/plantDB
+   cd /Users/davidchinnici/cladari
    ```
 3. **Start the server**:
    ```bash
@@ -42,7 +43,7 @@ This guide will help you use all the features of your Anthurium collection datab
 ### Stopping the System
 
 ```bash
-cd /Users/davidchinnici/cladari/plantDB
+cd /Users/davidchinnici/cladari
 ./scripts/stop
 ```
 
@@ -93,6 +94,19 @@ Click any plant card to see full details with these 5 tabs:
 1. On the plant detail page, click **"Edit"** (top right)
 2. Update any fields
 3. Click **"Save"** to confirm or **"Cancel"** to discard
+
+### Bulk Move Plants Between Locations
+
+Move multiple plants to a new location at once:
+
+1. On the **Plants** page, tap the **move icon** (arrows) in the top controls
+2. You're now in **Select Mode** — tap plant cards to select them (blue ring highlights selected)
+3. Use **"Select All"** to grab all visible plants, or tap individually
+4. Tap **"Move"** in the floating action bar at the bottom
+5. Choose the destination location from the dropdown (or "No Location" to unassign)
+6. Confirm the move — all selected plants update instantly
+
+Tap the **X** to exit select mode without moving.
 
 ---
 
@@ -170,7 +184,7 @@ The cover photo appears on plant cards in the main view:
 
 - **Edit**: Click the pencil icon to update details
 - **Delete**: Click the trash icon to remove
-- Photos are stored in `/public/uploads/photos/`
+- Photos are stored in Supabase cloud storage (access-controlled per user)
 - Thumbnails generated automatically for performance
 
 ---
@@ -185,30 +199,39 @@ Use Claude AI to analyze your plant photos and get intelligent health insights.
 2. Scroll down to find the **AI Assistant** chat panel
 3. The assistant has access to all your plant's photos and care history
 
-### Two Analysis Modes
+### Quick Analysis Modes
 
-**Recent Mode (Default)**
-- Analyzes the **3 most recent photos**
-- Best for quick check-ins and follow-up questions
-- Lower token cost (~4.5K tokens per message)
+Choose from four pre-configured analysis modes:
 
-**Comprehensive Mode (Deep Analysis)**
-- Analyzes up to **20 photos** for thorough evaluation
-- Best for initial health assessment or investigating issues
-- Check the **"Deep analysis"** checkbox to enable
-- Higher token cost (~30K tokens per message)
+- **Substrate** — EC/pH trends, feeding analysis (no photos, fast)
+- **Visual** — Quick health check (3 recent photos)
+- **Progress** — Growth over time (10 photos chronologically)
+- **Full Report** — Comprehensive analysis (20 photos, care data, environment, recommendations)
+
+Or toggle **Freestyle Mode** for open-ended multi-turn conversations.
+
+### Thinking Indicators
+
+When the AI is processing (especially for Full Report with extended thinking), you'll see rotating status messages:
+- *Pulling care history...*
+- *Reviewing photo timeline...*
+- *Analyzing EC/pH patterns...*
+- *Checking environmental readings...*
+- *Cross-referencing trait data...*
+
+These rotate every few seconds until the response begins streaming. Once text appears, you can start reading immediately — the AI won't jump you to the bottom if you scroll up.
 
 ### Optimal Usage Workflow
 
 For the best balance of analysis depth and cost:
 
-1. **Start with Deep Analysis ON** for your first question
-   - Example: "Review photos and provide analysis of plant health"
-   - AI analyzes full photo history, identifies patterns
+1. **Start with Full Report** for your first question
+   - AI analyzes full photo history, care data, and environmental conditions
+   - Most expensive but gives the best overview
 
-2. **Uncheck Deep Analysis** for follow-up questions
-   - The AI remembers what it saw in previous turns
-   - Follow-ups only send 3 photos, reducing cost
+2. **Switch to Substrate or Visual** for follow-ups
+   - The AI remembers context from previous turns
+   - Targeted modes are faster and cheaper
    - Example: "What could cause that stippling we discussed?"
 
 ### What the AI Can Do
@@ -493,12 +516,28 @@ Clone batches track vegetative propagation:
 1. Open the batch detail page
 2. Click "Graduate" button
 3. Enter how many to graduate
-4. Optionally specify: pot size, substrate, accession date
-5. Plant IDs are auto-generated (ANT-YYYY-####)
-6. Plants retain link to source batch in Lineage tab
+4. Preview auto-generated names: each clone gets a suffix based on propagation type
+   - Offsets: `Red Crystal Quilted OS-A`, `OS-B`, `OS-C`...
+   - Divisions: `Magnificum DV-A`, `DV-B`...
+   - TC: `Crystallinum TC-A`, `TC-B`...
+   - Suffixes continue from previous graduations (if you graduated A and B last time, the next starts at C)
+5. Optionally specify: pot size, substrate, accession date
+6. Plant IDs are auto-generated (ANT-YYYY-####)
+7. Plants retain link to source batch in Lineage tab
 
 **ID Convention:**
 - **CLB-YYYY-###**: Clone Batch ID (e.g., CLB-2025-001)
+
+---
+
+## ⚙️ Settings
+
+Access settings from the user menu (top right on desktop, "Logout" area on mobile).
+
+### User Preferences
+- **Display Name**: How your name appears in the app
+- **Timezone**: Controls date display across the platform (default: America/New_York)
+- **City/Region**: Optional — enables local weather data for AI context
 
 ---
 
@@ -569,7 +608,7 @@ Visual analytics showing:
 
 1. **Check the logs**:
    ```bash
-   cd /Users/davidchinnici/cladari/plantDB
+   cd /Users/davidchinnici/cladari
    tail -50 .next-dev.log
    ```
 
@@ -594,7 +633,7 @@ Your data is automatically backed up:
 
 Manual backup anytime:
 ```bash
-cd /Users/davidchinnici/cladari/plantDB
+cd /Users/davidchinnici/cladari
 ./scripts/backup-to-nas.sh
 ```
 
@@ -728,4 +767,4 @@ Remember: This system grows with your collection. Every plant tracked, every mea
 
 ---
 
-*End of Operator Manual v1.7.9*
+*End of Operator Manual v1.8.0*

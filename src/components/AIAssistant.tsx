@@ -74,6 +74,17 @@ const QUICK_ACTIONS: QuickActionTemplate[] = [
   },
 ];
 
+// Thinking status messages that rotate during extended processing
+const THINKING_PHASES = [
+  'Pulling care history...',
+  'Reviewing photo timeline...',
+  'Analyzing EC/pH patterns...',
+  'Checking environmental readings...',
+  'Cross-referencing trait data...',
+  'Evaluating growth trajectory...',
+  'Compiling insights...',
+];
+
 // Strip XML-style tags from AI responses (Claude sometimes outputs structured tags)
 function stripXmlTags(text: string): string {
   // Remove opening and closing XML-style tags like <analyze_photos>, <photo_analysis photo_number="1">, etc.
@@ -96,6 +107,7 @@ export default function AIAssistant({ plantId, plantData, embedded = false }: AI
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [savingTurnIndex, setSavingTurnIndex] = useState<number | null>(null);
+  const [thinkingPhase, setThinkingPhase] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
@@ -168,7 +180,10 @@ export default function AIAssistant({ plantId, plantData, embedded = false }: AI
   const isLoading = status === 'streaming' || status === 'submitted';
 
   const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const container = messagesContainerRef.current;
+    if (container) {
+      container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+    }
     setUserHasScrolled(false);
     setShowScrollButton(false);
   }, []);
@@ -191,14 +206,20 @@ export default function AIAssistant({ plantId, plantData, embedded = false }: AI
   }, [isLoading]);
 
   // Auto-scroll only when user hasn't manually scrolled up
+  // On completion (status → ready), show the scroll button instead of forcing a jump
   useEffect(() => {
-    if (!userHasScrolled && messages.length > 0) {
-      // Only auto-scroll for new messages, not during streaming
-      if (status === 'ready') {
-        scrollToBottom();
+    if (userHasScrolled) return;
+    if (messages.length === 0) return;
+
+    if (status === 'streaming') {
+      // During streaming, keep scrolling to follow new content
+      const container = messagesContainerRef.current;
+      if (container) {
+        container.scrollTo({ top: container.scrollHeight, behavior: 'instant' });
       }
     }
-  }, [messages.length, status, userHasScrolled, scrollToBottom]);
+    // On completion, don't force scroll — user is already reading
+  }, [messages, status, userHasScrolled]);
 
   // Show scroll button when there's new content and user is scrolled up
   useEffect(() => {
@@ -206,6 +227,18 @@ export default function AIAssistant({ plantId, plantData, embedded = false }: AI
       setShowScrollButton(true);
     }
   }, [userHasScrolled, isLoading]);
+
+  // Rotate thinking status messages during processing
+  useEffect(() => {
+    if (!isLoading) {
+      setThinkingPhase(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setThinkingPhase(prev => (prev + 1) % THINKING_PHASES.length);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, [isLoading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -370,7 +403,7 @@ export default function AIAssistant({ plantId, plantData, embedded = false }: AI
   }
 
   const containerClass = embedded
-    ? "bg-white border border-black/[0.08] rounded-xl h-full flex flex-col"
+    ? "bg-white border border-black/[0.08] rounded-xl max-h-[70vh] flex flex-col"
     : isMaximized
     ? "fixed inset-4 bg-white rounded-xl shadow-2xl z-50 flex flex-col"
     : "fixed bottom-4 right-4 w-96 h-[500px] bg-white rounded-xl shadow-2xl z-50 flex flex-col";
@@ -592,10 +625,13 @@ export default function AIAssistant({ plantId, plantData, embedded = false }: AI
             );
           })}
 
-          {isLoading && (
+          {isLoading && status === 'submitted' && (
             <div className="flex justify-start">
-              <div className="bg-[var(--bg-primary)] rounded-xl px-3 py-2">
-                <Loader className="w-4 h-4 animate-spin text-[var(--clay)]" />
+              <div className="bg-[var(--bg-primary)] rounded-xl px-3 py-2.5 flex items-center gap-2.5">
+                <Loader className="w-3.5 h-3.5 animate-spin text-[var(--moss)]" />
+                <span className="text-xs text-[var(--clay)] italic animate-pulse">
+                  {THINKING_PHASES[thinkingPhase]}
+                </span>
               </div>
             </div>
           )}

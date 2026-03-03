@@ -145,7 +145,9 @@ cladari/                          # Monorepo root
 ├── src/
 │   ├── app/                   # Next.js App Router pages + API routes
 │   │   ├── api/               # REST endpoints (all require auth)
+│   │   │   ├── admin/users/    # Admin user management (purge/revoke/delete-data)
 │   │   │   ├── breeding/      # Breeding record API
+│   │   │   ├── plants/bulk-move/ # Bulk move plants between locations
 │   │   │   ├── seed-batches/  # Seed batch API
 │   │   │   ├── seedlings/     # Seedling API
 │   │   │   ├── chat/          # AI chat endpoint (Opus 4 + quick actions + context modes + stress analysis)
@@ -155,12 +157,18 @@ cladari/                          # Monorepo root
 │   │   │   ├── sensorpush/    # SensorPush API (sync, history, sensors)
 │   │   │   ├── weather/       # Open-Meteo weather API
 │   │   │   └── print/         # Label print APIs (zebra, plant-tag, location-tag)
+│   │   ├── (app)/             # Authenticated route group (shared nav layout)
+│   │   │   ├── plants/        # Plant management UI (+ bulk move)
+│   │   │   ├── breeding/      # Breeding pipeline UI
+│   │   │   ├── batches/       # Clone batch management
+│   │   │   ├── batch-care/    # Batch care operations
+│   │   │   ├── dashboard/     # Analytics
+│   │   │   ├── locations/     # Location management
+│   │   │   ├── genetics/      # Genetics & RA codes
+│   │   │   ├── settings/      # User preferences
+│   │   │   └── q/             # QR redirect handler
+│   │   ├── (marketing)/       # Public marketing page
 │   │   ├── login/             # Supabase auth login page
-│   │   ├── q/                 # QR redirect handler (/q/p/{id}, /q/l/{loc})
-│   │   ├── plants/            # Plant management UI
-│   │   ├── breeding/          # Breeding pipeline UI
-│   │   ├── batch-care/        # Batch operations
-│   │   └── dashboard/         # Analytics
 │   ├── components/            # React components
 │   └── lib/
 │       ├── supabase/          # Supabase client utilities
@@ -195,9 +203,41 @@ cladari/                          # Monorepo root
 - **API routes**: kebab-case paths
 - **ID Generation**: `src/lib/breeding-ids.ts` for all ID generation
 
-## Current Version: v1.7.9 (Dec 27, 2025)
+## Current Version: v1.8.0 (Mar 3, 2026)
 
 ### Recently Completed
+- **AI Assistant UX Improvements** (Mar 3, 2026)
+  - **Thinking Status Indicators**: Rotating contextual messages during extended processing ("Pulling care history...", "Reviewing photo timeline...", "Analyzing EC/pH patterns...", etc.) — replaces bare spinner
+  - **Scroll Position Preservation**: AI responses no longer jump to bottom on completion. User's reading position is locked once they scroll up. Uses container-scoped `scrollTo()` instead of `scrollIntoView()`
+  - **Embedded Container Fix**: AI chat now constrained to `max-h-[70vh]` so responses scroll within the chat area instead of expanding the entire page behind the fixed bottom nav
+
+- **Auto-Suffix Clone Naming on Graduation** (Mar 2, 2026)
+  - Graduated clones auto-named with propagation prefix + letter suffix: `OS-A`, `OS-B`, `DV-A`, `TC-A`, etc.
+  - Prefix map: OFFSET→OS, DIVISION→DV, TC→TC, CUTTING→CT
+  - Letter sequence cumulative across graduation sessions (uses `alreadyGraduated` count)
+  - Handles >26 clones with AA, AB pattern
+  - Name preview shown in graduation modal before confirming
+
+- **Batches Route Fix** (Mar 2, 2026)
+  - Moved `src/app/batches/` → `src/app/(app)/batches/` so it inherits the nav layout
+
+- **Bulk Move Plants** (Feb 28, 2026)
+  - Select multiple plants on `/plants` page and move to a different location in one action
+  - API: `POST /api/plants/bulk-move` with `{ plantIds: string[], locationId: string | null }`
+  - UI: Toggle select mode, tap plant cards to select, floating action bar with move button
+  - Multi-tenant safe: validates both plant ownership and location ownership
+
+- **Beta Onboarding Sprint** (Feb 23-28, 2026)
+  - Multi-tenant unique constraints: `Location.name` and `Vendor.name` scoped per user
+  - Auth callback email conflict recovery: Profile UUID migration when Google OAuth creates new UUID
+  - Admin user management endpoint: `DELETE /api/admin/users/[id]?mode=purge|revoke|delete-data`
+  - Admin user inspect: `GET /api/admin/users/[id]`
+  - Settings page: User preferences (timezone, city, display name)
+  - Genetics page: RA code groupings and breeding value display
+  - Location filter fix on plants page
+  - Domain migration: `cladari.ai` → `cladari.co` with Vercel 308 redirects
+  - Demo account credentials moved to `DEMO_ACCOUNT_PASSWORD` env var
+
 - **Telegram Daily Care Notifications** (Dec 27, 2025)
   - **Telegram Bot Integration** (`src/lib/telegram.ts`):
     - CladariCareBot sends daily digest at 8am EST

@@ -1,7 +1,7 @@
 # Cladari Plant Database - Engineering Manual
-**Version:** 1.7.9
-**Last Updated:** December 27, 2025
-**Status:** PRODUCTION - Supabase Cloud + pgvector Semantic Search + AI Photo Analysis + Telegram Notifications
+**Version:** 1.8.0
+**Last Updated:** March 3, 2026
+**Status:** PRODUCTION - Supabase Cloud + pgvector + AI Photo Analysis + Admin Management + Bulk Operations
 **Architecture:** PostgreSQL (Supabase) + Next.js 15 + Prisma ORM + Claude AI + pgvector + Telegram Bot
 
 ---
@@ -31,7 +31,7 @@ The Cladari Plant Database is a comprehensive Anthurium breeding management syst
 
 ---
 
-## 📊 Current System State (December 21, 2025)
+## 📊 Current System State (March 3, 2026)
 
 ### What's Working ✅
 ```
@@ -66,10 +66,43 @@ The Cladari Plant Database is a comprehensive Anthurium breeding management syst
 ✅ WEATHER INTEGRATION: Open-Meteo API, AI chat context
 ✅ JOURNAL EDIT/DELETE: Edit or remove any historical entry (traits, measurements)
 ✅ TELEGRAM DAILY DIGEST: Morning care notifications at 8am EST via Vercel cron
+✅ BULK MOVE PLANTS: Select multiple plants and relocate in one action
+✅ AUTO-SUFFIX CLONE NAMING: OS-A, DV-B, TC-C auto-naming on graduation
+✅ AI THINKING INDICATORS: Rotating status messages during extended processing
+✅ ADMIN USER MANAGEMENT: Purge/revoke/delete-data endpoints with admin role gating
+✅ SETTINGS PAGE: User preferences (timezone, city, display name)
+✅ GENETICS PAGE: RA codes, breeding values, provenance display
+✅ MULTI-TENANT CONSTRAINTS: Location.name and Vendor.name scoped per user
+✅ DOMAIN MIGRATION: cladari.ai → cladari.co with 308 redirects
+✅ ROUTE GROUP ARCHITECTURE: (app) for authenticated, (marketing) for public
 ```
 
 ### Recent Improvements 🚀
 ```
+Mar 03: AI ASSISTANT UX IMPROVEMENTS (v1.8.0)
+        - Thinking status indicators: Rotating contextual messages during processing
+        - Scroll position preservation: No jump on completion, container-scoped scrolling
+        - Embedded container: max-h-[70vh] prevents page expansion behind fixed nav
+
+Mar 02: AUTO-SUFFIX CLONE NAMING + BATCHES FIX
+        - Clone graduation auto-names: OFFSET→OS-A, DIVISION→DV-A, TC→TC-A, etc.
+        - Letter sequence cumulative across sessions, handles >26 with AA/AB pattern
+        - Moved /app/batches/ → /app/(app)/batches/ for nav layout inheritance
+
+Feb 28: BULK MOVE PLANTS + LOCATION FILTER FIX
+        - POST /api/plants/bulk-move: Batch relocate plants with ownership validation
+        - Select mode UI with floating action bar on Plants page
+        - Location filter on plants page fixed (was returning empty)
+
+Feb 23-28: BETA ONBOARDING SPRINT
+        - Multi-tenant unique constraints: @@unique([userId, name]) on Location, Vendor
+        - Auth callback email conflict recovery (Profile UUID migration)
+        - Admin user management: GET/DELETE /api/admin/users/[id] (purge/revoke/delete-data)
+        - Settings page: /settings with timezone, city, display name
+        - Genetics page: /genetics with RA codes and breeding values
+        - Domain migration: cladari.ai → cladari.co with Vercel 308 redirects
+        - Demo credentials moved to DEMO_ACCOUNT_PASSWORD env var
+
 Dec 27: TELEGRAM DAILY CARE NOTIFICATIONS (v1.7.9)
         - Telegram Bot Integration: CladariCareBot sends daily digest at 8am EST
         - Care Priority Alerting: Overdue plants with days-since-care counts

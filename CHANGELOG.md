@@ -2,6 +2,63 @@
 
 All notable changes to the Cladari Plant Management System will be documented in this file.
 
+## [1.8.0] - 2026-03-03
+
+### Added
+- **Bulk Move Plants** - Select multiple plants and move them to a different location in one action
+  - New API endpoint: `POST /api/plants/bulk-move`
+  - Select mode UI on Plants page with floating action bar
+  - Multi-tenant safe: validates both plant ownership and location ownership
+
+- **Auto-Suffix Clone Naming** - Graduated clones automatically named with propagation prefix + letter suffix
+  - Prefix map: OFFSET→OS, DIVISION→DV, TC→TC, CUTTING→CT
+  - Example: "Red Crystal Quilted OS-A", "Red Crystal Quilted OS-B"
+  - Cumulative across graduation sessions (continues from last suffix)
+  - Handles >26 clones with AA, AB pattern
+  - Name preview shown in graduation modal
+
+- **AI Thinking Indicators** - Rotating status messages during extended AI processing
+  - "Pulling care history...", "Reviewing photo timeline...", "Analyzing EC/pH patterns...", etc.
+  - Rotates every 2.5 seconds during `submitted` phase (before streaming begins)
+  - Replaces bare spinner with contextual feedback
+
+- **Settings Page** - User preferences at `/settings`
+  - Display name, timezone, city/region configuration
+  - Timezone affects date display across the platform
+
+- **Genetics Page** - RA code groupings and breeding value display at `/genetics`
+
+- **Admin User Management** - Full user lifecycle management
+  - `GET /api/admin/users/[id]` - Profile + auth status + data counts
+  - `DELETE /api/admin/users/[id]?mode=purge|revoke|delete-data` - Three deletion modes
+  - Admin access controlled by `ADMIN_EMAILS` env var
+
+### Changed
+- **AI Assistant Scroll Behavior** - No longer jumps to bottom when response completes
+  - Reading position locked when user scrolls up during streaming
+  - Uses `container.scrollTo()` instead of `scrollIntoView()` (prevents page-level scroll)
+  - Embedded container constrained to `max-h-[70vh]` for internal scrolling
+
+- **Multi-Tenant Unique Constraints** - Location and Vendor names scoped per user
+  - `Location.name` changed from `@unique` to `@@unique([userId, name])`
+  - `Vendor.name` changed from `@unique` to `@@unique([userId, name])`
+  - Prevents one user's "Grow Tent 1" from blocking another user's
+
+- **Domain Migration** - `cladari.ai` → `cladari.co` with Vercel 308 redirects
+- **Demo Account** - Credentials moved from source code to `DEMO_ACCOUNT_PASSWORD` env var
+
+### Fixed
+- **Batches Nav Bar** - Moved `/app/batches/` into `(app)` route group so it inherits navigation layout
+- **Location Filter** - Plants page location filter was always returning empty results
+- **Auth Callback** - Email conflict recovery when Google OAuth creates new UUID for existing email
+  - Migrates Profile + all owned data to new UUID automatically
+
+### Technical
+- Route group reorganization: authenticated pages under `src/app/(app)/`, marketing under `src/app/(marketing)/`
+- New routes: `/settings`, `/genetics`, `/api/plants/bulk-move`, `/api/admin/users`
+- Clone graduation uses `getCloneSuffix()` for letter sequence generation
+- AI thinking phase uses `setInterval` with 2500ms rotation, cleaned up on unmount
+
 ## [1.7.9] - 2025-12-27
 
 ### Added
