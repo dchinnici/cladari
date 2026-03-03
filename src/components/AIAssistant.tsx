@@ -205,20 +205,24 @@ export default function AIAssistant({ plantId, plantData, embedded = false }: AI
     }
   }, [isLoading]);
 
-  // Auto-scroll only when user hasn't manually scrolled up
-  // On completion (status → ready), show the scroll button instead of forcing a jump
+  // Auto-scroll during streaming — throttled with rAF to avoid layout thrashing
+  const scrollRafRef = useRef<number | null>(null);
   useEffect(() => {
-    if (userHasScrolled) return;
-    if (messages.length === 0) return;
+    if (userHasScrolled || messages.length === 0 || status !== 'streaming') return;
 
-    if (status === 'streaming') {
-      // During streaming, keep scrolling to follow new content
+    // Cancel any pending scroll frame
+    if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current);
+
+    scrollRafRef.current = requestAnimationFrame(() => {
       const container = messagesContainerRef.current;
       if (container) {
-        container.scrollTo({ top: container.scrollHeight, behavior: 'instant' });
+        container.scrollTop = container.scrollHeight;
       }
-    }
-    // On completion, don't force scroll — user is already reading
+    });
+
+    return () => {
+      if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current);
+    };
   }, [messages, status, userHasScrolled]);
 
   // Show scroll button when there's new content and user is scrolled up
@@ -625,16 +629,31 @@ export default function AIAssistant({ plantId, plantData, embedded = false }: AI
             );
           })}
 
-          {isLoading && status === 'submitted' && (
-            <div className="flex justify-start">
-              <div className="bg-[var(--bg-primary)] rounded-xl px-3 py-2.5 flex items-center gap-2.5">
-                <Loader className="w-3.5 h-3.5 animate-spin text-[var(--moss)]" />
-                <span className="text-xs text-[var(--clay)] italic animate-pulse">
-                  {THINKING_PHASES[thinkingPhase]}
-                </span>
-              </div>
-            </div>
-          )}
+          {isLoading && (() => {
+            // Check if the latest assistant message has visible text yet
+            const lastAssistant = [...messages].reverse().find(m => m.role === 'assistant' && m.id !== 'context');
+            const lastText = lastAssistant?.parts
+              ?.filter((p): p is { type: 'text'; text: string } => p.type === 'text')
+              .map(p => p.text)
+              .join('') || '';
+            const hasVisibleContent = lastText.trim().length > 0;
+
+            // Show thinking indicator during submitted phase OR streaming with no visible text
+            // (extended thinking sends thinking tokens before visible text appears)
+            if (status === 'submitted' || !hasVisibleContent) {
+              return (
+                <div className="flex justify-start">
+                  <div className="bg-[var(--bg-primary)] rounded-xl px-3 py-2.5 flex items-center gap-2.5">
+                    <Loader className="w-3.5 h-3.5 animate-spin text-[var(--moss)]" />
+                    <span className="text-xs text-[var(--clay)] italic animate-pulse">
+                      {THINKING_PHASES[thinkingPhase]}
+                    </span>
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })()}
 
           <div ref={messagesEndRef} />
 
