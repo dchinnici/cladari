@@ -4,6 +4,7 @@ import './globals.css'
 import { Providers } from './providers'
 import { ToastContainer } from '@/components/toast'
 import ServiceWorker from '@/components/ServiceWorker'
+import { Analytics } from '@vercel/analytics/next'
 
 const outfit = Outfit({
   subsets: ['latin'],
@@ -52,6 +53,7 @@ export default function RootLayout({
             <ServiceWorker />
           </div>
         </Providers>
+        <Analytics />
       </body>
     </html>
   )
