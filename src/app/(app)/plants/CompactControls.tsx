@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import {
-  Search, Filter, Download, Droplets, Plus, Zap,
+  Search, Filter, Download, Droplets, Plus,
   SortAsc, X, ChevronDown
 } from 'lucide-react'
 
@@ -13,7 +13,6 @@ interface CompactControlsProps {
   sortBy: string
   setSortBy: (sort: string) => void
   onFilterClick: () => void
-  onQuickCareClick: () => void
   onExportClick: () => void
   onAddPlantClick: () => void
   activeFilterCount: number
@@ -26,7 +25,6 @@ export default function CompactControls({
   sortBy,
   setSortBy,
   onFilterClick,
-  onQuickCareClick,
   onExportClick,
   onAddPlantClick,
   activeFilterCount,
@@ -134,14 +132,14 @@ export default function CompactControls({
               )}
             </button>
 
-            {/* Quick Care */}
-            <button
-              onClick={onQuickCareClick}
+            {/* Batch Care */}
+            <Link
+              href="/batch-care"
               className="p-2 bg-yellow-100 hover:bg-yellow-200 rounded-lg"
-              title="Quick Care (Cmd+K)"
+              title="Batch Care (Cmd+K)"
             >
-              <Zap className="w-5 h-5 text-yellow-600" />
-            </button>
+              <Droplets className="w-5 h-5 text-yellow-600" />
+            </Link>
 
             {/* Batch Care */}
             <Link
@@ -227,16 +225,16 @@ export default function CompactControls({
           </span>
         </button>
 
-        <button
-          onClick={onQuickCareClick}
+        <Link
+          href="/batch-care"
           className="p-2 rounded-lg bg-yellow-100 hover:bg-yellow-200 group relative"
-          title="Quick Care (Cmd+K)"
+          title="Batch Care (Cmd+K)"
         >
-          <Zap className="w-5 h-5 text-yellow-600" />
+          <Droplets className="w-5 h-5 text-yellow-600" />
           <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs bg-gray-900 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-            Quick Care (⌘K)
+            Batch Care (⌘K)
           </span>
-        </button>
+        </Link>
 
         <button
           onClick={onExportClick}

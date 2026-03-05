@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { Droplets, Search, SlidersHorizontal, Plus, AlertTriangle, Clock, CheckSquare, Square, ArrowRightLeft, X } from 'lucide-react'
 import { showToast } from '@/components/toast'
 import { Modal } from '@/components/modal'
-import QuickCare from '@/components/QuickCare'
 import { useEffect, useState, useRef } from 'react'
 import { getTodayString } from '@/lib/timezone'
 import { isPlantStale, getWateringStatus, type CareStatus } from '@/lib/care-thresholds'
@@ -48,7 +47,6 @@ export default function PlantsPage() {
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState('')
   const [filterOpen, setFilterOpen] = useState(false)
-  const [quickCareOpen, setQuickCareOpen] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const [filters, setFilters] = useState({
     healthStatus: '',
@@ -147,10 +145,10 @@ export default function PlantsPage() {
         return
       }
 
-      // Cmd/Ctrl + K for Quick Care
+      // Cmd/Ctrl + K for Batch Care
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
-        setQuickCareOpen(true)
+        router.push('/batch-care')
       }
 
       // / to focus search (like GitHub)
@@ -336,13 +334,13 @@ export default function PlantsPage() {
             )}
             <span className="text-sm text-[var(--clay)]">{plants.length} plants</span>
           </div>
-          <button
-            onClick={() => setQuickCareOpen(true)}
+          <Link
+            href="/batch-care"
             className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--forest)] text-white text-sm rounded"
           >
             <Droplets className="w-4 h-4" />
             Log Care
-          </button>
+          </Link>
         </div>
       </div>
 
@@ -367,13 +365,13 @@ export default function PlantsPage() {
                 {stalePlantCount} need attention
               </button>
             )}
-            <button
-              onClick={() => setQuickCareOpen(true)}
+            <Link
+              href="/batch-care"
               className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--forest)] text-white text-sm rounded"
             >
               <Droplets className="w-4 h-4" />
               Log Care
-            </button>
+            </Link>
           </div>
         </div>
 
@@ -708,16 +706,6 @@ export default function PlantsPage() {
           </div>
         </Modal>
 
-        {/* Quick Care Modal */}
-        <QuickCare
-          isOpen={quickCareOpen}
-          onClose={() => setQuickCareOpen(false)}
-          plants={filteredPlants}
-          onSuccess={() => {
-            refetch()
-            showToast({ type: 'success', title: 'Care logs saved' })
-          }}
-        />
       </div>
     </div>
   )
