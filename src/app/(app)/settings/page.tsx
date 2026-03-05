@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Settings, MapPin, Clock, Save, Loader2 } from 'lucide-react'
+import { Settings, MapPin, Clock, Save, Loader2, Droplets } from 'lucide-react'
 import { showToast } from '@/components/toast'
 
 const TIMEZONE_OPTIONS = [
@@ -28,6 +28,9 @@ interface ProfileSettings {
   city: string | null
   tier: string
   maxPlants: number
+  baselineEC: number | null
+  baselinePH: number | null
+  baselineNotes: string | null
 }
 
 export default function SettingsPage() {
@@ -40,6 +43,9 @@ export default function SettingsPage() {
     city: '',
     latitude: '',
     longitude: '',
+    baselineEC: '',
+    baselinePH: '',
+    baselineNotes: '',
   })
   const [geocoding, setGeocoding] = useState(false)
 
@@ -54,6 +60,9 @@ export default function SettingsPage() {
           city: data.city || '',
           latitude: data.latitude?.toString() || '',
           longitude: data.longitude?.toString() || '',
+          baselineEC: data.baselineEC?.toString() || '',
+          baselinePH: data.baselinePH?.toString() || '',
+          baselineNotes: data.baselineNotes || '',
         })
       })
       .catch(() => showToast({ type: 'error', title: 'Failed to load settings' }))
@@ -72,6 +81,9 @@ export default function SettingsPage() {
           city: form.city || null,
           latitude: form.latitude ? parseFloat(form.latitude) : null,
           longitude: form.longitude ? parseFloat(form.longitude) : null,
+          baselineEC: form.baselineEC ? parseFloat(form.baselineEC) : null,
+          baselinePH: form.baselinePH ? parseFloat(form.baselinePH) : null,
+          baselineNotes: form.baselineNotes || null,
         }),
       })
 
@@ -254,6 +266,58 @@ export default function SettingsPage() {
                 <option key={tz.value} value={tz.value}>{tz.label}</option>
               ))}
             </select>
+          </section>
+
+          {/* Baseline Feed Section */}
+          <section className="bg-white border border-black/[0.08] rounded-lg p-5">
+            <div className="flex items-center gap-2 mb-1">
+              <Droplets className="w-4 h-4 text-[var(--forest)]" />
+              <h2 className="text-sm font-semibold text-[var(--bark)] uppercase tracking-wider">Baseline Feed</h2>
+            </div>
+            <p className="text-xs text-[var(--clay)] mb-4">
+              Your default fertigation values. When you toggle &quot;baseline feed&quot; during care logging,
+              these values auto-fill the pH, EC, and notes fields.
+              {!form.baselineEC && !form.baselinePH && ' Not configured — using app defaults.'}
+            </p>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm text-[var(--bark)] mb-1">Input pH</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={form.baselinePH}
+                    onChange={(e) => setForm({ ...form, baselinePH: e.target.value })}
+                    className="w-full p-2 rounded border border-black/[0.08] text-sm focus:outline-none focus:border-[var(--moss)]"
+                    placeholder="e.g., 5.8"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-[var(--bark)] mb-1">Input EC</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={form.baselineEC}
+                    onChange={(e) => setForm({ ...form, baselineEC: e.target.value })}
+                    className="w-full p-2 rounded border border-black/[0.08] text-sm focus:outline-none focus:border-[var(--moss)]"
+                    placeholder="e.g., 1.3"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm text-[var(--bark)] mb-1">Feed Description</label>
+                <input
+                  type="text"
+                  value={form.baselineNotes}
+                  onChange={(e) => setForm({ ...form, baselineNotes: e.target.value })}
+                  className="w-full p-2 rounded border border-black/[0.08] text-sm focus:outline-none focus:border-[var(--moss)]"
+                  placeholder="e.g., MSU 13-3-15 + CalMag"
+                />
+                <p className="text-xs text-[var(--clay)] mt-1">Describes what&apos;s in your standard mix — auto-fills the notes field</p>
+              </div>
+            </div>
           </section>
 
           {/* Save Button */}

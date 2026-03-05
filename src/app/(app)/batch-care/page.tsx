@@ -6,11 +6,12 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Check, Droplets, Calendar, Save, X } from 'lucide-react'
 import { showToast } from '@/components/toast'
 import { getTodayString } from '@/lib/timezone'
-import { DEFAULT_EC_INPUT, DEFAULT_PH_INPUT, DEFAULT_BASELINE_NOTES } from '@/lib/constants'
+import { useBaselineSettings } from '@/lib/hooks/useBaselineSettings'
 
 function BatchCareContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
+  const baseline = useBaselineSettings()
   const [plants, setPlants] = useState<any[]>([])
   const [locations, setLocations] = useState<any[]>([])
   const [selectedPlants, setSelectedPlants] = useState<string[]>([])
@@ -336,8 +337,8 @@ function BatchCareContent() {
                             setCareForm({
                               ...careForm,
                               isBaselineFeed: isBaseline,
-                              inputEC: isBaseline ? String(DEFAULT_EC_INPUT) : '',
-                              inputPH: isBaseline ? String(DEFAULT_PH_INPUT) : '',
+                              inputEC: isBaseline ? String(baseline.ec) : '',
+                              inputPH: isBaseline ? String(baseline.ph) : '',
                               useCaMg: isBaseline,
                               useTpsOne: isBaseline,
                               useSilica: false
@@ -347,7 +348,7 @@ function BatchCareContent() {
                         />
                         <div>
                           <span className="font-medium text-gray-900">Baseline Feed</span>
-                          <span className="text-xs text-gray-500 ml-2">({DEFAULT_BASELINE_NOTES} = pH {DEFAULT_PH_INPUT}, EC {DEFAULT_EC_INPUT})</span>
+                          <span className="text-xs text-gray-500 ml-2">({baseline.notes} = pH {baseline.ph}, EC {baseline.ec})</span>
                         </div>
                       </label>
                     </div>

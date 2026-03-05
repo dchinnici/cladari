@@ -149,7 +149,7 @@ async function generateWateringRecommendation(
   const reasoning: string[] = []
 
   // Note: Watering always includes baseline fertigation
-  reasoning.push(`💧 Watering with baseline feed (CalMag + TPS One)`)
+  reasoning.push(`💧 Watering with baseline feed`)
 
   if (wateringLogs.length >= 2) {
     reasoning.push(`Average watering interval: ${avgFrequency} days`)

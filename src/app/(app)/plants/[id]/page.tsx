@@ -16,7 +16,7 @@ import { TrendCharts } from '@/components/plant/TrendCharts'
 import { JournalTab, type JournalEntryType } from '@/components/plant/JournalTab'
 import { LineageTab } from '@/components/plant/LineageTab'
 import { getPhotoUrl } from '@/lib/photo-url'
-import { DEFAULT_EC_INPUT, DEFAULT_PH_INPUT, DEFAULT_BASELINE_NOTES } from '@/lib/constants'
+import { useBaselineSettings } from '@/lib/hooks/useBaselineSettings'
 
 // Maximum file size for Vercel Hobby tier (4.5MB, use 4MB with headroom)
 const MAX_UPLOAD_SIZE_MB = 4
@@ -95,6 +95,7 @@ export default function PlantDetailPage() {
   const params = useParams()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const baseline = useBaselineSettings()
   const [plant, setPlant] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('status')
@@ -394,13 +395,13 @@ export default function PlantDetailPage() {
       setCareLogForm({
         logId: '',
         activityType: 'watering',
-        notes: DEFAULT_BASELINE_NOTES,
+        notes: baseline.notes,
         fertilizer: '',
         pesticide: '',
         fungicide: '',
         dosage: '',
-        inputEC: String(DEFAULT_EC_INPUT),
-        inputPH: String(DEFAULT_PH_INPUT),
+        inputEC: String(baseline.ec),
+        inputPH: String(baseline.ph),
         outputEC: '',
         outputPH: '',
         rainAmount: '',
@@ -1337,9 +1338,9 @@ export default function PlantDetailPage() {
                   activityType: 'watering',
                   date: getTodayString(),
                   // Pre-populate baseline feed values
-                  inputPH: String(DEFAULT_PH_INPUT),
-                  inputEC: String(DEFAULT_EC_INPUT),
-                  notes: DEFAULT_BASELINE_NOTES
+                  inputPH: String(baseline.ph),
+                  inputEC: String(baseline.ec),
+                  notes: baseline.notes
                 })
                 setUseBaselineFeed(true) // Default to baseline feed with watering
                 setCareLogModalOpen(true)
@@ -2464,9 +2465,9 @@ export default function PlantDetailPage() {
                     if (checked) {
                       setCareLogForm({
                         ...careLogForm,
-                        inputPH: String(DEFAULT_PH_INPUT),
-                        inputEC: String(DEFAULT_EC_INPUT),
-                        notes: DEFAULT_BASELINE_NOTES
+                        inputPH: String(baseline.ph),
+                        inputEC: String(baseline.ec),
+                        notes: baseline.notes
                       })
                     } else {
                       // Clear auto-populated values when unchecked
@@ -2483,7 +2484,7 @@ export default function PlantDetailPage() {
                 <div className="flex-1">
                   <span className="font-medium text-[var(--bark)]">Include baseline feed</span>
                   <p className="text-xs text-[var(--clay)] mt-0.5">
-                    Auto-fills: pH {DEFAULT_PH_INPUT}, EC {DEFAULT_EC_INPUT} ({DEFAULT_BASELINE_NOTES})
+                    Auto-fills: pH {baseline.ph}, EC {baseline.ec} ({baseline.notes})
                   </p>
                 </div>
               </label>

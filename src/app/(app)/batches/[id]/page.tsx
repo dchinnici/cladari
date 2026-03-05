@@ -12,7 +12,7 @@ import { Modal } from '@/components/modal'
 import { showToast } from '@/components/toast'
 import { getTodayString } from '@/lib/timezone'
 import { getPhotoUrl as getPhotoUrlLib } from '@/lib/photo-url'
-import { DEFAULT_EC_INPUT, DEFAULT_PH_INPUT, DEFAULT_BASELINE_NOTES } from '@/lib/constants'
+import { useBaselineSettings } from '@/lib/hooks/useBaselineSettings'
 
 interface CloneBatch {
   id: string
@@ -98,6 +98,7 @@ function getStatusColor(status: string): string {
 export default function BatchDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
+  const baseline = useBaselineSettings()
 
   const [batch, setBatch] = useState<CloneBatch | null>(null)
   const [careLogs, setCareLogs] = useState<CareLog[]>([])
@@ -137,12 +138,12 @@ export default function BatchDetailPage({ params }: { params: Promise<{ id: stri
   const [careForm, setCareForm] = useState({
     date: getTodayString(),
     action: 'watering',
-    inputEC: String(DEFAULT_EC_INPUT),
-    inputPH: String(DEFAULT_PH_INPUT),
+    inputEC: String(baseline.ec),
+    inputPH: String(baseline.ph),
     outputEC: '',
     outputPH: '',
     isBaselineFeed: true,
-    notes: DEFAULT_BASELINE_NOTES
+    notes: baseline.notes
   })
 
   useEffect(() => {
@@ -742,12 +743,12 @@ export default function BatchDetailPage({ params }: { params: Promise<{ id: stri
               setCareForm({
                 date: getTodayString(),
                 action: 'watering',
-                inputEC: String(DEFAULT_EC_INPUT),
-                inputPH: String(DEFAULT_PH_INPUT),
+                inputEC: String(baseline.ec),
+                inputPH: String(baseline.ph),
                 outputEC: '',
                 outputPH: '',
                 isBaselineFeed: true,
-                notes: DEFAULT_BASELINE_NOTES
+                notes: baseline.notes
               })
               setCareModalOpen(true)
             }}
@@ -931,9 +932,9 @@ export default function BatchDetailPage({ params }: { params: Promise<{ id: stri
                       setCareForm({
                         ...careForm,
                         isBaselineFeed: true,
-                        inputPH: String(DEFAULT_PH_INPUT),
-                        inputEC: String(DEFAULT_EC_INPUT),
-                        notes: DEFAULT_BASELINE_NOTES
+                        inputPH: String(baseline.ph),
+                        inputEC: String(baseline.ec),
+                        notes: baseline.notes
                       })
                     } else {
                       setCareForm({
@@ -948,9 +949,9 @@ export default function BatchDetailPage({ params }: { params: Promise<{ id: stri
                   className="w-4 h-4 text-[var(--moss)] rounded focus:ring-[var(--moss)]"
                 />
                 <div className="flex-1">
-                  <span className="font-medium text-[var(--bark)]">Baseline feed ({DEFAULT_BASELINE_NOTES})</span>
+                  <span className="font-medium text-[var(--bark)]">Baseline feed ({baseline.notes})</span>
                   <p className="text-xs text-[var(--clay)] mt-0.5">
-                    Auto-fills: pH {DEFAULT_PH_INPUT}, EC {DEFAULT_EC_INPUT}
+                    Auto-fills: pH {baseline.ph}, EC {baseline.ec}
                   </p>
                 </div>
               </label>

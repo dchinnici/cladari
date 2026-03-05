@@ -5,7 +5,8 @@ import { Modal } from './modal'
 import { showToast } from './toast'
 import { Droplets } from 'lucide-react'
 import { getTodayString } from '@/lib/timezone'
-import { WATERING_THRESHOLD_DAYS, DEFAULT_EC_INPUT, DEFAULT_PH_INPUT } from '@/lib/constants'
+import { WATERING_THRESHOLD_DAYS } from '@/lib/constants'
+import { useBaselineSettings } from '@/lib/hooks/useBaselineSettings'
 
 interface QuickCareProps {
   isOpen: boolean
@@ -15,6 +16,7 @@ interface QuickCareProps {
 }
 
 export default function QuickCare({ isOpen, onClose, plants, onSuccess }: QuickCareProps) {
+  const baseline = useBaselineSettings()
   const [selectedPlants, setSelectedPlants] = useState<string[]>([])
   const [activityType, setActivityType] = useState('water')
   const [includeBaseline, setIncludeBaseline] = useState(false)
@@ -55,9 +57,9 @@ export default function QuickCare({ isOpen, onClose, plants, onSuccess }: QuickC
         date: getTodayString(),
         notes,
         ...(includeBaseline && {
-          ecIn: DEFAULT_EC_INPUT,
+          ecIn: baseline.ec,
           ecOut: null,
-          phIn: DEFAULT_PH_INPUT,
+          phIn: baseline.ph,
           phOut: null,
         })
       }
@@ -201,7 +203,7 @@ export default function QuickCare({ isOpen, onClose, plants, onSuccess }: QuickC
             />
             <div>
               <span className="font-medium text-sm text-[var(--bark)]">Include baseline feed</span>
-              <span className="text-xs text-[var(--clay)] ml-2">(pH 5.7, EC 1.15)</span>
+              <span className="text-xs text-[var(--clay)] ml-2">(pH {baseline.ph}, EC {baseline.ec})</span>
             </div>
           </label>
         )}

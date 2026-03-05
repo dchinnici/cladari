@@ -21,6 +21,9 @@ export async function GET() {
         city: true,
         tier: true,
         maxPlants: true,
+        baselineEC: true,
+        baselinePH: true,
+        baselineNotes: true,
       },
     })
 
@@ -46,7 +49,7 @@ export async function PATCH(request: Request) {
     const body = await request.json()
 
     // Only allow updating these fields
-    const allowedFields = ['displayName', 'timezone', 'latitude', 'longitude', 'city'] as const
+    const allowedFields = ['displayName', 'timezone', 'latitude', 'longitude', 'city', 'baselineEC', 'baselinePH', 'baselineNotes'] as const
     const data: Record<string, unknown> = {}
 
     for (const field of allowedFields) {
@@ -75,6 +78,27 @@ export async function PATCH(request: Request) {
       data.longitude = lon
     }
 
+    // Validate baseline feed values if provided
+    if (data.baselineEC !== undefined && data.baselineEC !== null) {
+      const ec = Number(data.baselineEC)
+      if (isNaN(ec) || ec < 0 || ec > 10) {
+        return NextResponse.json({ error: 'Invalid baseline EC (must be 0-10)' }, { status: 400 })
+      }
+      data.baselineEC = ec
+    }
+    if (data.baselinePH !== undefined && data.baselinePH !== null) {
+      const ph = Number(data.baselinePH)
+      if (isNaN(ph) || ph < 0 || ph > 14) {
+        return NextResponse.json({ error: 'Invalid baseline pH (must be 0-14)' }, { status: 400 })
+      }
+      data.baselinePH = ph
+    }
+    if (data.baselineNotes !== undefined && data.baselineNotes !== null) {
+      if (typeof data.baselineNotes !== 'string' || data.baselineNotes.length > 200) {
+        return NextResponse.json({ error: 'Baseline notes must be a string under 200 characters' }, { status: 400 })
+      }
+    }
+
     const updated = await prisma.profile.update({
       where: { id: user.id },
       data,
@@ -85,6 +109,9 @@ export async function PATCH(request: Request) {
         latitude: true,
         longitude: true,
         city: true,
+        baselineEC: true,
+        baselinePH: true,
+        baselineNotes: true,
       },
     })
 
