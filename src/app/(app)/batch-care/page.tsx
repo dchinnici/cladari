@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Check, Droplets, Calendar, Save, X } from 'lucide-react'
+import { ArrowLeft, Check, Save } from 'lucide-react'
 import { showToast } from '@/components/toast'
 import { getTodayString } from '@/lib/timezone'
 import { useBaselineSettings } from '@/lib/hooks/useBaselineSettings'
@@ -172,38 +172,36 @@ function BatchCareContent() {
   })
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <Link href="/plants" className="inline-flex items-center text-emerald-600 hover:text-emerald-700 mb-4">
-            <ArrowLeft className="w-4 h-4 mr-2" />
+    <div className="min-h-screen">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="mb-6">
+          <Link href="/plants" className="inline-flex items-center text-[var(--forest)] hover:opacity-80 mb-3 text-sm">
+            <ArrowLeft className="w-4 h-4 mr-1" />
             Back to Plants
           </Link>
-          <h1 className="text-4xl font-bold mb-4">
-            <span className="gradient-text">Batch Care Log</span>
-          </h1>
-          <p className="text-gray-600">Apply the same care action to multiple plants at once</p>
+          <h1 className="text-2xl font-semibold text-[var(--forest)]">Batch Care Log</h1>
+          <p className="text-sm text-[var(--clay)]">Apply the same care action to multiple plants at once</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Form Section */}
           <div className="lg:col-span-1">
-            <div className="glass rounded-3xl p-6 sticky top-8">
-              <h2 className="text-xl font-bold mb-4">Care Details</h2>
+            <div className="bg-white border border-black/[0.08] rounded-lg p-5 sticky top-8">
+              <h2 className="text-sm font-semibold text-[var(--bark)] uppercase tracking-wider mb-4">Care Details</h2>
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                  <label className="block text-sm text-[var(--bark)] mb-1">Date</label>
                   <input
                     type="date"
                     value={careForm.date}
                     onChange={(e) => setCareForm({ ...careForm, date: e.target.value })}
-                    className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full p-2 rounded border border-black/[0.08] text-sm focus:outline-none focus:border-[var(--moss)]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Activity Type</label>
+                  <label className="block text-sm text-[var(--bark)] mb-1">Activity Type</label>
                   <select
                     value={careForm.activityType}
                     onChange={(e) => {
@@ -220,7 +218,7 @@ function BatchCareContent() {
                       }
                       setCareForm({ ...careForm, ...updates })
                     }}
-                    className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full p-2 rounded border border-black/[0.08] text-sm focus:outline-none focus:border-[var(--moss)]"
                   >
                     <option value="watering">Watering</option>
                     <option value="rain">Rain</option>
@@ -238,13 +236,13 @@ function BatchCareContent() {
                 {careForm.activityType === 'rain' && (
                   <>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm text-[var(--bark)] mb-1">
                         Rainfall Amount
                       </label>
                       <select
                         value={careForm.rainAmount}
                         onChange={(e) => setCareForm({ ...careForm, rainAmount: e.target.value })}
-                        className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        className="w-full p-2 rounded border border-black/[0.08] text-sm focus:outline-none focus:border-[var(--moss)]"
                       >
                         <option value="">-- Select amount --</option>
                         <option value="light">Light</option>
@@ -254,13 +252,13 @@ function BatchCareContent() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm text-[var(--bark)] mb-1">
                         Duration
                       </label>
                       <select
                         value={careForm.rainDuration}
                         onChange={(e) => setCareForm({ ...careForm, rainDuration: e.target.value })}
-                        className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        className="w-full p-2 rounded border border-black/[0.08] text-sm focus:outline-none focus:border-[var(--moss)]"
                       >
                         <option value="">-- Select duration --</option>
                         <option value="brief">Brief (&lt;15 min)</option>
@@ -279,14 +277,14 @@ function BatchCareContent() {
                   careForm.activityType === 'fungicide' ||
                   careForm.activityType === 'foliar') && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm text-[var(--bark)] mb-1">
                       Dosage/Concentration
                     </label>
                     <input
                       type="text"
                       value={careForm.dosage}
                       onChange={(e) => setCareForm({ ...careForm, dosage: e.target.value })}
-                      className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className="w-full p-2 rounded border border-black/[0.08] text-sm focus:outline-none focus:border-[var(--moss)]"
                       placeholder="e.g., 0.4 EC, 2ml/L, 1 tbsp/gal"
                     />
                   </div>
@@ -297,7 +295,7 @@ function BatchCareContent() {
                   careForm.activityType === 'calmag') && (
                   <>
                     {/* Baseline Feed Toggle */}
-                    <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
+                    <div className="p-3 bg-[var(--forest)]/5 rounded-lg border border-[var(--forest)]/15">
                       <label className="flex items-center gap-3 cursor-pointer">
                         <input
                           type="checkbox"
@@ -312,11 +310,11 @@ function BatchCareContent() {
                               notes: isBaseline ? baseline.notes : '',
                             })
                           }}
-                          className="w-4 h-4 rounded text-emerald-600"
+                          className="w-4 h-4 rounded accent-[var(--forest)]"
                         />
                         <div>
-                          <span className="font-medium text-gray-900">Baseline Feed</span>
-                          <span className="text-xs text-gray-500 ml-2">({baseline.notes} = pH {baseline.ph}, EC {baseline.ec})</span>
+                          <span className="text-sm font-medium text-[var(--bark)]">Baseline Feed</span>
+                          <span className="text-xs text-[var(--clay)] ml-2">({baseline.notes} — pH {baseline.ph}, EC {baseline.ec})</span>
                         </div>
                       </label>
                     </div>
@@ -324,24 +322,24 @@ function BatchCareContent() {
                     {/* pH/EC Measurements */}
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Input pH</label>
+                        <label className="block text-sm text-[var(--bark)] mb-1">Input pH</label>
                         <input
                           type="number"
                           step="0.1"
                           value={careForm.inputPH}
                           onChange={(e) => setCareForm({ ...careForm, inputPH: e.target.value })}
-                          className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          className="w-full p-2 rounded border border-black/[0.08] text-sm focus:outline-none focus:border-[var(--moss)]"
                           placeholder="e.g., 5.7"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Input EC</label>
+                        <label className="block text-sm text-[var(--bark)] mb-1">Input EC</label>
                         <input
                           type="number"
                           step="0.01"
                           value={careForm.inputEC}
                           onChange={(e) => setCareForm({ ...careForm, inputEC: e.target.value })}
-                          className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          className="w-full p-2 rounded border border-black/[0.08] text-sm focus:outline-none focus:border-[var(--moss)]"
                           placeholder="e.g., 1.15"
                         />
                       </div>
@@ -349,24 +347,24 @@ function BatchCareContent() {
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Output pH <span className="text-xs text-gray-400">(runoff)</span></label>
+                        <label className="block text-sm text-[var(--bark)] mb-1">Output pH <span className="text-xs text-[var(--clay)]">(runoff)</span></label>
                         <input
                           type="number"
                           step="0.1"
                           value={careForm.outputPH}
                           onChange={(e) => setCareForm({ ...careForm, outputPH: e.target.value })}
-                          className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          className="w-full p-2 rounded border border-black/[0.08] text-sm focus:outline-none focus:border-[var(--moss)]"
                           placeholder="Optional"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Output EC <span className="text-xs text-gray-400">(runoff)</span></label>
+                        <label className="block text-sm text-[var(--bark)] mb-1">Output EC <span className="text-xs text-[var(--clay)]">(runoff)</span></label>
                         <input
                           type="number"
                           step="0.01"
                           value={careForm.outputEC}
                           onChange={(e) => setCareForm({ ...careForm, outputEC: e.target.value })}
-                          className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          className="w-full p-2 rounded border border-black/[0.08] text-sm focus:outline-none focus:border-[var(--moss)]"
                           placeholder="Optional"
                         />
                       </div>
@@ -375,24 +373,24 @@ function BatchCareContent() {
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                  <label className="block text-sm text-[var(--bark)] mb-1">Notes</label>
                   <textarea
                     value={careForm.notes}
                     onChange={(e) => setCareForm({ ...careForm, notes: e.target.value })}
-                    className="w-full p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full p-2 rounded border border-black/[0.08] text-sm focus:outline-none focus:border-[var(--moss)]"
                     rows={4}
                     placeholder="e.g., CalMag buffering with pH up to 6.2"
                   />
                 </div>
 
                 <div className="pt-4 space-y-2">
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-[var(--clay)]">
                     Selected: {selectedPlants.length} plant{selectedPlants.length !== 1 ? 's' : ''}
                   </div>
                   <button
                     onClick={handleSubmit}
                     disabled={submitting || selectedPlants.length === 0}
-                    className="w-full px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl hover:from-emerald-600 hover:to-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full px-4 py-3 bg-[var(--forest)] text-white text-sm font-medium rounded hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity flex items-center justify-center gap-2"
                   >
                     <Save className="w-4 h-4" />
                     {submitting ? 'Saving...' : 'Save to Selected Plants'}
@@ -404,12 +402,12 @@ function BatchCareContent() {
 
           {/* Plant Selection Section */}
           <div className="lg:col-span-2">
-            <div className="glass rounded-3xl p-6">
+            <div className="bg-white border border-black/[0.08] rounded-lg p-5">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold">Select Plants</h2>
+                <h2 className="text-sm font-semibold text-[var(--bark)] uppercase tracking-wider">Select Plants</h2>
                 <button
                   onClick={handleSelectAll}
-                  className="text-sm px-3 py-1 rounded-lg border border-gray-200 hover:bg-gray-50"
+                  className="text-sm px-3 py-1 rounded border border-black/[0.08] hover:bg-gray-50 text-[var(--bark)]"
                 >
                   {selectedPlants.length === filteredPlants.length ? 'Deselect All' : 'Select All'}
                 </button>
@@ -417,12 +415,12 @@ function BatchCareContent() {
 
               {/* Location Filter */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Select by Location</label>
+                <label className="block text-sm text-[var(--bark)] mb-1">Select by Location</label>
                 <div className="flex gap-2">
                   <select
                     value={selectedLocationFilter}
                     onChange={(e) => setSelectedLocationFilter(e.target.value)}
-                    className="flex-1 p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="flex-1 p-2 rounded border border-black/[0.08] text-sm focus:outline-none focus:border-[var(--moss)]"
                   >
                     <option value="">-- Choose location --</option>
                     {locations.map((location) => (
@@ -438,7 +436,7 @@ function BatchCareContent() {
                       }
                     }}
                     disabled={!selectedLocationFilter}
-                    className="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 bg-[var(--forest)] text-white text-sm rounded hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
                   >
                     Select
                   </button>
@@ -450,44 +448,44 @@ function BatchCareContent() {
                 placeholder="Search plants..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full mb-4 p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full mb-4 p-2 rounded border border-black/[0.08] text-sm focus:outline-none focus:border-[var(--moss)]"
               />
 
               {loading ? (
-                <div className="text-center py-8">Loading plants...</div>
+                <div className="text-center py-8 text-[var(--clay)]">Loading plants...</div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[600px] overflow-y-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[600px] overflow-y-auto">
                   {filteredPlants.map((plant) => (
                     <div
                       key={plant.id}
                       onClick={() => handleTogglePlant(plant.id)}
-                      className={`p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                      className={`p-3 rounded-lg border cursor-pointer transition-all ${
                         selectedPlants.includes(plant.id)
-                          ? 'border-emerald-500 bg-emerald-50'
-                          : 'border-gray-200 bg-white/50 hover:border-gray-300'
+                          ? 'border-[var(--forest)] bg-[var(--forest)]/5'
+                          : 'border-black/[0.08] bg-white hover:border-black/[0.15]'
                       }`}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <div className="font-semibold">
+                          <div className="text-sm font-medium text-[var(--bark)]">
                             {plant.hybridName || plant.species || plant.plantId}
                           </div>
-                          <div className="text-sm text-gray-500 font-mono">
+                          <div className="text-xs text-[var(--clay)] font-mono">
                             {plant.plantId}
                             {plant.breederCode && (
-                              <span className="ml-2 text-purple-600">{plant.breederCode}</span>
+                              <span className="ml-2 text-[var(--moss)]">{plant.breederCode}</span>
                             )}
                           </div>
                           {plant.currentLocation?.name && (
-                            <div className="text-xs text-gray-500 mt-1">
-                              📍 {plant.currentLocation.name}
+                            <div className="text-xs text-[var(--clay)] mt-1">
+                              {plant.currentLocation.name}
                             </div>
                           )}
                         </div>
-                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
                           selectedPlants.includes(plant.id)
-                            ? 'bg-emerald-500 border-emerald-500'
-                            : 'border-gray-300'
+                            ? 'bg-[var(--forest)] border-[var(--forest)]'
+                            : 'border-black/[0.15]'
                         }`}>
                           {selectedPlants.includes(plant.id) && (
                             <Check className="w-3 h-3 text-white" />

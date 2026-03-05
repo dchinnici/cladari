@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Droplets, Search, SlidersHorizontal, Plus, AlertTriangle, Clock, CheckSquare, Square, ArrowRightLeft, X } from 'lucide-react'
+import { Search, SlidersHorizontal, Plus, AlertTriangle, Clock, CheckSquare, Square, ArrowRightLeft, X } from 'lucide-react'
 import { showToast } from '@/components/toast'
 import { Modal } from '@/components/modal'
 import { useEffect, useState, useRef } from 'react'
@@ -334,13 +334,6 @@ export default function PlantsPage() {
             )}
             <span className="text-sm text-[var(--clay)]">{plants.length} plants</span>
           </div>
-          <Link
-            href="/batch-care"
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--forest)] text-white text-sm rounded"
-          >
-            <Droplets className="w-4 h-4" />
-            Log Care
-          </Link>
         </div>
       </div>
 
@@ -365,13 +358,6 @@ export default function PlantsPage() {
                 {stalePlantCount} need attention
               </button>
             )}
-            <Link
-              href="/batch-care"
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--forest)] text-white text-sm rounded"
-            >
-              <Droplets className="w-4 h-4" />
-              Log Care
-            </Link>
           </div>
         </div>
 
