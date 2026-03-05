@@ -175,19 +175,37 @@ export default function UserMenu() {
   )
 }
 
-// Compact version for mobile
+// Compact version for mobile — popup menu with Settings + Sign Out
 export function UserMenuMobile() {
-  const [user, setUser] = useState<{ email?: string } | null>(null)
+  const [user, setUser] = useState<{ email?: string; name?: string } | null>(null)
+  const [isOpen, setIsOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
   const supabase = createSupabaseClient()
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) setUser({ email: user.email })
+      if (user) setUser({
+        email: user.email,
+        name: user.user_metadata?.name || user.user_metadata?.full_name || user.email?.split('@')[0]
+      })
     })
   }, [supabase.auth])
 
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isOpen])
+
   async function handleLogout() {
+    setIsOpen(false)
     await supabase.auth.signOut()
     router.push('/login')
     router.refresh()
@@ -196,12 +214,40 @@ export function UserMenuMobile() {
   if (!user) return null
 
   return (
-    <button
-      onClick={handleLogout}
-      className="flex flex-col items-center justify-center text-[var(--clay)] active:text-red-500"
-    >
-      <LogOut className="w-5 h-5" />
-      <span className="text-[10px] mt-0.5">Logout</span>
-    </button>
+    <div className="relative flex items-center justify-center" ref={menuRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex flex-col items-center justify-center text-[var(--clay)] active:text-[var(--forest)]"
+      >
+        <User className="w-5 h-5" />
+        <span className="text-[10px] mt-0.5">Account</span>
+      </button>
+
+      {isOpen && (
+        <div className="absolute bottom-full mb-2 right-0 w-48 bg-white rounded-lg shadow-lg border border-black/[0.08] py-1 z-50">
+          <div className="px-3 py-2 border-b border-black/[0.08]">
+            <p className="text-sm font-medium text-[var(--bark)] truncate">{user.name}</p>
+            <p className="text-xs text-[var(--clay)] truncate">{user.email}</p>
+          </div>
+
+          <Link
+            href="/settings"
+            onClick={() => setIsOpen(false)}
+            className="w-full px-3 py-2.5 text-left text-sm text-[var(--bark)] hover:bg-black/[0.04] flex items-center gap-2 transition-colors"
+          >
+            <Settings className="w-4 h-4 text-[var(--clay)]" />
+            Settings
+          </Link>
+
+          <button
+            onClick={handleLogout}
+            className="w-full px-3 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+            Sign Out
+          </button>
+        </div>
+      )}
+    </div>
   )
 }
