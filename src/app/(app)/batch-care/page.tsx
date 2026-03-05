@@ -20,7 +20,6 @@ function BatchCareContent() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedLocationFilter, setSelectedLocationFilter] = useState<string>('')
 
-  const [feedProducts, setFeedProducts] = useState<any[]>([])
   const [careForm, setCareForm] = useState({
     activityType: 'watering',
     notes: '',
@@ -33,13 +32,6 @@ function BatchCareContent() {
     rainDuration: '',
     date: '', // Set in useEffect to avoid hydration mismatch
     isBaselineFeed: false,
-    // Component tracking
-    useCaMg: false,
-    caMgDose: '1',
-    useTpsOne: false,
-    tpsOneDose: '2',
-    useSilica: false,
-    silicaDose: '1'
   })
 
   useEffect(() => {
@@ -47,7 +39,6 @@ function BatchCareContent() {
     setCareForm(f => ({ ...f, date: getTodayString() }))
     fetchPlants()
     fetchLocations()
-    fetchFeedProducts()
   }, [])
 
   // Handle URL params from QR code scan (location pre-selection)
@@ -68,18 +59,6 @@ function BatchCareContent() {
       router.replace('/batch-care', { scroll: false })
     }
   }, [searchParams, locations, plants, router])
-
-  const fetchFeedProducts = async () => {
-    try {
-      const response = await fetch('/api/feed-products')
-      const data = await response.json()
-      if (Array.isArray(data)) {
-        setFeedProducts(data)
-      }
-    } catch (error) {
-      console.error('Error fetching feed products:', error)
-    }
-  }
 
   const fetchPlants = async () => {
     try {
@@ -170,12 +149,6 @@ function BatchCareContent() {
           rainDuration: '',
           date: getTodayString(),
           isBaselineFeed: false,
-          useCaMg: false,
-          caMgDose: '1',
-          useTpsOne: false,
-          tpsOneDose: '2',
-          useSilica: false,
-          silicaDose: '1'
         })
       } else {
         showToast({ type: 'error', title: 'Failed to add care logs', message: 'Please try again.' })
@@ -243,9 +216,6 @@ function BatchCareContent() {
                         updates.inputEC = ''
                         updates.outputPH = ''
                         updates.outputEC = ''
-                        updates.useCaMg = false
-                        updates.useTpsOne = false
-                        updates.useSilica = false
                         updates.notes = ''
                       }
                       setCareForm({ ...careForm, ...updates })
@@ -339,9 +309,7 @@ function BatchCareContent() {
                               isBaselineFeed: isBaseline,
                               inputEC: isBaseline ? String(baseline.ec) : '',
                               inputPH: isBaseline ? String(baseline.ph) : '',
-                              useCaMg: isBaseline,
-                              useTpsOne: isBaseline,
-                              useSilica: false
+                              notes: isBaseline ? baseline.notes : '',
                             })
                           }}
                           className="w-4 h-4 rounded text-emerald-600"
@@ -352,81 +320,6 @@ function BatchCareContent() {
                         </div>
                       </label>
                     </div>
-
-                    {/* Feed Components */}
-                    {!careForm.isBaselineFeed && (
-                      <div className="space-y-2">
-                        <label className="block text-sm font-medium text-gray-700">Feed Components</label>
-                        <div className="space-y-2 p-3 bg-gray-50 rounded-lg border">
-                          {/* CaMg */}
-                          <div className="flex items-center gap-3">
-                            <input
-                              type="checkbox"
-                              checked={careForm.useCaMg}
-                              onChange={(e) => setCareForm({ ...careForm, useCaMg: e.target.checked })}
-                              className="w-4 h-4 rounded"
-                            />
-                            <span className="text-sm flex-1">TPS CalMag</span>
-                            {careForm.useCaMg && (
-                              <div className="flex items-center gap-1">
-                                <input
-                                  type="number"
-                                  step="0.5"
-                                  value={careForm.caMgDose}
-                                  onChange={(e) => setCareForm({ ...careForm, caMgDose: e.target.value })}
-                                  className="w-16 p-1 text-sm rounded border border-gray-200"
-                                />
-                                <span className="text-xs text-gray-500">ml/L</span>
-                              </div>
-                            )}
-                          </div>
-                          {/* TPS One */}
-                          <div className="flex items-center gap-3">
-                            <input
-                              type="checkbox"
-                              checked={careForm.useTpsOne}
-                              onChange={(e) => setCareForm({ ...careForm, useTpsOne: e.target.checked })}
-                              className="w-4 h-4 rounded"
-                            />
-                            <span className="text-sm flex-1">TPS One (3-3-3)</span>
-                            {careForm.useTpsOne && (
-                              <div className="flex items-center gap-1">
-                                <input
-                                  type="number"
-                                  step="0.5"
-                                  value={careForm.tpsOneDose}
-                                  onChange={(e) => setCareForm({ ...careForm, tpsOneDose: e.target.value })}
-                                  className="w-16 p-1 text-sm rounded border border-gray-200"
-                                />
-                                <span className="text-xs text-gray-500">ml/L</span>
-                              </div>
-                            )}
-                          </div>
-                          {/* Silica */}
-                          <div className="flex items-center gap-3">
-                            <input
-                              type="checkbox"
-                              checked={careForm.useSilica}
-                              onChange={(e) => setCareForm({ ...careForm, useSilica: e.target.checked })}
-                              className="w-4 h-4 rounded"
-                            />
-                            <span className="text-sm flex-1">TPS Silica <span className="text-xs text-amber-600">(raises pH)</span></span>
-                            {careForm.useSilica && (
-                              <div className="flex items-center gap-1">
-                                <input
-                                  type="number"
-                                  step="0.5"
-                                  value={careForm.silicaDose}
-                                  onChange={(e) => setCareForm({ ...careForm, silicaDose: e.target.value })}
-                                  className="w-16 p-1 text-sm rounded border border-gray-200"
-                                />
-                                <span className="text-xs text-gray-500">ml/L</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    )}
 
                     {/* pH/EC Measurements */}
                     <div className="grid grid-cols-2 gap-3">

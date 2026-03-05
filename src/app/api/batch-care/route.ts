@@ -24,13 +24,6 @@ export async function POST(request: Request) {
       rainDuration,
       date,
       isBaselineFeed,
-      // Component tracking
-      useCaMg,
-      caMgDose,
-      useTpsOne,
-      tpsOneDose,
-      useSilica,
-      silicaDose
     } = body
 
     if (!plantIds || !Array.isArray(plantIds) || plantIds.length === 0) {
@@ -59,18 +52,6 @@ export async function POST(request: Request) {
       )
     }
 
-    // Build feed components array for ML analysis
-    const feedComponents: { product: string; mlPerLiter: number }[] = []
-    if (useCaMg && caMgDose) {
-      feedComponents.push({ product: 'TPS CalMag', mlPerLiter: parseFloat(caMgDose) })
-    }
-    if (useTpsOne && tpsOneDose) {
-      feedComponents.push({ product: 'TPS One', mlPerLiter: parseFloat(tpsOneDose) })
-    }
-    if (useSilica && silicaDose) {
-      feedComponents.push({ product: 'TPS Silica', mlPerLiter: parseFloat(silicaDose) })
-    }
-
     // Build details JSON for non-structured data (rain, substrate, notes)
     const detailsObj: Record<string, unknown> = {}
     if (notes) detailsObj.notes = notes
@@ -93,7 +74,6 @@ export async function POST(request: Request) {
         outputEC: outputEC ? parseFloat(outputEC) : null,
         outputPH: outputPH ? parseFloat(outputPH) : null,
         isBaselineFeed: isBaselineFeed || false,
-        feedComponents: feedComponents.length > 0 ? JSON.stringify(feedComponents) : null,
         // Legacy/additional details
         details: Object.keys(detailsObj).length > 0 ? JSON.stringify(detailsObj) : null,
         dosage: dosage ? parseFloat(dosage.replace(/[^0-9.]/g, '')) : null,
