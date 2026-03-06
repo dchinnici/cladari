@@ -36,6 +36,10 @@ model Profile {
   baselinePH    Float?   // Default input pH when "baseline feed" toggled (e.g., 5.8)
   baselineNotes String?  // Feed description (e.g., "MSU 13-3-15 + CalMag")
 
+  // User-defined presets (JSON arrays stored in JSONB)
+  substrateMixes Json?   // [{ id, name, description }] — e.g., "Dave's 5.0"
+  ipmProducts    Json?   // [{ id, name, dosage, category }] — e.g., "Abamectin 0.625ml/gal"
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

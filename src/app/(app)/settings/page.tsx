@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Settings, MapPin, Clock, Save, Loader2, Droplets } from 'lucide-react'
+import { MapPin, Clock, Save, Loader2, Droplets, Leaf, Bug, Plus, Trash2 } from 'lucide-react'
 import { showToast } from '@/components/toast'
+import type { SubstrateMix, IPMProduct } from '@/lib/hooks/useUserPresets'
 
 const TIMEZONE_OPTIONS = [
   { value: 'America/New_York', label: 'Eastern (ET)' },
@@ -31,7 +32,17 @@ interface ProfileSettings {
   baselineEC: number | null
   baselinePH: number | null
   baselineNotes: string | null
+  substrateMixes: SubstrateMix[] | null
+  ipmProducts: IPMProduct[] | null
 }
+
+const IPM_CATEGORIES = [
+  { value: 'miticide', label: 'Miticide' },
+  { value: 'insecticide', label: 'Insecticide' },
+  { value: 'fungicide', label: 'Fungicide' },
+  { value: 'bactericide', label: 'Bactericide' },
+  { value: 'general', label: 'General' },
+]
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<ProfileSettings | null>(null)
@@ -47,6 +58,12 @@ export default function SettingsPage() {
     baselinePH: '',
     baselineNotes: '',
   })
+  const [substrateMixes, setSubstrateMixes] = useState<SubstrateMix[]>([])
+  const [ipmProducts, setIpmProducts] = useState<IPMProduct[]>([])
+  const [newSubstrate, setNewSubstrate] = useState({ name: '', description: '' })
+  const [addingSubstrate, setAddingSubstrate] = useState(false)
+  const [newIPM, setNewIPM] = useState({ name: '', dosage: '', category: 'general' })
+  const [addingIPM, setAddingIPM] = useState(false)
   const [geocoding, setGeocoding] = useState(false)
 
   useEffect(() => {
@@ -64,6 +81,8 @@ export default function SettingsPage() {
           baselinePH: data.baselinePH?.toString() || '',
           baselineNotes: data.baselineNotes || '',
         })
+        setSubstrateMixes(Array.isArray(data.substrateMixes) ? data.substrateMixes : [])
+        setIpmProducts(Array.isArray(data.ipmProducts) ? data.ipmProducts : [])
       })
       .catch(() => showToast({ type: 'error', title: 'Failed to load settings' }))
       .finally(() => setLoading(false))
@@ -84,6 +103,8 @@ export default function SettingsPage() {
           baselineEC: form.baselineEC ? parseFloat(form.baselineEC) : null,
           baselinePH: form.baselinePH ? parseFloat(form.baselinePH) : null,
           baselineNotes: form.baselineNotes || null,
+          substrateMixes: substrateMixes.length > 0 ? substrateMixes : null,
+          ipmProducts: ipmProducts.length > 0 ? ipmProducts : null,
         }),
       })
 
@@ -318,6 +339,197 @@ export default function SettingsPage() {
                 <p className="text-xs text-[var(--clay)] mt-1">Describes what&apos;s in your standard mix — auto-fills the notes field</p>
               </div>
             </div>
+          </section>
+
+          {/* Substrate Mixes Section */}
+          <section className="bg-white border border-black/[0.08] rounded-lg p-5">
+            <div className="flex items-center gap-2 mb-1">
+              <Leaf className="w-4 h-4 text-[var(--forest)]" />
+              <h2 className="text-sm font-semibold text-[var(--bark)] uppercase tracking-wider">Substrate Mixes</h2>
+            </div>
+            <p className="text-xs text-[var(--clay)] mb-4">
+              Your custom substrate recipes. These appear as quick-select options when logging repotting.
+              {substrateMixes.length === 0 && ' None configured — you can type substrate details manually.'}
+            </p>
+
+            {substrateMixes.length > 0 && (
+              <div className="space-y-2 mb-3">
+                {substrateMixes.map(mix => (
+                  <div key={mix.id} className="flex items-center gap-2 p-2 rounded border border-black/[0.04] bg-gray-50">
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium text-[var(--bark)]">{mix.name}</span>
+                      {mix.description && (
+                        <span className="text-xs text-[var(--clay)] ml-2">{mix.description}</span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSubstrateMixes(substrateMixes.filter(m => m.id !== mix.id))}
+                      className="p-1 text-[var(--clay)] hover:text-red-500 transition-colors flex-shrink-0"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {addingSubstrate ? (
+              <div className="space-y-2 p-3 rounded border border-[var(--forest)]/15 bg-[var(--forest)]/5">
+                <input
+                  type="text"
+                  value={newSubstrate.name}
+                  onChange={(e) => setNewSubstrate({ ...newSubstrate, name: e.target.value })}
+                  className="w-full p-2 rounded border border-black/[0.08] text-sm focus:outline-none focus:border-[var(--moss)]"
+                  placeholder="Mix name (e.g., Dave's 5.0)"
+                  autoFocus
+                />
+                <input
+                  type="text"
+                  value={newSubstrate.description}
+                  onChange={(e) => setNewSubstrate({ ...newSubstrate, description: e.target.value })}
+                  className="w-full p-2 rounded border border-black/[0.08] text-sm focus:outline-none focus:border-[var(--moss)]"
+                  placeholder="Components (e.g., TFF/Perlite/Coco/Orchiata/Pon/Charcoal)"
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!newSubstrate.name.trim()) return
+                      setSubstrateMixes([...substrateMixes, {
+                        id: crypto.randomUUID(),
+                        name: newSubstrate.name.trim(),
+                        description: newSubstrate.description.trim(),
+                      }])
+                      setNewSubstrate({ name: '', description: '' })
+                      setAddingSubstrate(false)
+                    }}
+                    disabled={!newSubstrate.name.trim()}
+                    className="px-3 py-1.5 bg-[var(--forest)] text-white text-sm rounded hover:opacity-90 disabled:opacity-50 transition-opacity"
+                  >
+                    Add
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setAddingSubstrate(false); setNewSubstrate({ name: '', description: '' }) }}
+                    className="px-3 py-1.5 text-sm text-[var(--clay)] hover:text-[var(--bark)] transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setAddingSubstrate(true)}
+                className="flex items-center gap-1 text-sm text-[var(--forest)] hover:opacity-80 transition-opacity"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add substrate mix
+              </button>
+            )}
+          </section>
+
+          {/* IPM Products Section */}
+          <section className="bg-white border border-black/[0.08] rounded-lg p-5">
+            <div className="flex items-center gap-2 mb-1">
+              <Bug className="w-4 h-4 text-[var(--forest)]" />
+              <h2 className="text-sm font-semibold text-[var(--bark)] uppercase tracking-wider">IPM Products</h2>
+            </div>
+            <p className="text-xs text-[var(--clay)] mb-4">
+              Your pest and disease treatment products. These appear as quick-select options when logging treatments.
+              {ipmProducts.length === 0 && ' None configured — you can type treatment details manually.'}
+            </p>
+
+            {ipmProducts.length > 0 && (
+              <div className="space-y-2 mb-3">
+                {ipmProducts.map(product => (
+                  <div key={product.id} className="flex items-center gap-2 p-2 rounded border border-black/[0.04] bg-gray-50">
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium text-[var(--bark)]">{product.name}</span>
+                      {product.dosage && (
+                        <span className="text-xs text-[var(--clay)] ml-2">{product.dosage}</span>
+                      )}
+                      <span className="text-xs text-[var(--moss)] ml-2 capitalize">{product.category}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIpmProducts(ipmProducts.filter(p => p.id !== product.id))}
+                      className="p-1 text-[var(--clay)] hover:text-red-500 transition-colors flex-shrink-0"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {addingIPM ? (
+              <div className="space-y-2 p-3 rounded border border-[var(--forest)]/15 bg-[var(--forest)]/5">
+                <input
+                  type="text"
+                  value={newIPM.name}
+                  onChange={(e) => setNewIPM({ ...newIPM, name: e.target.value })}
+                  className="w-full p-2 rounded border border-black/[0.08] text-sm focus:outline-none focus:border-[var(--moss)]"
+                  placeholder="Product name (e.g., Abamectin)"
+                  autoFocus
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    value={newIPM.dosage}
+                    onChange={(e) => setNewIPM({ ...newIPM, dosage: e.target.value })}
+                    className="w-full p-2 rounded border border-black/[0.08] text-sm focus:outline-none focus:border-[var(--moss)]"
+                    placeholder="Dosage (e.g., 0.625ml/gal)"
+                  />
+                  <select
+                    value={newIPM.category}
+                    onChange={(e) => setNewIPM({ ...newIPM, category: e.target.value })}
+                    className="w-full p-2 rounded border border-black/[0.08] text-sm focus:outline-none focus:border-[var(--moss)]"
+                  >
+                    {IPM_CATEGORIES.map(cat => (
+                      <option key={cat.value} value={cat.value}>{cat.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!newIPM.name.trim()) return
+                      setIpmProducts([...ipmProducts, {
+                        id: crypto.randomUUID(),
+                        name: newIPM.name.trim(),
+                        dosage: newIPM.dosage.trim(),
+                        category: newIPM.category,
+                      }])
+                      setNewIPM({ name: '', dosage: '', category: 'general' })
+                      setAddingIPM(false)
+                    }}
+                    disabled={!newIPM.name.trim()}
+                    className="px-3 py-1.5 bg-[var(--forest)] text-white text-sm rounded hover:opacity-90 disabled:opacity-50 transition-opacity"
+                  >
+                    Add
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setAddingIPM(false); setNewIPM({ name: '', dosage: '', category: 'general' }) }}
+                    className="px-3 py-1.5 text-sm text-[var(--clay)] hover:text-[var(--bark)] transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setAddingIPM(true)}
+                className="flex items-center gap-1 text-sm text-[var(--forest)] hover:opacity-80 transition-opacity"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add IPM product
+              </button>
+            )}
           </section>
 
           {/* Save Button */}

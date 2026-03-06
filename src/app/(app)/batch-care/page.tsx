@@ -7,11 +7,13 @@ import { ArrowLeft, Check, Save } from 'lucide-react'
 import { showToast } from '@/components/toast'
 import { getTodayString } from '@/lib/timezone'
 import { useBaselineSettings } from '@/lib/hooks/useBaselineSettings'
+import { useUserPresets } from '@/lib/hooks/useUserPresets'
 
 function BatchCareContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const baseline = useBaselineSettings()
+  const presets = useUserPresets()
   const [plants, setPlants] = useState<any[]>([])
   const [locations, setLocations] = useState<any[]>([])
   const [selectedPlants, setSelectedPlants] = useState<string[]>([])
@@ -30,6 +32,8 @@ function BatchCareContent() {
     outputPH: '',
     rainAmount: '',
     rainDuration: '',
+    substrateType: '',
+    substrateMix: '',
     date: '', // Set in useEffect to avoid hydration mismatch
     isBaselineFeed: false,
   })
@@ -147,6 +151,8 @@ function BatchCareContent() {
           outputPH: '',
           rainAmount: '',
           rainDuration: '',
+          substrateType: '',
+          substrateMix: '',
           date: getTodayString(),
           isBaselineFeed: false,
         })
@@ -214,8 +220,15 @@ function BatchCareContent() {
                         updates.inputEC = ''
                         updates.outputPH = ''
                         updates.outputEC = ''
-                        updates.notes = ''
                       }
+                      // Clear substrate fields when switching away from repotting
+                      if (newType !== 'repotting') {
+                        updates.substrateType = ''
+                        updates.substrateMix = ''
+                      }
+                      // Always clear notes and dosage on type switch
+                      updates.notes = ''
+                      updates.dosage = ''
                       setCareForm({ ...careForm, ...updates })
                     }}
                     className="w-full p-2 rounded border border-black/[0.08] text-sm focus:outline-none focus:border-[var(--moss)]"
@@ -232,6 +245,48 @@ function BatchCareContent() {
                     <option value="other">Other</option>
                   </select>
                 </div>
+
+                {careForm.activityType === 'repotting' && (
+                  <div className="space-y-3">
+                    {presets.substrateMixes.length > 0 && (
+                      <div>
+                        <label className="block text-sm text-[var(--bark)] mb-1">Substrate Preset</label>
+                        <select
+                          onChange={(e) => {
+                            const mix = presets.substrateMixes.find(m => m.id === e.target.value)
+                            if (mix) {
+                              setCareForm({
+                                ...careForm,
+                                substrateType: 'custom',
+                                substrateMix: mix.description || mix.name,
+                                notes: mix.description ? `${mix.name} — ${mix.description}` : mix.name,
+                              })
+                            }
+                          }}
+                          className="w-full p-2 rounded border border-black/[0.08] text-sm focus:outline-none focus:border-[var(--moss)]"
+                          defaultValue=""
+                        >
+                          <option value="">Select a preset...</option>
+                          {presets.substrateMixes.map(mix => (
+                            <option key={mix.id} value={mix.id}>
+                              {mix.name}{mix.description ? ` — ${mix.description}` : ''}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                    <div>
+                      <label className="block text-sm text-[var(--bark)] mb-1">Substrate Details</label>
+                      <input
+                        type="text"
+                        value={careForm.substrateMix}
+                        onChange={(e) => setCareForm({ ...careForm, substrateMix: e.target.value })}
+                        className="w-full p-2 rounded border border-black/[0.08] text-sm focus:outline-none focus:border-[var(--moss)]"
+                        placeholder="e.g., TFF/Perlite/Coco/Orchiata"
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {careForm.activityType === 'rain' && (
                   <>
@@ -269,6 +324,40 @@ function BatchCareContent() {
                       </select>
                     </div>
                   </>
+                )}
+
+                {(careForm.activityType === 'pest_treatment' ||
+                  careForm.activityType === 'fungicide') && presets.ipmProducts.length > 0 && (
+                  <div>
+                    <label className="block text-sm text-[var(--bark)] mb-1">IPM Product</label>
+                    <select
+                      onChange={(e) => {
+                        const product = presets.ipmProducts.find(p => p.id === e.target.value)
+                        if (product) {
+                          setCareForm({
+                            ...careForm,
+                            dosage: product.dosage,
+                            notes: product.name,
+                          })
+                        }
+                      }}
+                      className="w-full p-2 rounded border border-black/[0.08] text-sm focus:outline-none focus:border-[var(--moss)]"
+                      defaultValue=""
+                    >
+                      <option value="">Select a product...</option>
+                      {presets.ipmProducts
+                        .filter(p => {
+                          if (p.category === 'general') return true
+                          if (careForm.activityType === 'fungicide') return p.category === 'fungicide'
+                          return p.category !== 'fungicide'
+                        })
+                        .map(product => (
+                          <option key={product.id} value={product.id}>
+                            {product.name}{product.dosage ? ` — ${product.dosage}` : ''} ({product.category})
+                          </option>
+                        ))}
+                    </select>
+                  </div>
                 )}
 
                 {(careForm.activityType === 'fertilizing' ||

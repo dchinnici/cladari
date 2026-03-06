@@ -24,6 +24,8 @@ export async function GET() {
         baselineEC: true,
         baselinePH: true,
         baselineNotes: true,
+        substrateMixes: true,
+        ipmProducts: true,
       },
     })
 
@@ -49,7 +51,7 @@ export async function PATCH(request: Request) {
     const body = await request.json()
 
     // Only allow updating these fields
-    const allowedFields = ['displayName', 'timezone', 'latitude', 'longitude', 'city', 'baselineEC', 'baselinePH', 'baselineNotes'] as const
+    const allowedFields = ['displayName', 'timezone', 'latitude', 'longitude', 'city', 'baselineEC', 'baselinePH', 'baselineNotes', 'substrateMixes', 'ipmProducts'] as const
     const data: Record<string, unknown> = {}
 
     for (const field of allowedFields) {
@@ -99,6 +101,30 @@ export async function PATCH(request: Request) {
       }
     }
 
+    // Validate substrate mixes if provided
+    if (data.substrateMixes !== undefined && data.substrateMixes !== null) {
+      if (!Array.isArray(data.substrateMixes) || data.substrateMixes.length > 50) {
+        return NextResponse.json({ error: 'Substrate mixes must be an array (max 50)' }, { status: 400 })
+      }
+      for (const mix of data.substrateMixes) {
+        if (!mix.id || !mix.name || typeof mix.name !== 'string') {
+          return NextResponse.json({ error: 'Each substrate mix must have an id and name' }, { status: 400 })
+        }
+      }
+    }
+
+    // Validate IPM products if provided
+    if (data.ipmProducts !== undefined && data.ipmProducts !== null) {
+      if (!Array.isArray(data.ipmProducts) || data.ipmProducts.length > 50) {
+        return NextResponse.json({ error: 'IPM products must be an array (max 50)' }, { status: 400 })
+      }
+      for (const product of data.ipmProducts) {
+        if (!product.id || !product.name || typeof product.name !== 'string') {
+          return NextResponse.json({ error: 'Each IPM product must have an id and name' }, { status: 400 })
+        }
+      }
+    }
+
     const updated = await prisma.profile.update({
       where: { id: user.id },
       data,
@@ -112,6 +138,8 @@ export async function PATCH(request: Request) {
         baselineEC: true,
         baselinePH: true,
         baselineNotes: true,
+        substrateMixes: true,
+        ipmProducts: true,
       },
     })
 
