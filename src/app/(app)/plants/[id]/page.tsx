@@ -17,6 +17,7 @@ import { JournalTab, type JournalEntryType } from '@/components/plant/JournalTab
 import { LineageTab } from '@/components/plant/LineageTab'
 import { getPhotoUrl } from '@/lib/photo-url'
 import { useBaselineSettings } from '@/lib/hooks/useBaselineSettings'
+import { useUserPresets } from '@/lib/hooks/useUserPresets'
 
 // Maximum file size for Vercel Hobby tier (4.5MB, use 4MB with headroom)
 const MAX_UPLOAD_SIZE_MB = 4
@@ -96,6 +97,7 @@ export default function PlantDetailPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const baseline = useBaselineSettings()
+  const presets = useUserPresets()
   const [plant, setPlant] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('status')
@@ -2684,29 +2686,60 @@ export default function PlantDetailPage() {
                 </div>
               )}
 
-              {careLogForm.activityType === 'pest_treatment' && (
-                <div>
-                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">Pesticide Used</label>
-                  <input
-                    type="text"
-                    value={careLogForm.pesticide}
-                    onChange={(e) => setCareLogForm({ ...careLogForm, pesticide: e.target.value })}
-                    className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
-                    placeholder="e.g., Neem oil"
-                  />
-                </div>
-              )}
-
-              {careLogForm.activityType === 'fungicide' && (
-                <div>
-                  <label className="block text-sm font-medium text-[var(--bark)] mb-1">Fungicide Used</label>
-                  <input
-                    type="text"
-                    value={careLogForm.fungicide}
-                    onChange={(e) => setCareLogForm({ ...careLogForm, fungicide: e.target.value })}
-                    className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
-                    placeholder="e.g., Copper fungicide"
-                  />
+              {(careLogForm.activityType === 'pest_treatment' || careLogForm.activityType === 'fungicide') && (
+                <div className="space-y-3">
+                  {presets.ipmProducts.length > 0 ? (
+                    <div className="p-3 bg-[var(--forest)]/5 rounded-lg border border-[var(--forest)]/15">
+                      <label className="block text-sm font-medium text-[var(--bark)] mb-1">IPM Product</label>
+                      <select
+                        onChange={(e) => {
+                          const product = presets.ipmProducts.find(p => p.id === e.target.value)
+                          if (product) {
+                            const field = careLogForm.activityType === 'fungicide' ? 'fungicide' : 'pesticide'
+                            setCareLogForm({
+                              ...careLogForm,
+                              [field]: product.name,
+                              dosage: product.dosage,
+                            })
+                          }
+                        }}
+                        className="w-full p-2 rounded border border-black/[0.08] text-sm focus:outline-none focus:border-[var(--moss)]"
+                        defaultValue=""
+                      >
+                        <option value="">Select a product...</option>
+                        {presets.ipmProducts
+                          .filter(p => {
+                            if (p.category === 'general') return true
+                            if (careLogForm.activityType === 'fungicide') return p.category === 'fungicide'
+                            return p.category !== 'fungicide'
+                          })
+                          .map(product => (
+                            <option key={product.id} value={product.id}>
+                              {product.name}{product.dosage ? ` — ${product.dosage}` : ''} ({product.category})
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-[var(--clay)]">
+                      <Link href="/settings" className="text-[var(--forest)] hover:underline">Add IPM presets in Settings</Link> for quick selection
+                    </p>
+                  )}
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--bark)] mb-1">
+                      {careLogForm.activityType === 'fungicide' ? 'Fungicide Used' : 'Pesticide Used'}
+                    </label>
+                    <input
+                      type="text"
+                      value={careLogForm.activityType === 'fungicide' ? careLogForm.fungicide : careLogForm.pesticide}
+                      onChange={(e) => {
+                        const field = careLogForm.activityType === 'fungicide' ? 'fungicide' : 'pesticide'
+                        setCareLogForm({ ...careLogForm, [field]: e.target.value })
+                      }}
+                      className="w-full p-2 rounded border border-black/[0.08] focus:outline-none focus:border-[var(--moss)]"
+                      placeholder={careLogForm.activityType === 'fungicide' ? 'e.g., Copper fungicide' : 'e.g., Neem oil'}
+                    />
+                  </div>
                 </div>
               )}
 
@@ -2801,6 +2834,37 @@ export default function PlantDetailPage() {
                 <h4 className="text-sm font-semibold text-blue-900 mb-3">
                   New Substrate Details
                 </h4>
+
+                {presets.substrateMixes.length > 0 ? (
+                  <div className="mb-3 p-3 bg-[var(--forest)]/5 rounded-lg border border-[var(--forest)]/15">
+                    <label className="block text-sm font-medium text-[var(--bark)] mb-1">Substrate Preset</label>
+                    <select
+                      onChange={(e) => {
+                        const mix = presets.substrateMixes.find(m => m.id === e.target.value)
+                        if (mix) {
+                          setCareLogForm({
+                            ...careLogForm,
+                            substrateType: 'custom',
+                            substrateMix: mix.description || mix.name,
+                          })
+                        }
+                      }}
+                      className="w-full p-2 rounded border border-black/[0.08] text-sm focus:outline-none focus:border-[var(--moss)]"
+                      defaultValue=""
+                    >
+                      <option value="">Select a preset...</option>
+                      {presets.substrateMixes.map(mix => (
+                        <option key={mix.id} value={mix.id}>
+                          {mix.name}{mix.description ? ` — ${mix.description}` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <p className="text-xs text-[var(--clay)] mb-3">
+                    <Link href="/settings" className="text-[var(--forest)] hover:underline">Add substrate presets in Settings</Link> for quick selection
+                  </p>
+                )}
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>

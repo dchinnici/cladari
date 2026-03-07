@@ -123,6 +123,24 @@ export default function SettingsPage() {
     }
   }
 
+  const savePresets = async (newSubstrates: SubstrateMix[], newIPM: IPMProduct[]) => {
+    try {
+      const response = await fetch('/api/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          substrateMixes: newSubstrates.length > 0 ? newSubstrates : null,
+          ipmProducts: newIPM.length > 0 ? newIPM : null,
+        }),
+      })
+      if (!response.ok) {
+        showToast({ type: 'error', title: 'Failed to save preset' })
+      }
+    } catch {
+      showToast({ type: 'error', title: 'Failed to save preset' })
+    }
+  }
+
   const handleLookupCity = async () => {
     if (!form.city.trim()) return
     setGeocoding(true)
@@ -364,7 +382,11 @@ export default function SettingsPage() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => setSubstrateMixes(substrateMixes.filter(m => m.id !== mix.id))}
+                      onClick={() => {
+                        const updated = substrateMixes.filter(m => m.id !== mix.id)
+                        setSubstrateMixes(updated)
+                        savePresets(updated, ipmProducts)
+                      }}
                       className="p-1 text-[var(--clay)] hover:text-red-500 transition-colors flex-shrink-0"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -396,13 +418,16 @@ export default function SettingsPage() {
                     type="button"
                     onClick={() => {
                       if (!newSubstrate.name.trim()) return
-                      setSubstrateMixes([...substrateMixes, {
+                      const updated = [...substrateMixes, {
                         id: crypto.randomUUID(),
                         name: newSubstrate.name.trim(),
                         description: newSubstrate.description.trim(),
-                      }])
+                      }]
+                      setSubstrateMixes(updated)
+                      savePresets(updated, ipmProducts)
                       setNewSubstrate({ name: '', description: '' })
                       setAddingSubstrate(false)
+                      showToast({ type: 'success', title: 'Substrate mix added' })
                     }}
                     disabled={!newSubstrate.name.trim()}
                     className="px-3 py-1.5 bg-[var(--forest)] text-white text-sm rounded hover:opacity-90 disabled:opacity-50 transition-opacity"
@@ -454,7 +479,11 @@ export default function SettingsPage() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => setIpmProducts(ipmProducts.filter(p => p.id !== product.id))}
+                      onClick={() => {
+                        const updated = ipmProducts.filter(p => p.id !== product.id)
+                        setIpmProducts(updated)
+                        savePresets(substrateMixes, updated)
+                      }}
                       className="p-1 text-[var(--clay)] hover:text-red-500 transition-colors flex-shrink-0"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -497,14 +526,17 @@ export default function SettingsPage() {
                     type="button"
                     onClick={() => {
                       if (!newIPM.name.trim()) return
-                      setIpmProducts([...ipmProducts, {
+                      const updated = [...ipmProducts, {
                         id: crypto.randomUUID(),
                         name: newIPM.name.trim(),
                         dosage: newIPM.dosage.trim(),
                         category: newIPM.category,
-                      }])
+                      }]
+                      setIpmProducts(updated)
+                      savePresets(substrateMixes, updated)
                       setNewIPM({ name: '', dosage: '', category: 'general' })
                       setAddingIPM(false)
+                      showToast({ type: 'success', title: 'IPM product added' })
                     }}
                     disabled={!newIPM.name.trim()}
                     className="px-3 py-1.5 bg-[var(--forest)] text-white text-sm rounded hover:opacity-90 disabled:opacity-50 transition-opacity"

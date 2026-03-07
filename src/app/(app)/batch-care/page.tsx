@@ -248,7 +248,7 @@ function BatchCareContent() {
 
                 {careForm.activityType === 'repotting' && (
                   <div className="space-y-3">
-                    {presets.substrateMixes.length > 0 && (
+                    {presets.substrateMixes.length > 0 ? (
                       <div>
                         <label className="block text-sm text-[var(--bark)] mb-1">Substrate Preset</label>
                         <select
@@ -274,6 +274,10 @@ function BatchCareContent() {
                           ))}
                         </select>
                       </div>
+                    ) : (
+                      <p className="text-xs text-[var(--clay)]">
+                        <Link href="/settings" className="text-[var(--forest)] hover:underline">Add substrate presets in Settings</Link> for quick selection
+                      </p>
                     )}
                     <div>
                       <label className="block text-sm text-[var(--bark)] mb-1">Substrate Details</label>
@@ -327,7 +331,8 @@ function BatchCareContent() {
                 )}
 
                 {(careForm.activityType === 'pest_treatment' ||
-                  careForm.activityType === 'fungicide') && presets.ipmProducts.length > 0 && (
+                  careForm.activityType === 'fungicide') && (
+                  presets.ipmProducts.length > 0 ? (
                   <div>
                     <label className="block text-sm text-[var(--bark)] mb-1">IPM Product</label>
                     <select
@@ -358,6 +363,11 @@ function BatchCareContent() {
                         ))}
                     </select>
                   </div>
+                  ) : (
+                    <p className="text-xs text-[var(--clay)]">
+                      <Link href="/settings" className="text-[var(--forest)] hover:underline">Add IPM presets in Settings</Link> for quick selection
+                    </p>
+                  )
                 )}
 
                 {(careForm.activityType === 'fertilizing' ||
