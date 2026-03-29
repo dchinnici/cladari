@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { writeFile, mkdir, unlink } from 'fs/promises'
-import { existsSync } from 'fs'
-import path from 'path'
 import sharp from 'sharp'
+import ExifParser from 'exif-parser'
 import prisma from '@/lib/prisma'
-import { exiftool } from 'exiftool-vendored'
 import { getUser, uploadToStorage, deleteFromStorage } from '@/lib/supabase/server'
 
 // Route segment config for photo uploads (Next.js 15 App Router)
@@ -100,68 +97,44 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
-    // Generate temporary file path for EXIF extraction
-    // Use /tmp on Vercel (serverless) - process.cwd() is read-only
-    const tempDir = process.env.VERCEL ? '/tmp' : path.join(process.cwd(), 'tmp')
-    if (!existsSync(tempDir)) {
-      await mkdir(tempDir, { recursive: true })
-    }
-    const tempFilePath = path.join(tempDir, `temp_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`)
-
-    // Extract EXIF data - try exiftool first, fall back to sharp
+    // Extract EXIF data using exif-parser (pure JS, works on Vercel serverless)
     let exifDate: Date | null = null
-    let exifTags: any = null
+    let exifTags: Record<string, any> = {}
     let exifOrientation: number = 1 // Default: normal orientation
 
-    // Method 1: Try exiftool (handles all formats including HEIC, RAW)
-    // This may fail on Vercel serverless if exiftool binary isn't available
     try {
-      // Write temp file for exiftool to read
-      await writeFile(tempFilePath, buffer)
-      exifTags = await exiftool.read(tempFilePath)
+      const parser = ExifParser.create(buffer)
+      parser.enableSimpleValues(true)
+      const exifResult = parser.parse()
+      exifTags = exifResult.tags || {}
 
-      // Try DateTimeOriginal first (most accurate - when photo was taken)
+      // DateTimeOriginal is a Unix timestamp (seconds since epoch)
       if (exifTags.DateTimeOriginal) {
-        exifDate = exifTags.DateTimeOriginal instanceof Date ? exifTags.DateTimeOriginal : new Date(exifTags.DateTimeOriginal)
-      }
-      // Fall back to CreateDate
-      else if (exifTags.CreateDate) {
-        exifDate = exifTags.CreateDate instanceof Date ? exifTags.CreateDate : new Date(exifTags.CreateDate)
-      }
-      // Last resort: DateTime
-      else if (exifTags.DateTime) {
-        exifDate = exifTags.DateTime instanceof Date ? exifTags.DateTime : new Date(exifTags.DateTime)
+        exifDate = new Date(exifTags.DateTimeOriginal * 1000)
+      } else if (exifTags.CreateDate) {
+        exifDate = new Date(exifTags.CreateDate * 1000)
+      } else if (exifTags.ModifyDate) {
+        exifDate = new Date(exifTags.ModifyDate * 1000)
       }
 
-      // Extract orientation for rotation correction
-      if (exifTags.Orientation) {
-        exifOrientation = typeof exifTags.Orientation === 'number'
-          ? exifTags.Orientation
-          : parseInt(exifTags.Orientation, 10) || 1
+      // Orientation
+      if (exifTags.Orientation && typeof exifTags.Orientation === 'number') {
+        exifOrientation = exifTags.Orientation
       }
 
-      console.log(`EXIF (exiftool): date=${exifDate?.toISOString() || 'none'}, orientation=${exifOrientation}`)
-    } catch (exiftoolError) {
-      console.log('Exiftool failed (expected on Vercel), falling back to sharp:', exiftoolError instanceof Error ? exiftoolError.message : 'unknown')
+      console.log(`EXIF (exif-parser): date=${exifDate?.toISOString() || 'none'}, orientation=${exifOrientation}`)
+    } catch (exifError) {
+      console.log('EXIF parsing failed, falling back to sharp:', exifError instanceof Error ? exifError.message : 'unknown')
 
-      // Method 2: Fall back to sharp's built-in EXIF extraction
-      // Works for JPEG/PNG, limited support for other formats
+      // Fallback: sharp metadata for orientation only
       try {
-        const sharpMetadata = await sharp(buffer).metadata()
-        if (sharpMetadata.orientation) {
-          exifOrientation = sharpMetadata.orientation
+        const sharpMeta = await sharp(buffer).metadata()
+        if (sharpMeta.orientation) {
+          exifOrientation = sharpMeta.orientation
         }
-        // Sharp doesn't give us date, but we can get orientation
         console.log(`EXIF (sharp fallback): orientation=${exifOrientation}`)
       } catch (sharpError) {
         console.log('Sharp metadata extraction also failed:', sharpError)
-      }
-    } finally {
-      // Clean up temp file if it was created
-      try {
-        await unlink(tempFilePath)
-      } catch {
-        // File may not exist if exiftool failed before write
       }
     }
 
@@ -197,7 +170,7 @@ export async function POST(request: NextRequest) {
     const filename = `${sanitizedParentId}_${timestamp}.jpeg`
     const thumbnailFilename = `${sanitizedParentId}_${timestamp}_thumb.jpeg`
 
-    // Build comprehensive metadata object using sharp + exiftool data
+    // Build comprehensive metadata object using sharp + exif-parser data
     let metadata: any = {}
     try {
       const imageMetadata = await sharp(buffer).metadata()
@@ -209,10 +182,8 @@ export async function POST(request: NextRequest) {
         space: imageMetadata.space,
         hasAlpha: imageMetadata.hasAlpha,
         orientation: exifOrientation,
-        exif: exifTags ? {
-          dateTimeOriginal: exifTags.DateTimeOriginal ?
-            (exifTags.DateTimeOriginal instanceof Date ? exifTags.DateTimeOriginal.toISOString() : new Date(exifTags.DateTimeOriginal).toISOString())
-            : null,
+        exif: {
+          dateTimeOriginal: exifDate ? exifDate.toISOString() : null,
           make: exifTags.Make || null,
           model: exifTags.Model || null,
           software: exifTags.Software || null,
@@ -224,7 +195,7 @@ export async function POST(request: NextRequest) {
           flash: exifTags.Flash || null,
           gpsLatitude: exifTags.GPSLatitude || null,
           gpsLongitude: exifTags.GPSLongitude || null
-        } : {}
+        }
       }
     } catch (error) {
       console.error('Error extracting metadata:', error)
